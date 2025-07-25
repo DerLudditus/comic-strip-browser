@@ -127,17 +127,17 @@ Note that I was not able to build a working Windows binary! See under **Known Is
 
 This is because such a scaling is performed externally, not by the app. Basically, an image is enlarged by the display server or by the window manager. While such a phenomenon is typically associated with X11, Deepin's Wayland-based Treeland is quite a failure in this regard. Compare the rendering in Deepin 25.0.1 with the out-of-the-box **125% desktop scaling** to the normal 100% scaling:
 
-* [125% desktop scaling](./Screenshots/deepin_25_original_125_scaling.png)
-* [100% desktop scaling](./Screenshots/deepin_25_reset_to_100_scaling.png)
+* [125% desktop scaling](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/deepin_25_original_125_scaling.png)
+* [100% desktop scaling](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/deepin_25_reset_to_100_scaling.png)
 
 Maximizing the window can help in some cases. In others, you might want to resize the window until a better rendering is obtained, if at all.
 
 Otherwise, here's how the same comic strip looks by default in:
 
-* [Linux Mint 22.1 Cinnamon](./Screenshots/Linux_Mint_22.1_Cinnamon.png)
-* [Linux Mint 22.1 XFCE](./Screenshots/Linux_Mint_22.1_XFCE.png)
-* [Ubuntu 25.04](./Screenshots/Ubuntu_25.04.png)
-* [Kubuntu 25.10 snapshot2](./Screenshots/Kubuntu_25.10_snapshot2.png)
+* [Linux Mint 22.1 Cinnamon](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/Linux_Mint_22.1_Cinnamon.png)
+* [Linux Mint 22.1 XFCE](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/Linux_Mint_22.1_XFCE.png)
+* [Ubuntu 25.04](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/Ubuntu_25.04.png)
+* [Kubuntu 25.10 snapshot2](https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/main/Screenshots/Kubuntu_25.10_snapshot2.png)
 
 Note that the above screenshots were taken when the 15th comic title hadn't been added yet. 
 
@@ -179,6 +179,6 @@ Using the `.spec` file provided by Kiro, and the `requirements.txt`, building fo
 
 ## License
 
-This project is licensed under the MIT License. See LICENSE file for details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](./LICENSE) file for details.
 
 **Note**: This application is for personal use only. Please respect the terms of service of GoComics.com and the copyright of comic strip creators.
