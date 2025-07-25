@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Comic Strip Browser
+Comment=Browse a selection of comic strips from GoComics.com
+GenericName=Comic Strips Reader
+Exec=comic-strip-browser
+Icon=comic-strip-browser
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=
+Keywords=comic;comics;strips;gocomics;entertainment;
+StartupNotify=true
+StartupWMClass=ComicStripBrowser

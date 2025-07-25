@@ -1,0 +1,5 @@
+PyQt6==6.4.2
+requests==2.31.0
+beautifulsoup4==4.12.2
+pytest==7.4.3
+pyinstaller==6.3.0
