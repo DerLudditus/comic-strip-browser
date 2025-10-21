@@ -3,7 +3,7 @@ Web scraping functionality for retrieving comic data from GoComics.com.
 """
 
 import re
-import logging
+# import logging
 from typing import Optional
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -26,7 +26,7 @@ class WebScraper:
     Uses requests for page retrieval and BeautifulSoup for HTML parsing.
     """
     
-    def __init__(self, timeout: int = 30, error_handler: Optional[ErrorHandler] = None):
+    def __init__(self, timeout: int = 5, error_handler: Optional[ErrorHandler] = None):
         """
         Initialize the WebScraper.
         
@@ -36,7 +36,7 @@ class WebScraper:
         """
         self.timeout = timeout
         self.error_handler = error_handler or ErrorHandler()
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         
     def fetch_page(self, url: str) -> str:
         """
@@ -79,13 +79,13 @@ class WebScraper:
                     except (ValueError, IndexError):
                         date_obj = datetime.date.today()
                     self.error_handler.handle_network_error(http_error, url, comic_name, date_obj)
-            self.logger.error(f"Request failed for {url}: {e}")
+            # self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except RequestException as e:
-            self.logger.error(f"Request failed for {url}: {e}")
+            # self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except Exception as e:
-            self.logger.error(f"Unexpected error fetching {url}: {e}")
+            # self.logger.error(f"Unexpected error fetching {url}: {e}")
             raise WebScrapingError(f"Unexpected error fetching {url}: {e}")
 
     def parse_comic_data(self, html_content: str, comic_name: str, date: datetime.date) -> ComicData:
@@ -128,12 +128,12 @@ class WebScraper:
             try:
                 fallback_result = self.error_handler.handle_parsing_error(e, html_content, comic_name, date)
                 if fallback_result:
-                    self.logger.info(f"Fallback parsing successful for {comic_name} on {date}")
+                    # self.logger.info(f"Fallback parsing successful for {comic_name} on {date}")
                     return fallback_result
             except ParsingError:
                 pass
             
-            self.logger.error(f"Failed to parse comic data: {e}")
+            # self.logger.error(f"Failed to parse comic data: {e}")
             raise WebScrapingError(f"Failed to parse comic data: {e}")
     
     def _extract_title(self, soup: BeautifulSoup) -> str:
@@ -186,7 +186,7 @@ class WebScraper:
     
     def _detect_image_format(self, image_url: str) -> str:
         """
-        Detect image format from URL extension.
+        Detect image format by downloading and inspecting the actual image data.
         
         Args:
             image_url: URL of the image
@@ -195,21 +195,41 @@ class WebScraper:
             Image format (e.g., 'jpeg', 'png', 'gif')
         """
         try:
-            parsed_url = urlparse(image_url)
-            path = parsed_url.path.lower()
+            # Download the image to detect its actual format
+            import requests
+            from PIL import Image
+            from io import BytesIO
             
-            if path.endswith('.jpg') or path.endswith('.jpeg'):
-                return 'jpeg'
-            elif path.endswith('.png'):
-                return 'png'
-            elif path.endswith('.gif'):
-                return 'gif'
-            elif path.endswith('.webp'):
-                return 'webp'
-            else:
-                return 'jpeg'
+            response = requests.get(image_url, timeout=5)
+            response.raise_for_status()
+            
+            # Open the image and get its format
+            image = Image.open(BytesIO(response.content))
+            format_name = image.format.lower() if image.format else 'jpeg'
+            
+            # Normalize format names
+            if format_name == 'jpg':
+                format_name = 'jpeg'
+            
+            return format_name
                 
         except Exception:
+            # Fallback: try to detect from URL extension
+            try:
+                parsed_url = urlparse(image_url)
+                path = parsed_url.path.lower()
+                
+                if path.endswith('.jpg') or path.endswith('.jpeg'):
+                    return 'jpeg'
+                elif path.endswith('.png'):
+                    return 'png'
+                elif path.endswith('.gif'):
+                    return 'gif'
+                elif path.endswith('.webp'):
+                    return 'webp'
+            except Exception:
+                pass
+            
             return 'jpeg'
     
     def _extract_author(self, title: str, comic_name: str) -> str:
@@ -241,7 +261,8 @@ class WebScraper:
             'pickles': 'Brian Crane',
             'wumo': 'Mikael Wulff and Anders Morgenthaler',
             'speedbump': 'Dave Coverly',
-            'freerange': 'Bill Whitehead'
+            'freerange': 'Bill Whitehead',
+            'offthemark': 'Mark Parisi'
         }
         
         return author_mapping.get(comic_name, 'Unknown Author')
@@ -263,12 +284,12 @@ class WebScraper:
         """
         url = f"{base_url}/{date.year:04d}/{date.month:02d}/{date.day:02d}"
         
-        self.logger.info(f"Fetching comic data from {url}")
+        # self.logger.info(f"Fetching comic data from {url}")
         
         html_content = self.fetch_page(url)
         
         comic_data = self.parse_comic_data(html_content, comic_name, date)
         
-        self.logger.info(f"Successfully extracted comic data for {comic_name} on {date}")
+        # self.logger.info(f"Successfully extracted comic data for {comic_name} on {date}")
         
         return comic_data

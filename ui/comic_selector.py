@@ -235,6 +235,10 @@ class ComicSelector(QWidget):
         Args:
             comic_name: Name of the comic to select
         """
+        # Validate comic name
+        if not comic_name or not isinstance(comic_name, str):
+            return
+            
         if comic_name not in self.comic_items:
             return
         

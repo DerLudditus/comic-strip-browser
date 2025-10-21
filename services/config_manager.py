@@ -62,7 +62,7 @@ class ConfigManager:
             "comics": {},
             "start_dates": {},
             "settings": {
-                "cache_size_per_comic": 50,
+                "cache_size_per_comic": 200,
                 "default_comic": "garfield",
                 "auto_discover_dates": False  # No longer needed with hard-coded dates
             }

@@ -127,42 +127,42 @@ COMIC_DEFINITIONS = [
         display_name="Calvin and Hobbes",
         base_url="https://www.gocomics.com/calvinandhobbes",
         author="Bill Watterson",
-        earliest_date=date(2007, 1, 1)  # GoComics availability, not original publication
+        earliest_date=date(1985, 11, 18)  # GoComics availability, not original publication
     ),
     ComicDefinition(
         name="peanuts",
         display_name="Peanuts",
         base_url="https://www.gocomics.com/peanuts",
         author="Charles M. Schulz",
-        earliest_date=date(1951, 1, 1)  # Good historical coverage
+        earliest_date=date(1950, 10, 16)
     ),
     ComicDefinition(
         name="peanuts-begins",
         display_name="Peanuts Begins",
         base_url="https://www.gocomics.com/peanuts-begins",
         author="Charles M. Schulz",
-        earliest_date=date(2021, 4, 15)  # Recent reprint series
+        earliest_date=date(1950, 10, 16)  # Recent reprint series; for old dates can be identical to Peanuts, only in color
     ),
     ComicDefinition(
         name="garfield",
         display_name="Garfield",
         base_url="https://www.gocomics.com/garfield",
         author="Jim Davis",
-        earliest_date=date(1979, 1, 1)  # Good historical coverage
+        earliest_date=date(1978, 6, 19)
     ),
     ComicDefinition(
         name="wizardofid",
         display_name="Wizard of Id",
         base_url="https://www.gocomics.com/wizardofid",
         author="Brant Parker and Johnny Hart",
-        earliest_date=date(2003, 1, 1)  # Limited GoComics availability
+        earliest_date=date(2002, 1, 1)  # Limited GoComics availability
     ),
     ComicDefinition(
         name="wizard-of-id-classics",
         display_name="Wizard of Id Classics",
         base_url="https://www.gocomics.com/wizard-of-id-classics",
         author="Brant Parker and Johnny Hart",
-        earliest_date=date(2015, 1, 1)  # Classics reprint series
+        earliest_date=date(2014, 11, 17)  # Classics reprint series
     ),
     ComicDefinition(
         name="pearlsbeforeswine",
@@ -183,14 +183,14 @@ COMIC_DEFINITIONS = [
         display_name="B.C.",
         base_url="https://www.gocomics.com/bc",
         author="Johnny Hart",
-        earliest_date=date(2003, 1, 1)  # Limited GoComics availability
+        earliest_date=date(2002, 1, 1)  # Limited GoComics availability
     ),
     ComicDefinition(
         name="back-to-bc",
         display_name="Back to B.C.",
         base_url="https://www.gocomics.com/back-to-bc",
         author="Johnny Hart",
-        earliest_date=date(2016, 1, 1)  # Recent reprint series
+        earliest_date=date(2015, 9, 21)  # Recent reprint series
     ),
     ComicDefinition(
         name="pickles",
@@ -204,21 +204,21 @@ COMIC_DEFINITIONS = [
         display_name="WuMo",
         base_url="https://www.gocomics.com/wumo",
         author="Mikael Wulff and Anders Morgenthaler",
-        earliest_date=date(2014, 1, 1)  # Relatively recent addition
+        earliest_date=date(2013, 10, 13)  # Limited GoComics availability, with gaps
     ),
     ComicDefinition(
         name="speedbump",
         display_name="Speed Bump",
         base_url="https://www.gocomics.com/speedbump",
         author="Dave Coverly",
-        earliest_date=date(2003, 1, 1)  # Limited GoComics availability
+        earliest_date=date(2002, 1, 1)  # With gaps
     ),
     ComicDefinition(
         name="freerange",
         display_name="Free Range",
         base_url="https://www.gocomics.com/freerange",
         author="Bill Whitehead",
-        earliest_date=date(2008, 1, 1)  # Limited GoComics availability
+        earliest_date=date(2007, 2, 3) 
     ),
     ComicDefinition(
         name="offthemark",

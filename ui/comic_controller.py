@@ -6,7 +6,7 @@ UI components and the service layer, handling asynchronous operations,
 error management, and state synchronization.
 """
 
-import logging
+# import logging
 from datetime import date, datetime
 from typing import Optional, Set
 from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, QTimer
@@ -43,7 +43,7 @@ class ComicLoadingWorker(QThread):
         self.comic_service = comic_service
         self.comic_name = comic_name
         self.comic_date = comic_date
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
     
     def run(self):
         """Load the comic in the background thread."""
@@ -63,7 +63,7 @@ class ComicLoadingWorker(QThread):
             self.comic_loaded.emit(comic_data)
             
         except Exception as e:
-            self.logger.error(f"Failed to load comic {self.comic_name} for {self.comic_date}: {e}")
+            # self.logger.error(f"Failed to load comic {self.comic_name} for {self.comic_date}: {e}")
             self.loading_failed.emit(e)
 
 
@@ -95,7 +95,7 @@ class ComicController(QObject):
         """
         super().__init__()
         self.comic_service = comic_service or ComicService()
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         
         # Current state
         self.current_comic_name: Optional[str] = None
@@ -114,20 +114,20 @@ class ComicController(QObject):
     def _initialize_service(self):
         """Initialize the comic service in the background."""
         try:
-            self.logger.info("Initializing comic service...")
+            # self.logger.info("Initializing comic service...")
             
             # Check if initialization is needed
             if self.comic_service.initialize_if_needed():
-                self.logger.info("Comic service initialization completed")
+                # self.logger.info("Comic service initialization completed")
                 # Update available dates for all comics
                 self._update_all_available_dates()
             else:
-                self.logger.info("Comic service already initialized")
+                # self.logger.info("Comic service already initialized")
                 # Still update available dates from config
                 self._update_all_available_dates()
                 
         except Exception as e:
-            self.logger.error(f"Failed to initialize comic service: {e}")
+            # self.logger.error(f"Failed to initialize comic service: {e}")
             error_msg = self.comic_service.get_user_friendly_error_message(e)
             suggestions = self.comic_service.get_recovery_suggestions(e)
             self.loading_error.emit(error_msg, "; ".join(suggestions), "network")
@@ -179,7 +179,8 @@ class ComicController(QObject):
             self.available_dates_updated.emit(comic_name, available_dates)
             
         except Exception as e:
-            self.logger.error(f"Failed to update available dates for {comic_name}: {e}")
+            # self.logger.error(f"Failed to update available dates for {comic_name}: {e}")
+            pass
     
     def select_comic(self, comic_name: str):
         """
@@ -188,7 +189,7 @@ class ComicController(QObject):
         Args:
             comic_name: Name of the selected comic
         """
-        self.logger.info(f"Comic selected: {comic_name}")
+        # self.logger.info(f"Comic selected: {comic_name}")
         self.current_comic_name = comic_name
         
         # Update available dates for the selected comic
@@ -208,7 +209,7 @@ class ComicController(QObject):
         Args:
             selected_date: Date selected from the calendar
         """
-        self.logger.info(f"Date selected: {selected_date}")
+        # self.logger.info(f"Date selected: {selected_date}")
         self.current_date = selected_date
         
         # Load comic for the selected date if we have a comic selected
@@ -242,7 +243,7 @@ class ComicController(QObject):
             self.loading_error.emit(error_msg, suggestions, "unavailable")
             return
         
-        self.logger.info(f"Loading comic {comic_name} for {comic_date}")
+        # self.logger.info(f"Loading comic {comic_name} for {comic_date}")
         
         # Update current state
         self.current_comic_name = comic_name
@@ -266,7 +267,7 @@ class ComicController(QObject):
         Args:
             comic_data: Loaded comic data
         """
-        self.logger.info(f"Comic loaded successfully: {comic_data.comic_name} for {comic_data.date}")
+        # self.logger.info(f"Comic loaded successfully: {comic_data.comic_name} for {comic_data.date}")
         
         # Emit signals
         self.comic_loaded.emit(comic_data)
@@ -280,7 +281,7 @@ class ComicController(QObject):
         Args:
             error: Exception that occurred during loading
         """
-        self.logger.error(f"Comic loading failed: {error}")
+        # self.logger.error(f"Comic loading failed: {error}")
         
         # Determine error type for appropriate UI handling
         error_type = self._classify_error(error)
@@ -329,7 +330,7 @@ class ComicController(QObject):
         Args:
             progress_message: Progress message to display
         """
-        self.logger.debug(f"Loading progress: {progress_message}")
+        # self.logger.debug(f"Loading progress: {progress_message}")
         # Progress messages are handled by the UI components directly
     
     def get_available_dates(self, comic_name: str) -> Set[date]:
@@ -383,7 +384,7 @@ class ComicController(QObject):
             comic_service: ComicService instance to use
         """
         self.comic_service = comic_service
-        self.logger.info("Comic service injected into controller")
+        # self.logger.info("Comic service injected into controller")
         
         # Re-initialize with the new service
         self._initialize_service()

@@ -1,0 +1,129 @@
+name: Build Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cx_Freeze
+
+      - name: Build Windows executable
+        run: |
+          python setup_cxfreeze.py build
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(python -c "from version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP archive
+        shell: bash
+        run: |
+          cd build
+          BUILD_DIR=$(ls -d exe.* | head -1)
+          mv "$BUILD_DIR" ComicStripBrowser-${{ steps.version.outputs.version }}-Windows
+          7z a ../ComicStripBrowser-${{ steps.version.outputs.version }}-Windows.zip ComicStripBrowser-${{ steps.version.outputs.version }}-Windows
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: ComicStripBrowser-*.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Linux binary
+        run: |
+          chmod +x build_scripts/build_linux.sh
+          ./build_scripts/build_linux.sh
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(python -c "from version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build DEB package
+        run: |
+          python build_scripts/create_deb.py
+
+      - name: Install RPM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Build RPM package
+        run: |
+          chmod +x build_scripts/build_rpm.sh
+          ./build_scripts/build_rpm.sh
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            releases/*.deb
+            releases/*.rpm
+
+  create-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(python -c "from version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            windows-build/*.zip
+            linux-builds/*.deb
+            linux-builds/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

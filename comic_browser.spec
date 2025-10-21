@@ -55,7 +55,6 @@ hiddenimports = [
     'services.config_manager',
     'services.date_manager',
     'services.error_handler',
-    'services.logging_service',
     'services.web_scraper',
     'ui',
     'ui.calendar_widget',

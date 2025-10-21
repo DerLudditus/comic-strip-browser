@@ -6,7 +6,7 @@ algorithm to discover the earliest available date for each comic strip,
 using a year-by-year approach followed by month-by-month refinement.
 """
 
-import logging
+# import logging
 from datetime import date, timedelta
 from typing import Dict, Optional, Tuple
 from services.web_scraper import WebScraper, WebScrapingError
@@ -39,7 +39,7 @@ class DateManager:
         """
         self.web_scraper = web_scraper or WebScraper()
         self.config_manager = config_manager or ConfigManager()
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         
     def discover_earliest_date(self, comic_name: str, progress_callback=None) -> Optional[date]:
         """
@@ -64,7 +64,7 @@ class DateManager:
         if not comic_def:
             raise DateDiscoveryError(f"Comic definition not found for: {comic_name}")
         
-        self.logger.info(f"Starting optimized date discovery for {comic_name}")
+        # self.logger.info(f"Starting optimized date discovery for {comic_name}")
         
         if progress_callback:
             progress_callback(f"Discovering dates for {comic_name}...")
@@ -74,14 +74,14 @@ class DateManager:
             earliest_date = self._optimized_discovery(comic_def.name, comic_def.base_url, progress_callback)
             
             if earliest_date:
-                self.logger.info(f"Discovered earliest date for {comic_name}: {earliest_date}")
+                # self.logger.info(f"Discovered earliest date for {comic_name}: {earliest_date}")
                 return earliest_date
             else:
-                self.logger.warning(f"Could not find earliest date for {comic_name}")
+                # self.logger.warning(f"Could not find earliest date for {comic_name}")
                 return None
                 
         except Exception as e:
-            self.logger.error(f"Date discovery failed for {comic_name}: {e}")
+            # self.logger.error(f"Date discovery failed for {comic_name}: {e}")
             # Don't raise exception, just return None to allow partial discovery
             return None
     
@@ -101,7 +101,7 @@ class DateManager:
         
         # First, verify current year has comics
         if not self._test_comic_availability(comic_name, base_url, test_date):
-            self.logger.warning(f"No comics found for {comic_name} in current year {current_year}")
+            # self.logger.warning(f"No comics found for {comic_name} in current year {current_year}")
             return None
         
         last_working_year = current_year
@@ -111,13 +111,13 @@ class DateManager:
             test_year = current_year - years_back
             test_date = date(test_year, 1, 1)
             
-            self.logger.debug(f"Testing year {test_year} for {comic_name}")
+            # self.logger.debug(f"Testing year {test_year} for {comic_name}")
             
             if self._test_comic_availability(comic_name, base_url, test_date):
                 last_working_year = test_year
             else:
                 # Found the boundary - comics don't exist in this year
-                self.logger.debug(f"Comics not available in {test_year} for {comic_name}")
+                # self.logger.debug(f"Comics not available in {test_year} for {comic_name}")
                 break
         
         return last_working_year
@@ -134,7 +134,7 @@ class DateManager:
         Returns:
             Earliest available date, or None if not found
         """
-        self.logger.debug(f"Refining earliest date by months for {comic_name} in {year}")
+        # self.logger.debug(f"Refining earliest date by months for {comic_name} in {year}")
         
         # Test each month from January to December
         for month in range(1, 13):
@@ -168,7 +168,7 @@ class DateManager:
         Returns:
             Earliest available date in the month, or None if not found
         """
-        self.logger.debug(f"Refining earliest date by days for {comic_name} in {year}-{month:02d}")
+        # self.logger.debug(f"Refining earliest date by days for {comic_name} in {year}-{month:02d}")
         
         # Get the number of days in the month
         if month == 12:
@@ -183,7 +183,7 @@ class DateManager:
             test_date = date(year, month, day)
             
             if self._test_comic_availability(comic_name, base_url, test_date):
-                self.logger.debug(f"Found earliest date for {comic_name}: {test_date}")
+                # self.logger.debug(f"Found earliest date for {comic_name}: {test_date}")
                 return test_date
         
         return None
@@ -213,6 +213,7 @@ class DateManager:
             'wumo': 2005,
             'speedbump': 1994,
             'freerange': 2006,
+            'offthemark': 1987,
         }
         
         # Get estimated start year or use conservative default
@@ -322,18 +323,18 @@ class DateManager:
         except WebScrapingError as e:
             # Check if it's a 404 error or missing comic data
             if "404" in str(e) or "not found" in str(e).lower():
-                self.logger.debug(f"Comic not available for {comic_name} on {test_date}: 404")
+                # self.logger.debug(f"Comic not available for {comic_name} on {test_date}: 404")
                 return False
             elif "empty" in str(e).lower() or "missing" in str(e).lower():
-                self.logger.debug(f"Comic data missing for {comic_name} on {test_date}")
+                # self.logger.debug(f"Comic data missing for {comic_name} on {test_date}")
                 return False
             else:
                 # Other errors might be temporary, so we'll consider them as unavailable
-                self.logger.debug(f"Error testing {comic_name} on {test_date}: {e}")
+                # self.logger.debug(f"Error testing {comic_name} on {test_date}: {e}")
                 return False
         except Exception as e:
             # Any other exception means the comic is not available
-            self.logger.debug(f"Unexpected error testing {comic_name} on {test_date}: {e}")
+            # self.logger.debug(f"Unexpected error testing {comic_name} on {test_date}: {e}")
             return False
     
     def discover_all_earliest_dates(self) -> Dict[str, date]:
@@ -346,7 +347,7 @@ class DateManager:
         Raises:
             DateDiscoveryError: If discovery fails for any comic
         """
-        self.logger.info("Starting discovery of earliest dates for all comics")
+        # self.logger.info("Starting discovery of earliest dates for all comics")
         
         earliest_dates = {}
         failed_comics = []
@@ -358,15 +359,15 @@ class DateManager:
                     earliest_dates[comic_def.name] = earliest_date
                 else:
                     failed_comics.append(comic_def.name)
-                    self.logger.warning(f"Failed to discover earliest date for {comic_def.name}")
+                    # self.logger.warning(f"Failed to discover earliest date for {comic_def.name}")
             except Exception as e:
                 failed_comics.append(comic_def.name)
-                self.logger.error(f"Error discovering earliest date for {comic_def.name}: {e}")
+                # self.logger.error(f"Error discovering earliest date for {comic_def.name}: {e}")
         
-        if failed_comics:
-            self.logger.warning(f"Failed to discover dates for comics: {failed_comics}")
+        # if failed_comics:
+            # self.logger.warning(f"Failed to discover dates for comics: {failed_comics}")
         
-        self.logger.info(f"Successfully discovered earliest dates for {len(earliest_dates)} comics")
+        # self.logger.info(f"Successfully discovered earliest dates for {len(earliest_dates)} comics")
         return earliest_dates
     
     def run_discovery_and_save(self) -> bool:
@@ -381,7 +382,7 @@ class DateManager:
         """
         # Check if we already have all start dates
         if self.config_manager.has_all_start_dates():
-            self.logger.info("All start dates already available in config, skipping discovery")
+            # self.logger.info("All start dates already available in config, skipping discovery")
             return True
         
         self.logger.info("Running one-time date discovery process")
@@ -391,17 +392,17 @@ class DateManager:
             earliest_dates = self.discover_all_earliest_dates()
             
             if not earliest_dates:
-                self.logger.error("No earliest dates discovered")
+                # self.logger.error("No earliest dates discovered")
                 return False
             
             # Save the discovered dates to config
             self.config_manager.save_start_dates(earliest_dates)
             
-            self.logger.info(f"Successfully saved earliest dates for {len(earliest_dates)} comics")
+            # self.logger.info(f"Successfully saved earliest dates for {len(earliest_dates)} comics")
             return True
             
         except Exception as e:
-            self.logger.error(f"Date discovery and save process failed: {e}")
+            # self.logger.error(f"Date discovery and save process failed: {e}")
             return False
     
     def get_earliest_date(self, comic_name: str) -> Optional[date]:
@@ -428,9 +429,8 @@ class DateManager:
                 self.config_manager.set_start_date(comic_name, discovered_date)
                 return discovered_date
         except Exception as e:
-            self.logger.error(f"Failed to discover earliest date for {comic_name}: {e}")
-        
-        return None
+            # self.logger.error(f"Failed to discover earliest date for {comic_name}: {e}")
+            return None
     
     def is_date_available(self, comic_name: str, check_date: date) -> bool:
         """

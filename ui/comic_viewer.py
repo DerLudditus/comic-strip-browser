@@ -158,14 +158,11 @@ class ComicViewer(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
-        self.scroll_area.setStyleSheet("""
-            QScrollArea {
-                background-color: white;
-            }
-        """)
+        # No background color set - use system theme
         
         # Content widget that will contain the comic image or state displays
         self.content_widget = QWidget()
+        # No background color set - use system theme
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(20, 20, 20, 20)
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -187,6 +184,29 @@ class ComicViewer(QWidget):
         nav_layout = QHBoxLayout()
         nav_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav_layout.setSpacing(10)
+        nav_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins to prevent artifacts
+        
+        # First button
+        self.first_button = QPushButton("First")
+        self.first_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #000000;
+                border: 2px solid #bdbdbd;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 2px solid #9e9e9e;
+            }
+            QPushButton:pressed {
+                background-color: #bdbdbd;
+                border: 2px solid #757575;
+            }
+        """)
+        nav_layout.addWidget(self.first_button)
         
         # Previous button
         self.prev_button = QPushButton("Previous")
@@ -254,12 +274,35 @@ class ComicViewer(QWidget):
         """)
         nav_layout.addWidget(self.next_button)
         
+        # Random button
+        self.random_button = QPushButton("Random")
+        self.random_button.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #000000;
+                border: 2px solid #bdbdbd;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 2px solid #9e9e9e;
+            }
+            QPushButton:pressed {
+                background-color: #bdbdbd;
+                border: 2px solid #757575;
+            }
+        """)
+        nav_layout.addWidget(self.random_button)
+        
         self.content_layout.addLayout(nav_layout)
         
         # Loading progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         self.progress_bar.setMaximumWidth(300)
+        self.progress_bar.setMaximumHeight(0)  # Collapse when hidden to prevent artifacts
         self.progress_bar.hide()  # Explicitly hide initially
         self.content_layout.addWidget(self.progress_bar)
         
@@ -310,16 +353,18 @@ class ComicViewer(QWidget):
         Args:
             comic_data: ComicData object containing comic information
         """
-        # Set title from extracted HTML title
-        self.title_label.setText(comic_data.title)
+        # Set title from extracted HTML title (strip GoComics suffix)
+        clean_title = comic_data.title.replace(" | GoComics", "")
+        self.title_label.setText(clean_title)
         
         # Set metadata information
         date_str = comic_data.date.strftime("%B %d, %Y")
-        metadata_text = f"{date_str} • by {comic_data.author}"
+        # metadata_text =  f"{date_str} • by {comic_data.author}"
         
         # Add image format and dimensions info
         if comic_data.image_width and comic_data.image_height:
-            metadata_text += f" • {comic_data.image_width}×{comic_data.image_height} {comic_data.image_format.upper()}"
+            # metadata_text += f" • {comic_data.image_width}×{comic_data.image_height} {comic_data.image_format.upper()}"
+            metadata_text = f" {comic_data.image_width}×{comic_data.image_height}"
         
         self.metadata_label.setText(metadata_text)
         self.metadata_label.setVisible(True)  # Show metadata when we have content

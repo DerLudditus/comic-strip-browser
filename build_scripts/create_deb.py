@@ -4,15 +4,21 @@ Create .deb package for Comic Strip Browser
 """
 
 import os
+import sys
 import shutil
 import subprocess
 from pathlib import Path
 
+# Add project root to path to import version
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from version import __version__, DEB_VERSION, DEB_MAINTAINER, DEB_HOMEPAGE, CHANGELOG
+
 def create_deb_package():
     """Create a .deb package for Ubuntu/Debian systems."""
     
-    project_root = Path(__file__).parent.parent
-    deb_dir = project_root / "build" / "comic-strip-browser_1.0.4-1_amd64"
+    deb_dir = project_root / "build" / f"comic-strip-browser_{DEB_VERSION}_amd64"
     
     # Create directory structure
     dirs_to_create = [
@@ -28,13 +34,13 @@ def create_deb_package():
         (deb_dir / dir_path).mkdir(parents=True, exist_ok=True)
     
     # Create control file
-    control_content = """Package: comic-strip-browser
-Version: 1.0.4-1
+    control_content = f"""Package: comic-strip-browser
+Version: {DEB_VERSION}
 Section: graphics
 Priority: optional
 Architecture: amd64
-Maintainer: Homo Ludditus <ludditus@etik.com>
-Homepage: https://github.com/DerLudditus/comic-strip-browser
+Maintainer: {DEB_MAINTAINER}
+Homepage: {DEB_HOMEPAGE}
 Description: Comic Strip Browser - Browse a selection of GoComics.com strips
  A standalone PyQt6 application for browsing comic strips from GoComics.com.
  Features include calendar navigation, caching, and support for 15 popular
@@ -116,16 +122,9 @@ License: MIT
     with open(deb_dir / "usr" / "share" / "doc" / "comic-strip-browser" / "copyright", "w") as f:
         f.write(copyright_content)
     
-    # Create changelog file
-    changelog_content = """comic-strip-browser (1.0.4-1) stable; urgency=medium
-
-  * Added the 15th comic strip title
-
- -- Homo Ludditus <ludditus@etik.com>  Fri, 25 Jul 2025 03:15:00 +0300
-"""
-    
+    # Create changelog file (from version.py)
     with open(deb_dir / "usr" / "share" / "doc" / "comic-strip-browser" / "changelog", "w") as f:
-        f.write(changelog_content)
+        f.write(CHANGELOG)
     subprocess.run(["gzip", "-9", str(deb_dir / "usr" / "share" / "doc" / "comic-strip-browser" / "changelog")])
     
     # Build the .deb package

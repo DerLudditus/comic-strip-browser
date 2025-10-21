@@ -1,0 +1,68 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cx_Freeze
+
+      - name: Test Windows build
+        run: |
+          python setup_cxfreeze.py build
+
+      - name: Verify executable exists
+        shell: bash
+        run: |
+          BUILD_DIR=$(ls -d build/exe.* | head -1)
+          if [ ! -f "$BUILD_DIR/ComicStripBrowser.exe" ]; then
+            echo "ERROR: Executable not found!"
+            exit 1
+          fi
+          echo "Build successful: $BUILD_DIR/ComicStripBrowser.exe"
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Test Linux build
+        run: |
+          chmod +x build_scripts/build_linux.sh
+          ./build_scripts/build_linux.sh
+
+      - name: Verify binary exists
+        run: |
+          if [ ! -f "dist/comic-strip-browser" ]; then
+            echo "ERROR: Binary not found!"
+            exit 1
+          fi
+          echo "Build successful: dist/comic-strip-browser"

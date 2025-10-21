@@ -9,16 +9,18 @@ toolbar, status bar, and cross-platform compatibility.
 import sys
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QMenuBar, QToolBar, QStatusBar, QApplication,
+    QStatusBar, QApplication,
     QSplitter, QFrame
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtGui import QIcon
 
 from ui.comic_selector import ComicSelector
 from ui.comic_viewer import ComicViewer
 from ui.calendar_widget import CalendarWidget
 from ui.comic_controller import ComicController
+from models.data_models import get_comic_definition
+from version import __version__
 
 
 class MainWindow(QMainWindow):
@@ -47,9 +49,14 @@ class MainWindow(QMainWindow):
     def initialize_ui(self):
         """Set up the main window layout and components."""
         # Set window properties
-        self.setWindowTitle("Comic Strip Browser 1.0.4")
+        self.setWindowTitle(f"Comic Strip Browser {__version__}")
         self.setMinimumSize(QSize(1000, 700))
         self.resize(QSize(1200, 840))
+
+        # Set up status bar FIRST
+        self.create_status_bar()
+
+ 
         
         # Set application icon to comicicon.png
         import os
@@ -73,16 +80,13 @@ class MainWindow(QMainWindow):
         
         # Create placeholder frames for future UI components
         self.create_ui_placeholders()
-        
-        # Set up status bar
-        self.create_status_bar()
     
     def create_ui_placeholders(self):
         """Create UI components and placeholder frames."""
         # Left panel - Comic selector
         self.comic_selector = ComicSelector()
         self.comic_selector.setMinimumWidth(250)
-        self.comic_selector.setMaximumWidth(300)
+        self.comic_selector.setMaximumWidth(350)
         
         # Connect comic selector signals
         self.comic_selector.comic_selected.connect(self.on_comic_selected)
@@ -93,12 +97,12 @@ class MainWindow(QMainWindow):
         # Connect comic viewer signals
         self.comic_viewer.loading_started.connect(lambda: self.update_status("Loading comic..."))
         self.comic_viewer.loading_finished.connect(lambda: self.update_status("Ready", 2000))
-        self.comic_viewer.comic_displayed.connect(lambda name: self.update_status(f"Displaying {name}", 3000))
+        self.comic_viewer.comic_displayed.connect(self.on_comic_displayed)
         
         # Right panel - Calendar navigation widget
         self.calendar_widget = CalendarWidget()
-        self.calendar_widget.setMinimumWidth(200)
-        self.calendar_widget.setMaximumWidth(250)
+        self.calendar_widget.setMinimumWidth(250)
+        self.calendar_widget.setMaximumWidth(350)
         
         # Connect calendar widget signals
         self.calendar_widget.date_selected.connect(self.on_date_changed)
@@ -112,80 +116,35 @@ class MainWindow(QMainWindow):
         # Set initial splitter proportions
         self.main_splitter.setSizes([250, 700, 250])
     
-    def create_menu_bar(self):
-        """Create and configure the menu bar."""
-        menubar = self.menuBar()
-        
-        # File menu
-        file_menu = menubar.addMenu("&File")
-        
-        # Exit action
-        exit_action = QAction("E&xit", self)
-        exit_action.setShortcut("Ctrl+Q")
-        exit_action.setStatusTip("Exit the application")
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
-        
-        # View menu (for future UI component toggles)
-        view_menu = menubar.addMenu("&View")
-        
-        # Placeholder actions for future components
-        toggle_selector_action = QAction("Show Comic &Selector", self)
-        toggle_selector_action.setCheckable(True)
-        toggle_selector_action.setChecked(True)
-        toggle_selector_action.setStatusTip("Toggle comic selector panel")
-        view_menu.addAction(toggle_selector_action)
-        
-        toggle_calendar_action = QAction("Show &Calendar", self)
-        toggle_calendar_action.setCheckable(True)
-        toggle_calendar_action.setChecked(True)
-        toggle_calendar_action.setStatusTip("Toggle calendar navigation panel")
-        view_menu.addAction(toggle_calendar_action)
-        
-        # Help menu
-        help_menu = menubar.addMenu("&Help")
-        
-        about_action = QAction("&About", self)
-        about_action.setStatusTip("About Comic Strip Browser")
-        about_action.triggered.connect(self.show_about)
-        help_menu.addAction(about_action)
+
     
-    def create_toolbar(self):
-        """Create and configure the toolbar."""
-        toolbar = QToolBar("Main Toolbar")
-        toolbar.setMovable(False)
-        self.addToolBar(toolbar)
-        
-        # Navigation actions (placeholders for future functionality)
-        prev_action = QAction("Previous", self)
-        prev_action.setStatusTip("Go to previous comic")
-        prev_action.setEnabled(False)  # Will be enabled when functionality is added
-        toolbar.addAction(prev_action)
-        
-        next_action = QAction("Next", self)
-        next_action.setStatusTip("Go to next comic")
-        next_action.setEnabled(False)  # Will be enabled when functionality is added
-        toolbar.addAction(next_action)
-        
-        toolbar.addSeparator()
-        
-        today_action = QAction("Today", self)
-        today_action.setStatusTip("Go to today's comic")
-        today_action.setEnabled(False)  # Will be enabled when functionality is added
-        toolbar.addAction(today_action)
-        
-        # Store actions for future use
-        self.prev_action = prev_action
-        self.next_action = next_action
-        self.today_action = today_action
+
     
     def create_status_bar(self):
         """Create and configure the status bar."""
         self.status_bar = QStatusBar()
+        self.status_bar.setVisible(True)
+        self.status_bar.setSizeGripEnabled(True)
+        
+        # Set minimum height to ensure visibility
+        self.status_bar.setMinimumHeight(25)
+        
+        # Set status bar with explicit styling
+        self.status_bar.setStyleSheet("""
+            QStatusBar {
+                background-color: #f0f0f0;
+                border-top: 1px solid #d0d0d0;
+                color: #333333;
+                font-size: 14px;
+                padding: 2px;
+            }
+        """)
+        
         self.setStatusBar(self.status_bar)
         
-        # Show ready message
-        self.status_bar.showMessage("Ready", 2000)
+        # Show ready message with version after a short delay
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(100, lambda: self.status_bar.showMessage(f"Ready - v{__version__}", 0))
     
     def setup_cross_platform_compatibility(self):
         """Configure settings for cross-platform compatibility."""
@@ -203,7 +162,12 @@ class MainWindow(QMainWindow):
                 spacing: 3px;
             }
             QStatusBar {
+                background-color: #f0f0f0;
                 border-top: 1px solid #d0d0d0;
+                color: #333333;
+                font-size: 14px;
+                min-height: 25px;
+                padding: 2px;
             }
         """)
         
@@ -222,12 +186,35 @@ class MainWindow(QMainWindow):
         Args:
             comic_name: Name of the selected comic strip
         """
+        from datetime import date, timedelta
+        
+        # Guard against invalid comic names
+        if not comic_name or not isinstance(comic_name, str) or len(comic_name) == 0:
+            self.update_status("Invalid comic selection", 3000)
+            return
+        
         self.status_bar.showMessage(f"Selected comic: {comic_name}", 3000)
         
-        # Log user action for debugging
-        from services.logging_service import get_logging_service
-        logging_service = get_logging_service()
-        logging_service.log_user_action("comic_selected", "comic_selector", {"comic_name": comic_name})
+        current_date = self.calendar_widget.get_selected_date()
+        comic_def = get_comic_definition(comic_name)
+        today = date.today()
+        
+        # Determine target date: prefer today, but respect comic's date range
+        if not current_date:
+            # No date selected - start with today (or yesterday if today not available)
+            target_date = today
+        else:
+            # Date already selected - only change if it's before comic's start date
+            if comic_def and comic_def.earliest_date and current_date < comic_def.earliest_date:
+                # Current date is before comic start - use comic's start date
+                target_date = comic_def.earliest_date
+            else:
+                # Current date is valid for this comic - keep it
+                target_date = current_date
+        
+        # Navigate to target date and load comic (don't emit signal to prevent double-load)
+        self.calendar_widget.navigate_to_date(target_date, emit_signal=False)
+        self.comic_controller.load_comic(comic_name, target_date)
         
         self.comic_selected.emit(comic_name)
     
@@ -240,11 +227,21 @@ class MainWindow(QMainWindow):
         """
         self.status_bar.showMessage(f"Selected date: {date}", 3000)
         
-        # Log user action for debugging
-        from services.logging_service import get_logging_service
-        logging_service = get_logging_service()
-        logging_service.log_user_action("date_selected", "calendar_widget", {"selected_date": str(date)})
+        # Load comic for the selected date
+        current_comic = self.comic_selector.get_selected_comic()
         
+        # Guard against invalid comic names
+        if not current_comic or not isinstance(current_comic, str) or len(current_comic) == 0:
+            self.update_status("Please select a comic from the list", 3000)
+            return
+        
+        # Additional validation - check if comic exists in definitions
+        from models.data_models import get_comic_definition
+        if not get_comic_definition(current_comic):
+            self.update_status(f"Invalid comic selection: {current_comic}", 3000)
+            return
+        
+        self.comic_controller.load_comic(current_comic, date)
         self.date_changed.emit(date)
     
     def on_month_changed(self, month: int, year: int):
@@ -256,15 +253,29 @@ class MainWindow(QMainWindow):
             year: New year
         """
         month_names = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+            "Jan.", "Feb.", "March", "April", "May", "June",
+            "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."
         ]
         month_name = month_names[month - 1]
         self.status_bar.showMessage(f"Viewing {month_name} {year}", 2000)
     
-    def show_about(self):
-        """Show about dialog (placeholder for future implementation)."""
-        self.status_bar.showMessage("About dialog - to be implemented", 3000)
+    def on_comic_displayed(self, comic_name: str):
+        """
+        Handle comic displayed event and show start date info.
+        
+        Args:
+            comic_name: Name of the displayed comic
+        """
+        comic_def = get_comic_definition(comic_name)
+        if comic_def and comic_def.earliest_date:
+            start_date_str = comic_def.earliest_date.strftime("%B %d, %Y")
+            message = f"{comic_def.display_name} on GoComics.com starts on {start_date_str}"
+            self.update_status(message, 0)  # Permanent message (timeout = 0)
+        else:
+            # Fallback if no start date found
+            self.update_status(f"Displaying {comic_name}", 0)
+    
+
     
     def update_status(self, message: str, timeout: int = 0):
         """
@@ -274,7 +285,8 @@ class MainWindow(QMainWindow):
             message: Message to display
             timeout: Timeout in milliseconds (0 for permanent)
         """
-        self.status_bar.showMessage(message, timeout)
+        if hasattr(self, 'status_bar') and self.status_bar:
+            self.status_bar.showMessage(message, timeout)
     
     def get_comic_selector(self) -> ComicSelector:
         """Get the comic selector widget."""
@@ -294,8 +306,9 @@ class MainWindow(QMainWindow):
         self.comic_controller = ComicController()
         
         # Connect UI components to controller
-        self.comic_selector.comic_selected.connect(self.comic_controller.select_comic)
-        self.calendar_widget.date_selected.connect(self.comic_controller.select_date)
+        # NOTE: Don't connect these to controller - we handle them in on_comic_selected and on_date_changed
+        # self.comic_selector.comic_selected.connect(self.comic_controller.select_comic)
+        # self.calendar_widget.date_selected.connect(self.comic_controller.select_date)
         
         # Connect controller signals to UI components
         self.comic_controller.comic_loaded.connect(self.comic_viewer.display_comic)
@@ -304,10 +317,47 @@ class MainWindow(QMainWindow):
         self.comic_controller.loading_error.connect(self.on_loading_error)
         self.comic_controller.available_dates_updated.connect(self.on_available_dates_updated)
         
+        # Add debounce tracking
+        self._last_error_time = 0
+        self._last_error_message = ""
+        
+
+        
         # Connect navigation buttons in the comic viewer
-        self.comic_viewer.prev_button.clicked.connect(self.go_to_previous_day)
-        self.comic_viewer.next_button.clicked.connect(self.go_to_next_day)
-        self.comic_viewer.today_button.clicked.connect(self.go_to_today)
+        if hasattr(self.comic_viewer, 'first_button'):
+            self.comic_viewer.first_button.clicked.connect(self.go_to_first)
+        
+        if hasattr(self.comic_viewer, 'prev_button'):
+            self.comic_viewer.prev_button.clicked.connect(self.go_to_previous_day)
+        
+        if hasattr(self.comic_viewer, 'next_button'):
+            self.comic_viewer.next_button.clicked.connect(self.go_to_next_day)
+        
+        if hasattr(self.comic_viewer, 'today_button'):
+            self.comic_viewer.today_button.clicked.connect(self.go_to_today)
+        
+        if hasattr(self.comic_viewer, 'random_button'):
+            self.comic_viewer.random_button.clicked.connect(self.go_to_random)
+        
+        # Add keyboard shortcuts for navigation
+        from PyQt6.QtGui import QShortcut, QKeySequence
+        from PyQt6.QtCore import Qt
+        
+        # Left arrow = Previous
+        self.shortcut_prev = QShortcut(QKeySequence(Qt.Key.Key_Left), self)
+        self.shortcut_prev.activated.connect(self.go_to_previous_day)
+        
+        # Right arrow = Next
+        self.shortcut_next = QShortcut(QKeySequence(Qt.Key.Key_Right), self)
+        self.shortcut_next.activated.connect(self.go_to_next_day)
+        
+        # Home = First
+        self.shortcut_first = QShortcut(QKeySequence(Qt.Key.Key_Home), self)
+        self.shortcut_first.activated.connect(self.go_to_first)
+        
+        # End = Today
+        self.shortcut_today = QShortcut(QKeySequence(Qt.Key.Key_End), self)
+        self.shortcut_today.activated.connect(self.go_to_today)
     
     def on_comic_loading_started(self, comic_name: str, comic_date):
         """
@@ -320,7 +370,10 @@ class MainWindow(QMainWindow):
         date_str = comic_date.strftime("%B %d, %Y")
         self.update_status(f"Loading {comic_name} for {date_str}...")
         
-        # Show loading state in comic viewer
+        # Clear any previous error messages
+        self._last_error_message = ""
+        
+        # Show loading state in comic viewer (this clears errors)
         self.comic_viewer.show_loading_state()
     
     def on_comic_loading_finished(self, comic_name: str, comic_date):
@@ -331,6 +384,10 @@ class MainWindow(QMainWindow):
             comic_name: Name of the comic that finished loading
             comic_date: Date of the comic that finished loading
         """
+        # Stop auto-advancing when we successfully load a comic
+        if hasattr(self, '_auto_advancing'):
+            self._auto_advancing = False
+        
         self.update_status("Ready", 2000)
     
     def on_loading_error(self, error_message: str, recovery_suggestions: str, error_type: str = "general"):
@@ -342,6 +399,52 @@ class MainWindow(QMainWindow):
             recovery_suggestions: Suggested recovery actions
             error_type: Type of error for appropriate UI styling
         """
+        # Debounce multiple error signals for the same error
+        import time
+        current_time = time.time()
+        
+        # Ignore duplicate errors within 2 seconds
+        if (current_time - self._last_error_time < 2.0 and 
+            error_message == self._last_error_message):
+            return
+        
+        self._last_error_time = current_time
+        self._last_error_message = error_message
+        
+        # If we're in auto-advance mode, keep trying the next day
+        if hasattr(self, '_auto_advancing') and self._auto_advancing:
+            from datetime import date, timedelta
+            
+            current_date = self.calendar_widget.get_selected_date()
+            start_date = self._auto_advance_start
+            
+            # Check if we've searched too far (31 days)
+            days_searched = (current_date - start_date).days
+            if days_searched >= 31:
+                self._auto_advancing = False
+                self.update_status(f"No comics found in next 31 days", 3000)
+                return
+            
+            # Try the next day automatically
+            next_date = current_date + timedelta(days=1)
+            today = date.today()
+            
+            if next_date > today:
+                self._auto_advancing = False
+                self.update_status("Reached today's date - no more comics available", 3000)
+                return
+            
+            # Show progress
+            comic_def = get_comic_definition(self._auto_advance_comic)
+            comic_display_name = comic_def.display_name if comic_def else self._auto_advance_comic
+            self.update_status(f"Searching for next {comic_display_name}... {next_date.strftime('%b %d')}")
+            
+            # Keep trying
+            self.calendar_widget.navigate_to_date(next_date)
+            self.comic_controller.load_comic(self._auto_advance_comic, next_date)
+            return
+        
+        # Not in auto-advance mode - show the error normally
         self.update_status(f"Error: {error_message}")
         
         # Parse recovery suggestions into actionable options
@@ -352,29 +455,10 @@ class MainWindow(QMainWindow):
         
         # Set up error recovery callback
         self.comic_viewer.set_error_recovery_callback(self._handle_error_recovery)
+    
+
         
-        # Log the error for debugging using enhanced logging service
-        from services.logging_service import get_logging_service
-        logging_service = get_logging_service()
-        
-        # Log UI error with enhanced tracking
-        current_comic = self.comic_selector.get_selected_comic() if hasattr(self, 'comic_selector') else None
-        current_date = self.calendar_widget.get_selected_date() if hasattr(self, 'calendar_widget') else None
-        
-        user_data = {
-            'current_comic': current_comic,
-            'current_date': str(current_date) if current_date else None,
-            'window_size': f"{self.width()}x{self.height()}",
-            'selected_comic_count': len(self.comic_selector.get_available_comics()) if hasattr(self.comic_selector, 'get_available_comics') else 0
-        }
-        
-        logging_service.log_ui_error(
-            error_type=error_type,
-            error_message=error_message,
-            component="main_window",
-            recovery_actions=recovery_options,
-            user_data=user_data
-        )
+
     
     def _parse_recovery_suggestions(self, suggestions: str, error_type: str) -> list:
         """
@@ -422,10 +506,7 @@ class MainWindow(QMainWindow):
             action: Recovery action to perform
             data: Additional data for the action
         """
-        # Log error recovery action
-        from services.logging_service import get_logging_service
-        logging_service = get_logging_service()
-        logging_service.log_user_action(f"error_recovery_{action}", "main_window", {"data": str(data) if data else None})
+
         
         if action == "try_date":
             # Load comic for specific date
@@ -531,59 +612,234 @@ class MainWindow(QMainWindow):
         if current_comic == comic_name:
             self.calendar_widget.set_available_dates(available_dates)
     
+    def go_to_first(self):
+        """Navigate to the first available comic (start date)."""
+        current_comic = self.comic_selector.get_selected_comic()
+        if current_comic:
+            comic_def = get_comic_definition(current_comic)
+            if comic_def and comic_def.earliest_date:
+                # Update calendar to the start date (don't emit signal to prevent double-load)
+                self.calendar_widget.navigate_to_date(comic_def.earliest_date, emit_signal=False)
+                
+                # Load the first comic
+                self.comic_controller.load_comic(current_comic, comic_def.earliest_date)
+            else:
+                self.update_status("No start date available for this comic", 3000)
+        else:
+            self.update_status("Please select a comic first", 3000)
+    
     def go_to_today(self):
-        """Navigate to today's comic."""
+        """Navigate to today's comic, or yesterday if today not available."""
         from datetime import date
+        
         today = date.today()
         
-        # Update calendar to today's date
-        self.calendar_widget.navigate_to_date(today)
-        
-        # Load today's comic if we have a comic selected
         current_comic = self.comic_selector.get_selected_comic()
-        if current_comic:
-            self.comic_controller.load_comic(current_comic, today)
-    
-    def go_to_previous_day(self):
-        """Navigate to the previous day's comic."""
-        from datetime import date, timedelta
-        
-        current_date = self.calendar_widget.get_selected_date()
-        if not current_date:
-            current_date = date.today()
-        
-        previous_date = current_date - timedelta(days=1)
-        
-        # Update calendar
-        self.calendar_widget.navigate_to_date(previous_date)
-        
-        # Load previous day's comic if we have a comic selected
-        current_comic = self.comic_selector.get_selected_comic()
-        if current_comic:
-            self.comic_controller.load_comic(current_comic, previous_date)
-    
-    def go_to_next_day(self):
-        """Navigate to the next day's comic."""
-        from datetime import date, timedelta
-        
-        current_date = self.calendar_widget.get_selected_date()
-        if not current_date:
-            current_date = date.today()
-        
-        next_date = current_date + timedelta(days=1)
-        
-        # Don't go beyond today
-        if next_date > date.today():
-            self.update_status("Cannot navigate beyond today's date", 3000)
+        if not current_comic:
+            self.update_status("Please select a comic first", 3000)
             return
         
-        # Update calendar
-        self.calendar_widget.navigate_to_date(next_date)
+        # Update calendar to today's date (don't emit signal to prevent double-load)
+        self.calendar_widget.navigate_to_date(today, emit_signal=False)
         
-        # Load next day's comic if we have a comic selected
+        # Try to load today's comic (let the error handler deal with failures)
+        self.comic_controller.load_comic(current_comic, today)
+    
+    def go_to_previous_day(self):
+        """Navigate to the previous day's comic - synchronous search."""
+        from datetime import date, timedelta
+        from PyQt6.QtWidgets import QApplication
+        
+        current_date = self.calendar_widget.get_selected_date()
+        if not current_date:
+            self.update_status("Please select a date first", 3000)
+            return
+        
         current_comic = self.comic_selector.get_selected_comic()
-        if current_comic:
-            self.comic_controller.load_comic(current_comic, next_date)
+        if not current_comic:
+            self.update_status("Please select a comic first", 3000)
+            return
+        
+        comic_def = get_comic_definition(current_comic)
+        comic_display_name = comic_def.display_name if comic_def else current_comic
+        earliest_date = comic_def.earliest_date if comic_def else date(1900, 1, 1)
+        
+        # Search synchronously for up to 31 days backward
+        for day_offset in range(1, 32):
+            search_date = current_date - timedelta(days=day_offset)
+            
+            # Don't go before comic start
+            if search_date < earliest_date:
+                self.update_status("Reached comic's start date", 3000)
+                return
+            
+            # Show progress
+            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
+            QApplication.processEvents()
+            
+            # Try to fetch this comic using the existing service
+            try:
+                comic_service = self.comic_controller.comic_service
+                
+                # Quick check: is it in cache?
+                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
+                if cached:
+                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                    self.comic_viewer.display_comic(cached)
+                    self.update_status("Ready", 2000)
+                    return
+                
+                # Not cached - use the comic service to fetch it
+                comic_data = comic_service.get_comic(current_comic, search_date)
+                
+                # Success! Navigate and display
+                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                self.comic_viewer.display_comic(comic_data)
+                self.update_status("Ready", 2000)
+                return
+                
+            except Exception as e:
+                # Comic doesn't exist for this date, continue to previous
+                error_str = str(e).lower()
+                if 'not available' in error_str:
+                    continue
+                else:
+                    continue
+        
+        self.update_status(f"No {comic_display_name} found in previous 31 days", 3000)
+    
+    def go_to_next_day(self):
+        """Navigate to the next day's comic - synchronous search."""
+        from datetime import date, timedelta
+        from PyQt6.QtWidgets import QApplication
+        
+        current_date = self.calendar_widget.get_selected_date()
+        if not current_date:
+            self.update_status("Please select a date first", 3000)
+            return
+        
+        current_comic = self.comic_selector.get_selected_comic()
+        if not current_comic:
+            self.update_status("Please select a comic first", 3000)
+            return
+        
+        comic_def = get_comic_definition(current_comic)
+        comic_display_name = comic_def.display_name if comic_def else current_comic
+        today = date.today()
+        
+        # Search synchronously for up to 31 days
+        for day_offset in range(1, 32):
+            search_date = current_date + timedelta(days=day_offset)
+            
+            # Don't go beyond today
+            if search_date > today:
+                self.update_status("Reached today's date", 3000)
+                return
+            
+            # Show progress
+            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
+            QApplication.processEvents()  # Keep UI responsive
+            
+            # Try to fetch this comic using the existing service (but catch errors quickly)
+            try:
+                comic_service = self.comic_controller.comic_service
+                
+                # Quick check: is it in cache?
+                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
+                if cached:
+                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                    self.comic_viewer.display_comic(cached)
+                    self.update_status("Ready", 2000)
+                    return
+                
+                # Not cached - use the comic service to fetch it
+                # This will use proper headers, cookies, etc.
+                comic_data = comic_service.get_comic(current_comic, search_date)
+                
+                # Success! Navigate and display
+                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                self.comic_viewer.display_comic(comic_data)
+                self.update_status("Ready", 2000)
+                return
+                
+            except Exception as e:
+                # Comic doesn't exist for this date, continue to next
+                error_str = str(e).lower()
+                if 'not available' in error_str:
+                    # Fast fail - comic doesn't exist
+                    continue
+                else:
+                    # Other error - continue
+                    continue
+        
+        self.update_status(f"No {comic_display_name} found in next 31 days", 3000)
+    
+    def go_to_random(self):
+        """Navigate to a random date's comic for the currently selected comic."""
+        import random
+        from datetime import date, timedelta
+        from PyQt6.QtWidgets import QApplication
+        
+        current_comic = self.comic_selector.get_selected_comic()
+        if not current_comic:
+            self.update_status("Please select a comic first", 3000)
+            return
+        
+        comic_def = get_comic_definition(current_comic)
+        comic_display_name = comic_def.display_name if comic_def else current_comic
+        earliest_date = comic_def.earliest_date if comic_def else date(2000, 1, 1)
+        today = date.today()
+        
+        # Calculate the date range
+        days_available = (today - earliest_date).days
+        if days_available < 0:
+            self.update_status("No comics available yet for this title", 3000)
+            return
+        
+        # Pick ONE random date
+        random_offset = random.randint(0, days_available)
+        random_date = earliest_date + timedelta(days=random_offset)
+        
+        # Now iterate forward from that date until we find a comic (max 31 days)
+        for day_offset in range(31):
+            search_date = random_date + timedelta(days=day_offset)
+            
+            # Don't go beyond today
+            if search_date > today:
+                self.update_status("Reached today's date", 3000)
+                return
+            
+            # Show progress
+            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d, %Y')}...")
+            QApplication.processEvents()
+            
+            # Try to fetch this comic
+            try:
+                comic_service = self.comic_controller.comic_service
+                
+                # Quick check: is it in cache?
+                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
+                if cached:
+                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                    self.comic_viewer.display_comic(cached)
+                    self.update_status("Ready", 2000)
+                    return
+                
+                # Not cached - fetch it
+                comic_data = comic_service.get_comic(current_comic, search_date)
+                
+                # Success! Navigate and display
+                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
+                self.comic_viewer.display_comic(comic_data)
+                self.update_status("Ready", 2000)
+                return
+                
+            except Exception as e:
+                # Comic doesn't exist for this date, continue to next day
+                continue
+        
+        self.update_status(f"No {comic_display_name} found in 31 days from random date", 3000)
+
     
     def get_comic_controller(self) -> ComicController:
         """Get the comic controller instance."""
@@ -606,7 +862,7 @@ def main():
     
     # Set application properties
     app.setApplicationName("Comic Strip Browser")
-    app.setApplicationVersion("1.0")
+    app.setApplicationVersion("1.0.5")
     app.setOrganizationName("Comic Browser")
     
     # Create and show main window

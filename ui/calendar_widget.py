@@ -460,8 +460,8 @@ class CalendarWidget(QWidget):
         
         # Update month/year label
         month_names = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+            "Jan.", "Feb.", "March", "April", "May", "June",
+            "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."
         ]
         self.month_year_label.setText(f"{month_names[self.current_date.month - 1]} {self.current_date.year}")
         
@@ -606,19 +606,31 @@ class CalendarWidget(QWidget):
             # Fallback to ensure calendar remains functional
             self.populate_calendar()
     
-    def navigate_to_date(self, target_date: date):
+    def navigate_to_date(self, target_date: date, emit_signal: bool = True):
         """
         Navigate to a specific date.
         
         Args:
             target_date: The date to navigate to
+            emit_signal: Whether to emit the date_selected signal (default True)
         """
         self.current_date = target_date.replace(day=1)  # Set to first day of target month
         self.populate_calendar()
         
-        # Select the target date if it's available
-        if self.is_date_available(target_date):
+        if emit_signal:
+            # Always select the target date (regardless of availability)
             self.on_date_clicked(target_date)
+        else:
+            # Update selection without emitting signal
+            old_selected = self.selected_date
+            self.selected_date = target_date
+            
+            # Update button states
+            if old_selected and old_selected in self.day_buttons:
+                self.day_buttons[old_selected].set_selected(False)
+            
+            if target_date in self.day_buttons:
+                self.day_buttons[target_date].set_selected(True)
     
     def get_selected_date(self) -> Optional[date]:
         """

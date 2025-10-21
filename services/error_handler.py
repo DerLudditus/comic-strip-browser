@@ -8,7 +8,7 @@ continues to work even when some comics are unavailable.
 """
 
 import time
-import logging
+# import logging
 from typing import Optional, Callable, Any, Dict, List, Type
 from datetime import date, timedelta
 from enum import Enum
@@ -85,7 +85,7 @@ class ErrorHandler:
     mechanisms, and specific recovery strategies for different error types.
     """
     
-    def __init__(self, max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0):
+    def __init__(self, max_retries: int = 0, base_delay: float = 1.0, max_delay: float = 60.0):
         """
         Initialize the error handler.
         
@@ -97,7 +97,7 @@ class ErrorHandler:
         self.max_retries = max_retries
         self.base_delay = base_delay
         self.max_delay = max_delay
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         
         # Track error statistics
         self.error_counts: Dict[ErrorType, int] = {error_type: 0 for error_type in ErrorType}
@@ -131,7 +131,7 @@ class ErrorHandler:
         self.recent_errors.append(error)
         if len(self.recent_errors) > self.max_recent_errors:
             self.recent_errors.pop(0)
-        
+        """
         # Log based on severity
         if error.severity == ErrorSeverity.CRITICAL:
             self.logger.critical(f"{error.error_type.value}: {error}")
@@ -141,7 +141,7 @@ class ErrorHandler:
             self.logger.warning(f"{error.error_type.value}: {error}")
         else:
             self.logger.info(f"{error.error_type.value}: {error}")
-    
+        """
     def retry_with_backoff(self, 
                           func: Callable[..., Any], 
                           *args, 
@@ -170,10 +170,10 @@ class ErrorHandler:
                 
                 if attempt < self.max_retries:
                     delay = self._calculate_delay(attempt)
-                    self.logger.info(f"Attempt {attempt + 1} failed, retrying in {delay:.1f}s: {e}")
+                    # self.logger.info(f"Attempt {attempt + 1} failed, retrying in {delay:.1f}s: {e}")
                     time.sleep(delay)
-                else:
-                    self.logger.error(f"All {self.max_retries + 1} attempts failed: {e}")
+                # else:
+                #    self.logger.error(f"All {self.max_retries + 1} attempts failed: {e}")
         
         raise last_exception
     
@@ -211,7 +211,7 @@ class ErrorHandler:
                     status_code=404,
                     severity=severity
                 )
-                self._log_error(network_error)
+                # self._log_error(network_error)
                 raise ComicUnavailableError(
                     f"Comic {comic_name} not available for {comic_date}",
                     comic_name,
@@ -229,11 +229,11 @@ class ErrorHandler:
             status_code=status_code,
             severity=severity
         )
-        self._log_error(network_error)
+        # self._log_error(network_error)
         
         # For high severity errors, we might want to try cache fallback
-        if severity == ErrorSeverity.HIGH:
-            self.logger.info(f"Network error occurred, caller should try cache fallback")
+        # if severity == ErrorSeverity.HIGH:
+            # self.logger.info(f"Network error occurred, caller should try cache fallback")
         
         raise network_error
     
@@ -260,12 +260,12 @@ class ErrorHandler:
         parsing_error = ParsingError(
             f"Failed to parse comic data for {comic_name} on {comic_date}: {error}"
         )
-        self._log_error(parsing_error)
+        # self._log_error(parsing_error)
         
         # Try fallback parsing strategies
         fallback_result = self._try_fallback_parsing(html_content, comic_name, comic_date)
         if fallback_result:
-            self.logger.info(f"Fallback parsing successful for {comic_name} on {comic_date}")
+            # self.logger.info(f"Fallback parsing successful for {comic_name} on {comic_date}")
             return fallback_result
         
         raise parsing_error
@@ -344,7 +344,8 @@ class ErrorHandler:
                         'pickles': 'Brian Crane',
                         'wumo': 'Mikael Wulff and Anders Morgenthaler',
                         'speedbump': 'Dave Coverly',
-                        'freerange': 'Bill Whitehead'
+                        'freerange': 'Bill Whitehead',
+                        'offthemark': 'Mark Parisi'
                     }
                     
                     author = author_mapping.get(comic_name, 'Unknown Author')
@@ -373,8 +374,8 @@ class ErrorHandler:
                     continue
             
         except Exception as e:
-            self.logger.debug(f"Fallback parsing failed: {e}")
-        
+            # self.logger.debug(f"Fallback parsing failed: {e}")
+            pass
         return None
     
     def handle_cache_error(self, 
@@ -396,11 +397,11 @@ class ErrorHandler:
             (f" on {comic_date}" if comic_date else "") + 
             f": {error}"
         )
-        self._log_error(cache_error)
+        # self._log_error(cache_error)
         
         # Cache errors are generally non-fatal, so we just log them
         # The application should continue without caching
-        self.logger.info(f"Continuing without cache for {operation}")
+        # self.logger.info(f"Continuing without cache for {operation}")
     
     def handle_comic_unavailable(self, 
                                comic_name: str, 
@@ -425,12 +426,12 @@ class ErrorHandler:
             comic_name,
             comic_date
         )
-        self._log_error(error)
+        # self._log_error(error)
         
         if try_previous_day and comic_date == date.today():
             # Try yesterday as fallback for today's comic
             yesterday = comic_date - timedelta(days=1)
-            self.logger.info(f"Trying previous day ({yesterday}) as fallback for {comic_name}")
+            # self.logger.info(f"Trying previous day ({yesterday}) as fallback for {comic_name}")
             
             # This would be called by the service layer to retry
             # We don't retry here to avoid circular dependencies
@@ -536,4 +537,4 @@ class ErrorHandler:
         """Clear error statistics and recent errors."""
         self.error_counts = {error_type: 0 for error_type in ErrorType}
         self.recent_errors.clear()
-        self.logger.info("Error statistics cleared")
+        # self.logger.info("Error statistics cleared")

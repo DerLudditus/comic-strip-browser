@@ -3,7 +3,7 @@ Cache management system for the comic strip browser application.
 
 This module implements an LRU (Least Recently Used) cache system that stores
 comic data and images locally to improve performance and reduce network requests.
-The cache maintains a maximum of 50 items per comic strip and handles both
+The cache maintains a maximum of 200 items per comic strip and handles both
 metadata and image file storage.
 """
 
@@ -91,6 +91,7 @@ class CacheManager:
     def _get_file_extension(self, url: str, image_format: str) -> str:
         """Determine the file extension for an image."""
         # Try to get extension from URL first
+        # Useless in the case of GoComics!
         parsed_url = urlparse(url)
         path = parsed_url.path
         if path and '.' in path:
