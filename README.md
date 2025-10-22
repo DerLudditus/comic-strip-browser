@@ -2,18 +2,28 @@
 
 A standalone PyQt6 application for browsing a selection of comic strips from GoComics.com. Features include calendar navigation, caching, and support for 15 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
 
-This app has been **vibe-coded with Amazon's Kiro** and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**.
+This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4.
+
+Three months later, I tried to fix a few bugs and add some extra features. I still don't have a Windows build, but the Linux binaries and packages (`.deb`, `.rpm`) work rather fine in version 1.1.1. 
+
+Kiro (Claude) helped with these minor changes, but it added more bugs than it fixed. I should have hunted the bugs myself and only let Kiro create the RPM `.spec` and other boring stuff. Kiro is even able to be that stupid:
+
+> Oops! I accidentally deleted the `.git` folder. Let me fix that:
+
+Nothing beats Kiro in creating new bugs, though. Or in forgetting what the purpose of a change was, what was the bug we were hunting, or that the bug needs to be fixed, not the error message!
+
+In the end, given the difficulties in building a PyQt6 self-contained Windows binary with either PyInstaller or cx_Freeze, I suppose PyQt6 is the wrong cross-platform framework. Maybe I should learn [Avalonia UI](https://docs.avaloniaui.net/docs/overview/what-is-avalonia).
 
 ## Features
 
-- **15 Popular Comic Strips**: Calvin and Hobbes, Peanuts, Garfield, Wizard of Id, and more
-- **Calendar Navigation**: Easy date selection with visual indicators
-- **Keyboard Navigation**: Left/Right arrows: Previous/Next, Home/End: First/Today
-- **Direct Access**: Button for First day of each comic as hosted on GoComics.com
-- **Random Access**: Button for display of a Random date for each comic
-- **Smart Caching**: Stores last 200 comics per strip for fast loading or later consulting from the cache folder
-- **Offline Viewing**: View cached comics without internet connection
-- **Cross-Platform**: Works on Linux and Windows\* (\*currently not tested)
+- **15 Popular Comic Strips**: Calvin and Hobbes, Peanuts, Garfield, Wizard of Id, and more.
+- **Calendar Navigation**: Easy date selection with visual indicators.
+- **Keyboard Navigation**: Left/Right arrows: Previous/Next, Home/End: First/Today.
+- **Direct Access**: Button for First day of each comic as hosted on GoComics.com.
+- **Random Access**: Button for display of a Random date for each comic.
+- **Smart Caching**: Stores last 200 comics per strip for fast loading or later consulting from the cache folder.
+- **Offline Viewing**: View cached comics without internet connection.
+- **Cross-Platform**: Works on Linux and should work on Windows someday (it currently doesn't build or doesn't run).
 
 ## Supported Comic Strips
 
@@ -41,37 +51,26 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 ## Releases
 
-📦 **Binaries** can be downloaded from SourceForge: **[Comic Strip Browser Files](https://sourceforge.net/projects/comic-strip-browser/files/releases/)**.
+📦 **Binaries** can be downloaded:
+
+- from **[Releases](https://github.com/DerLudditus/comic-strip-browser/releases)**.
+
+- from **[SourceForge](https://sourceforge.net/projects/comic-strip-browser/files/releases/)**.
 
 ## Installation
 
 ### Pre-built Binaries
+**Linux**: 
 
-- **Linux**: 
-	- `.deb` package for Debian/Ubuntu/Mint
-	- Prebuilt binary with `.desktop` file and icon
-	- AppImage (just in case)
+- `.deb` package for Debian/Ubuntu/Mint
+- `.rpm` package for Fedora/RHEL/CentOS/Alma/Rocky
+- Prebuilt binary with `.desktop` file, icon, and installation script
+- AppImage (just in case)
 
-### Linux Installation
-
-#### Using the .deb package (Debian/Ubuntu):
-```bash
-sudo apt install ./comic-strip-browser*.deb
-```
-
-Alternatively, GDebi, Captain (Mint) or Discover can be used.
-
-#### Using the prebuilt binary:
-
+#### Using the non-packaged binary:
 With `comic-strip-browser`, `comic-strip-browser.desktop`, `comic-strip-browser.png` and `install.sh` in the same folder, make sure the last one is executable (`chmod +x install.sh`) and launch it. It will install to `~/.local/bin/`.
 
 To uninstall the app, launch `~/.local/bin/uninstall-comic-strip-browser`.
-
-#### Using the AppImage:
-```bash
-chmod +x Comic_Strip_Browser-x86_64.AppImage
-./Comic_Strip_Browser-x86_64.AppImage
-```
 
 ## Building from Source
 
@@ -82,17 +81,14 @@ sudo apt-get update
 sudo apt-get install -y build-essential python3 python3-pip
 
 # For Fedora
-sudo dnf install -y @development-tools python3 python3-pip
-
-# For Arch Linux
-sudo pacman -S base-devel python python-pip
+sudo dnf -y install rpm-build rpmdevtools python3-devel python3-pip \
+python3-virtualenv python3-PyQt6 python3-requests python3-beautifulsoup4
 ```
 
 ### Build the binary:
 ```bash
 ./build_scripts/build_linux.sh
 ```
-
 Alternatively:
 ```bash
 python3 -m venv venv
@@ -102,16 +98,15 @@ python ./build_scripts/build.py
 ```
 
 ### Build the .deb:
-
 After you have a successfully built binary:
 ```bash
 python ./build_scripts/create_deb.py
 ```
 
 ### Build the .rpm:
-
-See RPM_BUILD.md
-
+```bash
+./build_scripts/build_rpm.sh
+```
 
 ### Build the AppImage:
 ```bash
@@ -121,14 +116,14 @@ chmod +x appimagetool-x86_64.AppImage
 ```
 
 ### Windows:
-
-Since I had issues with PyInstaller and PyQt6 under Windows (GitHub Actions had, too) using the original `build_windows.bat`, the alternative was to use cx_Freeze. See [`build_windows_cxfreeze.bat`](./build_scripts/build_windows_cxfreeze.bat) and [`WINDOWS_BUILD.md`](./WINDOWS_BUILD.md).
-
+Both [`build_windows.bat`](./build_scripts/build_windows.bat) and [`build_windows_cxfreeze.bat`](./build_scripts/build_windows_cxfreeze.bat) failed in my attempts and in the abomination called GitHub Actions. Read [`WINDOWS_BUILD.md`](./WINDOWS_BUILD.md) if it helps.
 
 ## Known issues
 
-### **Fractional scaling may lead to suboptimal rendering of the comics**
+### **Race conditions can make it forget the name of the selected comic strip**
+Should you click around frantically, repeatedly changing the comic strip from the 15 provided options after having changed the date, you might at some point see error messages about the impossibility of retrieving the “unknown” comic for today, despite the selected day in the calendar being another one. In some cases clicking again on the desired title is useless, but other titles remain functional. Should this happen, close the app and reopen it. Shit happens.
 
+### **Fractional scaling may lead to suboptimal rendering of the comics**
 This is because such a scaling is performed externally, not by the app. Basically, an image is enlarged by the display server or by the window manager. While such a phenomenon is typically associated with X11, Deepin's Wayland-based Treeland is quite a failure in this regard. Compare the rendering in Deepin 25.0.1 with the out-of-the-box **125% desktop scaling** to the normal 100% scaling:
 
 * [125% desktop scaling](./Screenshots/deepin_25_original_125_scaling.png)
@@ -136,17 +131,13 @@ This is because such a scaling is performed externally, not by the app. Basicall
 
 Maximizing the window can help in some cases. In others, you might want to resize the window until a better rendering is obtained, if at all.
 
-Otherwise, here's how the same comic strip looks by default in:
+Otherwise, here's a selection of updated screenshots:
 
-* [Linux Mint 22.1 Cinnamon](./Screenshots/Linux_Mint_22.1_Cinnamon.png)
-* [Linux Mint 22.1 XFCE](./Screenshots/Linux_Mint_22.1_XFCE.png)
-* [Ubuntu 25.04](./Screenshots/Ubuntu_25.04.png)
-* [Kubuntu 25.10 snapshot2](./Screenshots/Kubuntu_25.10_snapshot2.png)
-
-Note that the above screenshots were taken when the 15th comic title hadn't been added yet.
+* Lubuntu 25.10: [one](./Screenshots/Lubuntu_25.10_1.png), [two](./Screenshots/Lubuntu_25.10_2.png), [three](./Screenshots/Lubuntu_25.10_3.png)
+* LMDE 7: [one](./Screenshots/LMDE7_1.png), [two](./Screenshots/LMDE7_2.png), [three](./Screenshots/LMDE7_3.png)
+* Fedora 43 KDE (2025.10.15, KDE 6.4.5 on Wayland): [one](./Screenshots/FC43_KDE_1.png), [two](./Screenshots/FC43_KDE_2.png), [three](./Screenshots/FC43_KDE_3.png)
 
 ### **Cached images and logs**
-
 The last-accessed 200 images for each comic title are stored in a folder called `cache`, which is too generic a name. Each comic title has its own subfolder, though.
 
 The folder `cache` is saved as follows:
@@ -158,15 +149,12 @@ The folder `cache` is saved as follows:
 The location should probably have been `~/.cache/comic-strip-browser/`.
 
 ### **Discover and AppStream**
-
-I noticed that KDE Discover ignores the copyright file and claims there's no license in the `.deb`. Apparently, it expects all GUI packages to include AppStream metadata. I added such info in the `.deb`, but it's still ignored.
+I noticed that KDE Discover ignores the copyright file and claims there's no license in the `.deb`, or that the author is unknown in the `.rpm`. Bloody fucking Discover.
 
 ### **The AppImage**
-
 The AppImage is, by all evidence, useless as long as it's basically a wrap around a fat binary created by PyInstaller. It doesn't hurt to have it, though.
 
 ## License
-
 This project is licensed under the MIT License. See LICENSE file for details.
 
 **Note**: This application is for personal use only. Please respect the terms of service of GoComics.com and the copyright of comic strip creators.
