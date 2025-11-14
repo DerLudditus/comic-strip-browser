@@ -1,7 +1,7 @@
 Name:           comic-strip-browser
-Version:        1.1.2
+Version:        1.1.3
 Release:        1.fc42
-Summary:        A standalone comic strip browser for 15 titles from GoComics.com
+Summary:        A standalone comic strip browser for 20 titles from GoComics.com
 
 License:        MIT
 URL:            https://github.com/DerLudditus/comic-strip-browser
@@ -55,7 +55,14 @@ install -D -m 0644 assets/comic-strip-browser.png %{buildroot}%{_datadir}/pixmap
 %{_datadir}/pixmaps/comic-strip-browser.png
 
 %changelog
-* Tue Oct 21 2025 Homo Ludditus <ludditus@etik.com> - 1.1.0-1
+* Fri Nov 14 2025 Homo Ludditus <ludditus@etik.com> - 1.1.3-1
+- Removed Wizard of Id Classics because GoComics stopped publishing it on Oct. 31 (it was a reprint, anyway)
+- Number of strip titles: 20
+
+* Fri Nov 14 2025 Homo Ludditus <ludditus@etik.com> - 1.1.2-1
+- Added 6 more comic strip titles, to a total of 21
+
+* Tue Oct 21 2025 Homo Ludditus <ludditus@etik.com> - 1.1.1-1
 - Updated the start dates of each comic regarding their presence on GoComics
 - Added "First" and "Random" buttons for navigation
 - Added smart Next/Previous navigation that skips gaps
