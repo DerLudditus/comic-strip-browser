@@ -4,7 +4,7 @@ A standalone PyQt6 application for browsing a selection of comic strips from GoC
 
 This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4.
 
-Three months later, I tried to fix a few bugs and add some extra features. I still don't have a Windows build, but the Linux binaries and packages (`.deb`, `.rpm`) work rather fine in version 1.1.1. 
+Three months later, I tried to fix a few bugs and add some extra features. I still don't have a Windows build, but the Linux binaries and packages (`.deb`, `.rpm`) work rather fine in version 1.1.3. 
 
 Kiro (Claude) helped with these minor changes, but it added more bugs than it fixed. I should have hunted the bugs myself and only let Kiro create the RPM `.spec` and other boring stuff. Kiro is even able to be that stupid:
 
@@ -16,7 +16,7 @@ In the end, given the difficulties in building a PyQt6 self-contained Windows bi
 
 ## Features
 
-- **15 Popular Comic Strips**: Calvin and Hobbes, Peanuts, Garfield, Wizard of Id, and more.
+- **20 Popular Comic Strips**: Calvin and Hobbes, Peanuts, Garfield, Wizard of Id, and more.
 - **Calendar Navigation**: Easy date selection with visual indicators.
 - **Keyboard Navigation**: Left/Right arrows: Previous/Next, Home/End: First/Today.
 - **Direct Access**: Button for First day of each comic as hosted on GoComics.com.
@@ -32,22 +32,27 @@ In the end, given the difficulties in building a PyQt6 self-contained Windows bi
 3. **Peanuts Begins** - since 1950-10-16 (Reprint series; for old dates can be identical to Peanuts, only in color)
 4. **Garfield** - since 1978-06-19
 5. **Wizard of Id** - since 2002-01-01 (Limited GoComics availability)
-6. **Wizard of Id Classics** - since 2014-11-17
-7. **Pearls before Swine** - since 2002-01-07
-8. **Shoe** - since 2001-04-08 (Limited GoComics availability)
-9. **B.C.** - since 2002-01-01 (Limited GoComics availability)
-10. **Back to B.C.** - since 2015-09-21 (Recent reprint series)
-11. **Pickles** - since 2003-01-01 (Limited GoComics availability)
-12. **WuMo** - since 2013-10-13 (With gaps)
-13. **Speed Bump** - since 2002-01-01 (Limited GoComics availability)
-14. **Free Range** - since 2007-02-03
-15. **Off the Mark** - since 2002-09-02 (Limited GoComics availability)
+6. **Pearls before Swine** - since 2002-01-07
+7. **Shoe** - since 2001-04-08 (Limited GoComics availability)
+8. **B.C.** - since 2002-01-01 (Limited GoComics availability)
+9. **Back to B.C.** - since 2015-09-21 (Recent reprint series)
+10. **Pickles** - since 2003-01-01 (Limited GoComics availability)
+11. **WuMo** - since 2013-10-13 (With gaps)
+12. **Speed Bump** - since 2002-01-01 (Limited GoComics availability)
+13. **Free Range** - since 2007-02-03
+14. **Off the Mark** - since 2002-09-02 (Limited GoComics availability)
+15. **Mother Goose and Grimm** - since 2002-11-25
+16. **The Flying McCoys** - since 2005-05-09
+17. **The Duplex** - since 1996-08-12
+18. **Reality Check** - since 1997-01-01
+19. **Adam@Home** - since 1995-06-20
+20. **Ziggy** - since 1971-06-27
 
 Note that some comic titles, especially in their early days, can have large gaps in availability.
 
 <img src="./Screenshots/Ubuntu_MATE_24.04_dark_theme.png" alt="Under Ubuntu MATE 24.04 LTS (dark theme)" width="100%"/>
 
-<p align="center">Under Ubuntu MATE 24.04 LTS (dark theme)</p>
+<p align="center">Version 1.1.1 under Ubuntu MATE 24.04 LTS (dark theme)</p>
 
 ## Releases
 
@@ -76,13 +81,13 @@ To uninstall the app, launch `~/.local/bin/uninstall-comic-strip-browser`.
 
 ### Prerequisites:
 ```bash
-# For Debian/Ubuntu/Mint
+# For Debian/MX/Ubuntu/Mint
 sudo apt-get update
-sudo apt-get install -y build-essential python3 python3-pip
+sudo apt-get install -y build-essential python3 python3-pip python3-venv
 
 # For Fedora
 sudo dnf -y install rpm-build rpmdevtools python3-devel python3-pip \
-python3-virtualenv python3-PyQt6 python3-requests python3-beautifulsoup4
+python3-virtualenv
 ```
 
 ### Build the binary:
@@ -100,7 +105,7 @@ python ./build_scripts/build.py
 ### Build the .deb:
 After you have a successfully built binary:
 ```bash
-python ./build_scripts/create_deb.py
+python3 ./build_scripts/create_deb.py
 ```
 
 ### Build the .rpm:
@@ -131,8 +136,9 @@ This is because such a scaling is performed externally, not by the app. Basicall
 
 Maximizing the window can help in some cases. In others, you might want to resize the window until a better rendering is obtained, if at all.
 
-Otherwise, here's a selection of updated screenshots:
+Otherwise, here's a selection of screenshots:
 
+* MX 25: [one](./Screenshots/MX_25_1.png), [two](./Screenshots/MX_25_2.png)
 * Lubuntu 25.10: [one](./Screenshots/Lubuntu_25.10_1.png), [two](./Screenshots/Lubuntu_25.10_2.png), [three](./Screenshots/Lubuntu_25.10_3.png)
 * LMDE 7: [one](./Screenshots/LMDE7_1.png), [two](./Screenshots/LMDE7_2.png), [three](./Screenshots/LMDE7_3.png)
 * Fedora 43 KDE (2025.10.15, KDE 6.4.5 on Wayland): [one](./Screenshots/FC43_KDE_1.png), [two](./Screenshots/FC43_KDE_2.png), [three](./Screenshots/FC43_KDE_3.png)
