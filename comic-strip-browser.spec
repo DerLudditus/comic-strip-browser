@@ -1,5 +1,5 @@
 Name:           comic-strip-browser
-Version:        1.1.1
+Version:        1.1.2
 Release:        1.fc42
 Summary:        A standalone comic strip browser for 15 titles from GoComics.com
 
@@ -14,9 +14,9 @@ BuildRequires:  python3-pip
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-virtualenv
 BuildRequires:       python3
-BuildRequires:       python3-pyqt6
-BuildRequires:       python3-requests
-BuildRequires:       python3-beautifulsoup4
+#BuildRequires:       python3-pyqt6
+#BuildRequires:       python3-requests
+#BuildRequires:       python3-beautifulsoup4
 
 %description
 A standalone PyQt6 application for browsing a selection of comic strips from

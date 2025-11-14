@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Application metadata
 APP_NAME = 'ComicStripBrowser'
-APP_VERSION = '1.0.4'
+APP_VERSION = '1.1.2'
 APP_DESCRIPTION = 'A standalone comic strip browser for 15 titles from GoComics.com'
 APP_AUTHOR = 'Homo Ludditus <ludditus@etik.com>'
 
