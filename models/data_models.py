@@ -226,7 +226,49 @@ COMIC_DEFINITIONS = [
         base_url="https://www.gocomics.com/offthemark",
         author="Mark Parisi",
         earliest_date=date(2002, 9, 2)  # Limited GoComics availability
-    )    
+    ),
+    ComicDefinition(
+        name="mother-goose-and-grimm",
+        display_name="Mother Goose and Grimm",
+        base_url="https://www.gocomics.com/mother-goose-and-grimm",
+        author="Mike Peters",
+        earliest_date=date(1984, 10, 1)
+    ),
+    ComicDefinition(
+        name="theflyingmccoys",
+        display_name="The Flying McCoys",
+        base_url="https://www.gocomics.com/theflyingmccoys",
+        author="Gary McCoy and Glenn McCoy",
+        earliest_date=date(2005, 5, 9)
+    ),        
+    ComicDefinition(
+        name="duplex",
+        display_name="The Duplex",
+        base_url="https://www.gocomics.com/duplex",
+        author="Glenn McCoy",
+        earliest_date=date(1996, 8, 12)
+    ),        
+    ComicDefinition(
+        name="realitycheck",
+        display_name="Reality Check",
+        base_url="https://www.gocomics.com/realitycheck",
+        author="Dave Whamond",
+        earliest_date=date(1997, 1, 1)
+    ),    
+    ComicDefinition(
+        name="adamathome",
+        display_name="Adam@Home",
+        base_url="https://www.gocomics.com/adamathome",
+        author="Rob Harrell",
+        earliest_date=date(1995, 6, 20)
+    ),
+    ComicDefinition(
+        name="ziggy",
+        display_name="Ziggy",
+        base_url="https://www.gocomics.com/ziggy",
+        author="Tom Wilson & Tom II",
+        earliest_date=date(1971, 6, 27)
+    )        
 ]
 
 

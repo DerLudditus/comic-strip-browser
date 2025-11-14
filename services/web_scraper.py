@@ -262,7 +262,13 @@ class WebScraper:
             'wumo': 'Mikael Wulff and Anders Morgenthaler',
             'speedbump': 'Dave Coverly',
             'freerange': 'Bill Whitehead',
-            'offthemark': 'Mark Parisi'
+            'offthemark': 'Mark Parisi',
+            'mother-goose-and-grimm': 'Mike Peters',
+            'theflyingmccoys': 'Gary McCoy and Glenn McCoy',
+            'duplex': 'Glenn McCoy',
+            'realitycheck': 'Dave Whamond',
+            'adamathome': 'Rob Harrell',
+            'ziggy': 'Tom Wilson & Tom II'
         }
         
         return author_mapping.get(comic_name, 'Unknown Author')

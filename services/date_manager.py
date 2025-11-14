@@ -190,6 +190,7 @@ class DateManager:
     
     def _optimized_discovery(self, comic_name: str, base_url: str, progress_callback=None) -> Optional[date]:
         """
+        NOT USED ANYMORE, BUT LEFT HERE JUST IN CASE.
         Optimized discovery algorithm that uses smarter starting points and fewer requests.
         
         Args:
@@ -214,6 +215,12 @@ class DateManager:
             'speedbump': 1994,
             'freerange': 2006,
             'offthemark': 1987,
+            'mother-goose-and-grimm': 1984,
+            'theflyingmccoys': 2005,
+            'duplex': 1996,
+            'realitycheck': 1997,
+            'adamathome': 1995,
+            'ziggy': 1971
         }
         
         # Get estimated start year or use conservative default

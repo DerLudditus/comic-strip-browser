@@ -862,7 +862,7 @@ def main():
     
     # Set application properties
     app.setApplicationName("Comic Strip Browser")
-    app.setApplicationVersion("1.0.5")
+    app.setApplicationVersion(__version__)
     app.setOrganizationName("Comic Browser")
     
     # Create and show main window
