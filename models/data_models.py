@@ -158,13 +158,6 @@ COMIC_DEFINITIONS = [
         earliest_date=date(2002, 1, 1)  # Limited GoComics availability
     ),
     ComicDefinition(
-        name="wizard-of-id-classics",
-        display_name="Wizard of Id Classics",
-        base_url="https://www.gocomics.com/wizard-of-id-classics",
-        author="Brant Parker and Johnny Hart",
-        earliest_date=date(2014, 11, 17)  # Classics reprint series
-    ),
-    ComicDefinition(
         name="pearlsbeforeswine",
         display_name="Pearls before Swine",
         base_url="https://www.gocomics.com/pearlsbeforeswine",
