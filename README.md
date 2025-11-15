@@ -41,7 +41,7 @@ In the end, given the difficulties in building a PyQt6 self-contained Windows bi
 12. **Speed Bump** - since 2002-01-01 (Limited GoComics availability)
 13. **Free Range** - since 2007-02-03
 14. **Off the Mark** - since 2002-09-02 (Limited GoComics availability)
-15. **Mother Goose and Grimm** - since 2002-11-25
+15. **Mother Goose and Grimm** - since 2002-11-25 (Limited GoComics availability)
 16. **The Flying McCoys** - since 2005-05-09
 17. **The Duplex** - since 1996-08-12
 18. **Reality Check** - since 1997-01-01
@@ -94,7 +94,7 @@ python3-virtualenv
 ```bash
 ./build_scripts/build_linux.sh
 ```
-Alternatively:
+Alternatively, or for the first time:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
