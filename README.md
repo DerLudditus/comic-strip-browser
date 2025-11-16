@@ -14,6 +14,8 @@ Nothing beats Kiro in creating new bugs, though. Or in forgetting what the purpo
 
 In the end, given the difficulties in building a PyQt6 self-contained Windows binary with either PyInstaller or cx_Freeze, I suppose PyQt6 is the wrong cross-platform framework. Maybe I should learn [Avalonia UI](https://docs.avaloniaui.net/docs/overview/what-is-avalonia).
 
+## **NEW!** See also [**comic-strip-browser-web**](https://github.com/DerLudditus/comic-strip-browser-web) :rocket:
+
 ## Features
 
 - **20 Popular Comic Strips**: Calvin and Hobbes, Peanuts, Garfield, Wizard of Id, and more.
