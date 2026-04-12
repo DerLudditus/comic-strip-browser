@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QFrame, QPushButton, QProgressBar, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QThread, pyqtSlot
-from PyQt6.QtGui import QPixmap, QFont, QPainter, QMovie
+from PyQt6.QtGui import QPixmap, QFont, QPainter, QMovie, QImage
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 from models.data_models import ComicData
@@ -433,19 +433,31 @@ class ComicViewer(QWidget):
     def display_image(self, pixmap: QPixmap):
         """
         Display the comic image with proper scaling and aspect ratio preservation.
-        
+
         Args:
             pixmap: QPixmap object to display
         """
         if pixmap.isNull():
             self.show_error_state("Invalid image data")
-            return        
-      
+            return
+
+        # Convert to 32-bit RGB to prevent muddy artifacts when scaling.
+        # Comic strips from GoComics are typically 256-color indexed GIFs or
+        # palette PNGs. When QPixmap.scaled() with SmoothTransformation runs
+        # bilinear interpolation on an indexed image, it creates intermediate
+        # colors that don't exist in the original palette → muddy, banded
+        # artifacts. Converting to RGB32 first gives the scaler 16.7M colors
+        # to work with, producing clean downscaled images.
+        true_color_image = pixmap.toImage().convertToFormat(
+            QImage.Format.Format_RGB32
+        )
+        true_color_pixmap = QPixmap.fromImage(true_color_image)
+
         # Calculate appropriate size for display
-        display_size = self.calculate_display_size(pixmap.size())        
-       
+        display_size = self.calculate_display_size(true_color_pixmap.size())
+
         # Scale pixmap while preserving aspect ratio
-        scaled_pixmap = pixmap.scaled(
+        scaled_pixmap = true_color_pixmap.scaled(
             display_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
