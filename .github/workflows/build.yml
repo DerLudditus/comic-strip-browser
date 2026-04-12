@@ -9,7 +9,11 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Manual trigger
 
+permissions:
+  contents: write  # Required for creating releases
+
 jobs:
+  # ─── Windows ───────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
 
@@ -27,27 +31,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
-      - name: Build (onedir - recommended for Windows)
+      - name: Build (onedir)
         run: |
           python -m PyInstaller comic_browser_onedir.spec --clean --noconfirm
         shell: pwsh
-
-      - name: Upload Windows build
-        uses: actions/upload-artifact@v4
-        with:
-          name: ComicStripBrowser-Windows
-          path: dist/ComicStripBrowser/
-          retention-days: 30
 
       - name: Create ZIP archive
         run: |
           Compress-Archive -Path dist\ComicStripBrowser\* -DestinationPath dist\ComicStripBrowser-Windows.zip -Force
         shell: pwsh
 
-      - name: Upload ZIP artifact
+      - name: Upload Windows ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ComicStripBrowser-Windows-ZIP
+          name: ComicStripBrowser-Windows
           path: dist/ComicStripBrowser-Windows.zip
           retention-days: 30
 
@@ -58,6 +55,7 @@ jobs:
           files: dist/ComicStripBrowser-Windows.zip
           generate_release_notes: true
 
+  # ─── Linux ─────────────────────────────────────────────────
   build-linux:
     runs-on: ubuntu-24.04
 
@@ -74,84 +72,95 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libxcb-cursor0 \
-            libxcb-xinerama0 \
-            libxcb-icccm4 \
-            libxcb-image0 \
-            libxcb-keysyms1 \
-            libxcb-randr0 \
-            libxcb-render-util0 \
-            libxcb-shape0 \
-            libxcb-xfixes0 \
-            libxcb-xkb1 \
-            libxkbcommon-x11-0
+            libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
+            libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0 \
+            dpkg-dev rpm  # for .deb and .rpm packaging
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
-      - name: Build (onefile)
+      - name: Build binary (onefile)
         run: |
           python -m PyInstaller comic_browser.spec --clean --noconfirm
 
-      - name: Build (onedir)
+      # ── .deb package ──
+      - name: Build .deb package
         run: |
-          python -m PyInstaller comic_browser_onedir.spec --clean --noconfirm
+          python3 build_scripts/create_deb.py
 
+      - name: Find .deb artifact
+        id: deb
+        run: |
+          DEB_FILE=$(find build/ -name "*.deb" -type f | head -1)
+          echo "path=$DEB_FILE" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$DEB_FILE")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: ComicStripBrowser-deb
+          path: ${{ steps.deb.outputs.path }}
+          retention-days: 30
+
+      # ── .rpm package ──
+      - name: Build .rpm package
+        run: |
+          python3 build_scripts/create_rpm.py
+
+      - name: Find .rpm artifact
+        id: rpm
+        run: |
+          RPM_FILE=$(find build/rpm-build/RPMS/ -name "*.rpm" -type f | head -1)
+          echo "path=$RPM_FILE" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$RPM_FILE")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload .rpm
+        uses: actions/upload-artifact@v4
+        with:
+          name: ComicStripBrowser-rpm
+          path: ${{ steps.rpm.outputs.path }}
+          retention-days: 30
+
+      # ── AppImage ──
       - name: Create AppImage
         run: |
-          # Build AppImage from onedir output
           mkdir -p ComicStripBrowser.AppDir
-          cp -r dist/comic-strip-browser/* ComicStripBrowser.AppDir/
+          cp dist/comic-strip-browser ComicStripBrowser.AppDir/AppRun
+          chmod +x ComicStripBrowser.AppDir/AppRun
           cp assets/comic-strip-browser.png ComicStripBrowser.AppDir/comic-strip-browser.png 2>/dev/null || true
 
-          # Create desktop file
           cat > ComicStripBrowser.AppDir/comic-strip-browser.desktop << 'EOF'
           [Desktop Entry]
           Name=Comic Strip Browser
-          Exec=comic-strip-browser
+          Exec=AppRun
           Icon=comic-strip-browser
           Type=Application
           Categories=Graphics;Viewer;
           EOF
 
-          # Create AppRun symlink
-          ln -sf comic-strip-browser ComicStripBrowser.AppDir/AppRun
-
-          # Download appimagetool
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
-          ARCH=x86_64 ./appimagetool-x86_64.AppImage --no-appstream ComicStripBrowser.AppDir/ ComicStripBrowser-x86_64.AppImage || \
-            echo "AppImage build skipped (appimagetool issue)"
-
-      - name: Upload Linux onefile
-        uses: actions/upload-artifact@v4
-        with:
-          name: ComicStripBrowser-Linux-OneFile
-          path: dist/comic-strip-browser
-          retention-days: 30
-
-      - name: Upload Linux onedir
-        uses: actions/upload-artifact@v4
-        with:
-          name: ComicStripBrowser-Linux-OneDir
-          path: dist/comic-strip-browser/
-          retention-days: 30
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage --no-appstream ComicStripBrowser.AppDir/ ComicStripBrowser-x86_64.AppImage 2>/dev/null || \
+            echo "AppImage build skipped"
 
       - name: Upload AppImage
         if: hashFiles('ComicStripBrowser-x86_64.AppImage') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ComicStripBrowser-Linux-AppImage
+          name: ComicStripBrowser-AppImage
           path: ComicStripBrowser-x86_64.AppImage
           retention-days: 30
 
+      # ── Release (on tag) ──
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            ${{ steps.deb.outputs.path }}
+            ${{ steps.rpm.outputs.path }}
             ComicStripBrowser-x86_64.AppImage
-            dist/comic-strip-browser
           generate_release_notes: true
