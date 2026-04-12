@@ -90,7 +90,7 @@ def create_rpm_package():
 
     spec_content = f"""Name:           comic-strip-browser
 Version:        {version}
-Release:        {release}%{{?dist}}
+Release:        {release}.fc43
 Summary:        Browse GoComics.com comic strips
 
 License:        MIT
@@ -98,12 +98,17 @@ URL:            {DEB_HOMEPAGE}
 Source0:        %{{name}}-%{{version}}.tar.gz
 
 BuildArch:      x86_64
-Requires:       libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0
+# These are system libraries not bundled by PyInstaller.
+# All Fedora desktop installs include these by default.
+Requires:       libX11 libxcb
 
 %description
 A standalone PyQt6 application for browsing comic strips from GoComics.com.
 Features include calendar navigation, caching, and support for 15 popular
 comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
+
+%prep
+%setup -q
 
 %install
 # Binary RPM — no build step, just install the pre-built files
