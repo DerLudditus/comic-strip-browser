@@ -43,10 +43,10 @@ class ComicBrowserBuilder:
     def check_dependencies(self):
         """Check if all required dependencies are installed."""
         print("Checking dependencies...")
-        
-        required_packages = ['PyQt6', 'requests', 'beautifulsoup4', 'pyinstaller']
+
+        required_packages = ['PyQt6', 'requests', 'beautifulsoup4', 'PIL', 'pyinstaller']
         missing_packages = []
-        
+
         for package in required_packages:
             try:
                 if package == 'PyQt6':
@@ -55,6 +55,8 @@ class ComicBrowserBuilder:
                     import bs4
                 elif package == 'pyinstaller':
                     import PyInstaller
+                elif package == 'PIL':
+                    from PIL import Image
                 else:
                     __import__(package.lower().replace('-', '_'))
                 print(f"✓ {package}")
@@ -70,18 +72,31 @@ class ComicBrowserBuilder:
         print("All dependencies satisfied.")
         return True
     
-    def build_application(self, debug=False):
-        """Build the application using PyInstaller."""
-        print(f"Building Comic Strip Browser for {self.platform_name}...")
+    def build_application(self, debug=False, onedir=False):
+        """Build the application using PyInstaller.
         
+        Args:
+            debug: Enable debug output.
+            onedir: Use --onedir mode (directory with separate DLLs).
+                    Recommended for Windows builds for reliable Qt6 DLL bundling.
+        """
+        build_mode = "onedir" if onedir else "onefile"
+        print(f"Building Comic Strip Browser for {self.platform_name} ({build_mode})...")
+
+        # Select spec file based on build mode
+        if onedir:
+            spec_path = self.project_root / "comic_browser_onedir.spec"
+        else:
+            spec_path = self.project_root / "comic_browser.spec"
+
         # Prepare PyInstaller command
         cmd = [
             sys.executable, "-m", "PyInstaller",
-            str(self.spec_file),
+            str(spec_path),
             "--clean",
             "--noconfirm"
         ]
-        
+
         if debug:
             cmd.append("--debug=all")
         
@@ -209,16 +224,17 @@ def main():
     parser = argparse.ArgumentParser(description="Build Comic Strip Browser")
     parser.add_argument("--clean", action="store_true", help="Clean build directories")
     parser.add_argument("--debug", action="store_true", help="Build with debug information")
+    parser.add_argument("--onedir", action="store_true", help="Use onedir mode (recommended for Windows)")
     parser.add_argument("--package", action="store_true", help="Create installer package")
     parser.add_argument("--test", action="store_true", help="Run deployment tests")
     parser.add_argument("--all", action="store_true", help="Run complete build process")
-    
+
     args = parser.parse_args()
-    
+
     builder = ComicBrowserBuilder()
-    
+
     # Default to full build if no specific options
-    if not any([args.clean, args.debug, args.package, args.test]):
+    if not any([args.clean, args.debug, args.onedir, args.package, args.test]):
         args.all = True
     
     success = True
@@ -231,8 +247,8 @@ def main():
             print("Dependency check failed. Please install missing packages.")
             return 1
     
-    if args.all or args.debug:
-        success = builder.build_application(debug=args.debug)
+    if args.all or args.debug or args.onedir:
+        success = builder.build_application(debug=args.debug, onedir=args.onedir)
         if not success:
             print("Build failed!")
             return 1
