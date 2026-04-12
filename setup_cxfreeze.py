@@ -1,6 +1,11 @@
 """
 cx_Freeze setup script for Comic Strip Browser
 Alternative to PyInstaller for Windows builds
+
+Changelog (2026-04-12):
+- Fixed: Added PIL/Pillow to packages (used by web_scraper.py)
+- Fixed: Added include_files for Qt plugins and binaries on Windows
+- Fixed: Added explicit PyQt6.QtNetwork to packages
 """
 
 import sys
@@ -14,6 +19,7 @@ build_exe_options = {
         "PyQt6.QtCore",
         "PyQt6.QtWidgets",
         "PyQt6.QtGui",
+        "PyQt6.QtNetwork",
         "requests",
         "bs4",
         "beautifulsoup4",
@@ -21,6 +27,9 @@ build_exe_options = {
         "certifi",
         "charset_normalizer",
         "idna",
+        # PIL/Pillow - used by web_scraper.py for image format detection
+        "PIL",
+        "PIL.Image",
     ],
     "includes": [
         "models.data_models",
@@ -35,6 +44,7 @@ build_exe_options = {
         "ui.comic_selector",
         "ui.comic_viewer",
         "ui.main_window",
+        "ui.embedded_images",
     ],
     "excludes": [
         "tkinter",
@@ -42,17 +52,56 @@ build_exe_options = {
         "numpy",
         "scipy",
         "pandas",
-        "PIL",
-        "Pillow",
         "test",
         "unittest",
     ],
     "include_files": [
-        # Add any additional files here if needed
-        # ("assets/", "assets/"),
+        # Include assets for icons and images
+        ("assets/", "assets/") if __import__('os').path.exists("assets/") else None,
     ],
     "optimize": 2,
 }
+# Remove None entries
+build_exe_options["include_files"] = [
+    item for item in build_exe_options["include_files"] if item is not None
+]
+
+# On Windows, include Qt platform plugins and DLLs
+if sys.platform == "win32":
+    import os
+    import PyQt6
+    pyqt6_path = os.path.dirname(PyQt6.__file__)
+    qt_bin_path = os.path.join(pyqt6_path, "Qt6", "bin")
+    qt_plugins_path = os.path.join(pyqt6_path, "Qt6", "plugins")
+
+    if os.path.exists(qt_plugins_path):
+        # Include platform plugin (essential for Windows)
+        platforms_path = os.path.join(qt_plugins_path, "platforms")
+        if os.path.exists(platforms_path):
+            build_exe_options["include_files"].append(
+                (platforms_path, "PyQt6/Qt6/plugins/platforms")
+            )
+        # Include imageformats plugin (for PNG, JPEG, GIF support)
+        imageformats_path = os.path.join(qt_plugins_path, "imageformats")
+        if os.path.exists(imageformats_path):
+            build_exe_options["include_files"].append(
+                (imageformats_path, "PyQt6/Qt6/plugins/imageformats")
+            )
+        # Include styles plugin
+        styles_path = os.path.join(qt_plugins_path, "styles")
+        if os.path.exists(styles_path):
+            build_exe_options["include_files"].append(
+                (styles_path, "PyQt6/Qt6/plugins/styles")
+            )
+
+    # Include Qt6 DLLs on Windows
+    if os.path.exists(qt_bin_path):
+        for dll_name in os.listdir(qt_bin_path):
+            if dll_name.endswith('.dll'):
+                dll_path = os.path.join(qt_bin_path, dll_name)
+                build_exe_options["include_files"].append(
+                    (dll_path, "PyQt6/Qt6/bin/" + dll_name)
+                )
 
 # Base for Windows GUI application (no console window)
 base = None

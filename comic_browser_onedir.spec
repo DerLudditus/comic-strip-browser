@@ -1,14 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for Comic Strip Browser
-Cross-platform configuration for Windows and Linux builds
+PyInstaller spec file for Comic Strip Browser - ONEDIR mode
+Recommended for Windows builds: bundles Qt6 DLLs as separate files
+instead of embedding in a single EXE, which is more reliable.
 
-Changelog (2026-04-12):
-- Fixed: UPX disabled (upx=True corrupts Qt6 DLLs on Windows)
-- Fixed: PIL/Pillow removed from excludes (used by web_scraper.py for image format detection)
-- Fixed: Added PIL, PIL.Image, io to hiddenimports
-- Fixed: Added explicit Qt platform and imageformat plugin hooks for Windows
-- Fixed: Use --onedir mode (--onefile is unreliable with Qt6 DLL bundles)
+To build:
+    python -m PyInstaller comic_browser_onedir.spec --clean --noconfirm
+
+The output will be dist/comic-browser/ directory containing the EXE + DLLs.
 """
 
 import sys
@@ -18,32 +17,25 @@ from pathlib import Path
 # Application metadata
 APP_NAME = 'ComicStripBrowser'
 APP_VERSION = '1.1.2'
-APP_DESCRIPTION = 'A standalone comic strip browser for 15 titles from GoComics.com'
-APP_AUTHOR = 'Homo Ludditus <ludditus@etik.com>'
 
 # Build configuration
 block_cipher = None
 debug = False
 
-# Platform-specific settings
 is_windows = sys.platform.startswith('win')
 is_linux = sys.platform.startswith('linux')
 
-# Define paths
 project_root = Path('.')
 main_script = project_root / 'main.py'
 
 # Data files to include
 datas = [
-    # Include any configuration templates or default files
     ('config.json', '.') if (project_root / 'config.json').exists() else None,
-    # Include assets for icons and images
     ('assets', 'assets') if (project_root / 'assets').exists() else None,
 ]
-# Remove None entries
 datas = [item for item in datas if item is not None]
 
-# Hidden imports - modules that PyInstaller might miss
+# Hidden imports - all modules PyInstaller might miss
 hiddenimports = [
     'PyQt6.QtCore',
     'PyQt6.QtWidgets',
@@ -90,7 +82,7 @@ excludes = [
     'unittest',
 ]
 
-# Analysis configuration
+# Analysis
 a = Analysis(
     [str(main_script)],
     pathex=[str(project_root)],
@@ -107,26 +99,21 @@ a = Analysis(
     noarchive=False,
 )
 
-# Remove duplicate entries
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# Platform-specific executable configuration
+# ONEDIR: creates a directory with EXE + DLLs + dependencies
 if is_windows:
     exe = EXE(
         pyz,
         a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        [],
+        exclude_binaries=True,  # ONEDIR: binaries go to separate folder
         name='ComicStripBrowser',
         debug=debug,
         bootloader_ignore_signals=False,
         strip=False,
         upx=False,  # CRITICAL: UPX corrupts Qt6 DLLs on Windows
         upx_exclude=[],
-        runtime_tmpdir=None,
-        console=False,  # No console window on Windows (set to True for debugging)
+        console=False,
         disable_windowed_traceback=False,
         target_arch=None,
         codesign_identity=None,
@@ -134,24 +121,40 @@ if is_windows:
         icon='assets/comic-strip-browser.ico' if (project_root / 'assets' / 'comic-strip-browser.ico').exists() else None,
         version='version_info.txt' if (project_root / 'version_info.txt').exists() else None,
     )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=False,
+        upx_exclude=[],
+        name='ComicStripBrowser',
+    )
 else:  # Linux
     exe = EXE(
         pyz,
         a.scripts,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        [],
+        exclude_binaries=True,
         name='comic-strip-browser',
         debug=debug,
         bootloader_ignore_signals=False,
         strip=False,
-        upx=False,  # Disabled for consistency with Windows
+        upx=False,
         upx_exclude=[],
-        runtime_tmpdir=None,
         console=False,
         disable_windowed_traceback=False,
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=False,
+        upx_exclude=[],
+        name='comic-strip-browser',
     )
