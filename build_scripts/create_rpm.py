@@ -98,10 +98,7 @@ URL:            {DEB_HOMEPAGE}
 Source0:        %{{name}}-%{{version}}.tar.gz
 
 BuildArch:      x86_64
-Requires:       libxcb-cursor0, libxcb-xinerama0, libxcb-icccm4,
-                libxcb-image0, libxcb-keysyms1, libxcb-randr0,
-                libxcb-render-util0, libxcb-shape0, libxcb-xfixes0,
-                libxcb-xkb1, libxkbcommon-x11-0
+Requires:       libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0
 
 %description
 A standalone PyQt6 application for browsing comic strips from GoComics.com.
