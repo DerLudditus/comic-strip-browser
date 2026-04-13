@@ -413,6 +413,11 @@ class ComicViewer(QWidget):
         dpr = win.devicePixelRatioF() if win else 1.0
         if dpr < 1.0:
             dpr = 1.0
+        # Refuse fractional scaling!
+        if dpr < 1.75:
+            dpr = 1.0
+        else:
+            dpr = round(dpr)            
 
         # Scale to PHYSICAL pixel size.
         # At 125% scaling: logical 800×600 → physical 1000×750.
