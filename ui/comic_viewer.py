@@ -392,35 +392,25 @@ class ComicViewer(QWidget):
             self.show_error_state("Invalid image data")
             return
 
-        # Comic strips are line art with hard edges. SmoothTransformation
-        # (bilinear) is correct for downscaling but causes two problems:
-        #
-        # 1. On indexed 256-color images, bilinear creates intermediate
-        #    colors outside the original palette → muddy artifacts.
-        #    Fix: convert to ARGB32 first.
-        # 2. With fractional desktop scaling (125%, 150%), the compositor
-        #    re-interpolates the entire window after Qt renders → double
-        #    blur. Fix: render at physical pixel size so the compositor
-        #    has nothing to scale. On 100% scaling, DPR = 1.0 and this
-        #    is a no-op.
-
+        # Comic strips are typically 256-color indexed GIFs or palette PNGs.
+        # SmoothTransformation on indexed images creates intermediate colors
+        # outside the original palette → muddy artifacts. Convert to
+        # true-color first to prevent this.
         img = pixmap.toImage()
         if img.colorTable():
             img = img.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        true_color_pixmap = QPixmap.fromImage(img)
 
-        logical_size = self.calculate_display_size(pixmap.size())
-        dpr = self.devicePixelRatioF()
-        target_size = (logical_size * dpr).toSize()
+        display_size = self.calculate_display_size(pixmap.size())
 
-        scaled_pixmap = QPixmap.fromImage(img).scaled(
-            target_size,
+        scaled_pixmap = true_color_pixmap.scaled(
+            display_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
 
-        scaled_pixmap.setDevicePixelRatio(dpr)
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.setFixedSize(logical_size)
+        self.image_label.setFixedSize(scaled_pixmap.size())
 
         # Resize content widget to fit content (needed with setWidgetResizable=False)
         self._resize_content_widget()
