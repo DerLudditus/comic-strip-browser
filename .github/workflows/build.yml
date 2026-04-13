@@ -31,9 +31,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
-      - name: Build (onedir)
+      - name: Build (onedir on Windows)
         run: |
-          python -m PyInstaller comic_browser.spec --clean --noconfirm --onedir
+          python -m PyInstaller comic_browser.spec --clean --noconfirm
         shell: pwsh
 
       - name: Create ZIP archive
