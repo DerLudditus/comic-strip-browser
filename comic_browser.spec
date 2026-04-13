@@ -1,21 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
 PyInstaller spec file for Comic Strip Browser
-Linux: onefile (single ~70 MB binary)
-Windows: onedir (directory with DLLs)
+Both Linux and Windows: onefile (single large binary)
 """
 
 import sys
-import os
 from pathlib import Path
-
-# Platform-specific settings
-is_windows = sys.platform.startswith('win')
-is_linux = sys.platform.startswith('linux')
 
 project_root = Path('.')
 
-# Data files to include
 datas = [
     ('assets', 'assets') if (project_root / 'assets').exists() else None,
     ('initial_transparent_alpha.png', '.') if (project_root / 'initial_transparent_alpha.png').exists() else None,
@@ -35,34 +28,30 @@ hiddenimports = [
 
 excludes = ['tkinter', 'matplotlib', 'numpy', 'scipy', 'pandas', 'test', 'unittest']
 
+is_windows = sys.platform.startswith('win')
+
 a = Analysis(
     [str(project_root / 'main.py')],
     pathex=[str(project_root)],
     datas=datas,
     hiddenimports=hiddenimports,
     excludes=excludes,
-    cipher=None,
 )
 
 pyz = PYZ(a.pure, a.zipped_data)
 
-# Platform-specific output
+# ── Windows: onefile ──
 if is_windows:
-    # ── Windows: onedir ──
     exe = EXE(
         pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [],
         name='ComicStripBrowser',
-        console=False, upx=False,
+        console=False, upx=False, strip=False,
         icon='assets/comic-strip-browser.ico' if (project_root / 'assets' / 'comic-strip-browser.ico').exists() else None,
     )
-    coll = COLLECT(
-        exe, a.binaries, a.zipfiles, a.datas,
-        name='ComicStripBrowser',
-    )
+# ── Linux: onefile ──
 else:
-    # ── Linux: onefile ──
     exe = EXE(
         pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [],
         name='comic-strip-browser',
-        console=False, upx=False,
+        console=False, upx=False, strip=False,
     )

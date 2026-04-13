@@ -7,10 +7,13 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Required for creating releases
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # ─── Windows ──────────────────────────────────────────────
@@ -18,10 +21,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -31,28 +34,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
-      - name: Build (onedir on Windows)
+      - name: Build (onefile)
         run: |
           python -m PyInstaller comic_browser.spec --clean --noconfirm
         shell: pwsh
 
-      - name: Create ZIP archive
-        run: |
-          Compress-Archive -Path dist\ComicStripBrowser\* -DestinationPath dist\ComicStripBrowser-Windows.zip -Force
-        shell: pwsh
-
-      - name: Upload Windows ZIP
-        uses: actions/upload-artifact@v4
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v5
         with:
           name: ComicStripBrowser-Windows
-          path: dist/ComicStripBrowser-Windows.zip
+          path: dist/ComicStripBrowser.exe
           retention-days: 30
 
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/ComicStripBrowser-Windows.zip
+          files: dist/ComicStripBrowser.exe
           generate_release_notes: true
 
   # ─── Linux ─────────────────────────────────────────────────
@@ -60,10 +58,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -75,27 +73,24 @@ jobs:
             libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
             libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0 \
-            dpkg-dev rpm file fuse  # for .deb, .rpm, and AppImage packaging
+            dpkg-dev rpm file fuse
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
-      # ── onefile binary ──
       - name: Build binary (onefile)
         run: |
-          python -m PyInstaller comic_browser.spec --clean --noconfirm \
-            --distpath dist/onefile --workpath build/onefile
+          python -m PyInstaller comic_browser.spec --clean --noconfirm
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ComicStripBrowser-linux-binary
-          path: dist/onefile/comic-strip-browser
+          path: dist/comic-strip-browser
           retention-days: 30
 
-      # ── .deb package ──
       - name: Build .deb package
         run: |
           python3 build_scripts/create_deb.py
@@ -108,18 +103,17 @@ jobs:
           echo "name=$(basename "$DEB_FILE")" >> "$GITHUB_OUTPUT"
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ComicStripBrowser-deb
           path: ${{ steps.deb.outputs.path }}
           retention-days: 30
 
-      # ── .rpm package ──
       - name: Build .rpm package
         run: |
           VERSION=$(python3 -c "from version import __version__; print(__version__)")
           RELEASE="1"
-          BINARY="dist/onefile/comic-strip-browser"
+          BINARY="dist/comic-strip-browser"
           RPMBUILD="$HOME/rpmbuild"
           mkdir -p "$RPMBUILD"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
           TMPDIR=$(mktemp -d)
@@ -174,19 +168,18 @@ jobs:
           echo "name=$(basename "$RPM_FILE")" >> "$GITHUB_OUTPUT"
 
       - name: Upload .rpm
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ComicStripBrowser-rpm
           path: ${{ steps.rpm.outputs.path }}
           retention-days: 30
 
-      # ── AppImage ──
       - name: Create AppImage
         run: |
           VERSION=$(python3 -c "from version import __version__; print(__version__)")
           APPDIR="$PWD/build/ComicStripBrowser.AppDir"
           mkdir -p "$APPDIR"/{usr/bin,usr/share/applications,usr/share/pixmaps}
-          cp dist/onefile/comic-strip-browser "$APPDIR/usr/bin/comic-strip-browser"
+          cp dist/comic-strip-browser "$APPDIR/usr/bin/comic-strip-browser"
           chmod +x "$APPDIR/usr/bin/comic-strip-browser"
           ln -sf usr/bin/comic-strip-browser "$APPDIR/AppRun"
           [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$APPDIR/"
@@ -202,19 +195,18 @@ jobs:
           ARCH=x86_64 ./appimagetool-x86_64.AppImage "$APPDIR" "dist/comic-strip-browser-${VERSION}.AppImage"
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ComicStripBrowser-AppImage
           path: dist/comic-strip-browser-*.AppImage
           retention-days: 30
 
-      # ── Release (on tag) ──
       - name: Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/onefile/comic-strip-browser
+            dist/comic-strip-browser
             ${{ steps.deb.outputs.path }}
             ${{ steps.rpm.outputs.path }}
             dist/comic-strip-browser-*.AppImage

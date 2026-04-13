@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 
 echo "=== Comic Strip Browser — AppImage Build ==="
 
-BINARY="dist/onefile/comic-strip-browser"
+BINARY="dist/comic-strip-browser"
 [ -f "$BINARY" ] || { echo "✗ Binary not found — run build_binary.sh first"; exit 1; }
 
 VERSION=$(python3 -c "from version import __version__; print(__version__)")

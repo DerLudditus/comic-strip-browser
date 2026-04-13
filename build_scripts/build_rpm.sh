@@ -10,7 +10,7 @@ echo "=== Comic Strip Browser — .rpm Build ==="
 
 command -v rpmbuild &>/dev/null || { echo "✗ rpmbuild not found — install rpm-build"; exit 1; }
 
-BINARY="dist/onefile/comic-strip-browser"
+BINARY="dist/comic-strip-browser"
 [ -f "$BINARY" ] || { echo "✗ Binary not found — run build_binary.sh first"; exit 1; }
 
 VERSION=$(python3 -c "from version import __version__; print(__version__)")
