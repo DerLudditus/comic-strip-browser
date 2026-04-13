@@ -392,35 +392,32 @@ class ComicViewer(QWidget):
             self.show_error_state("Invalid image data")
             return
 
-        # Comic strips from GoComics are typically 256-color indexed GIFs or
-        # palette PNGs. When QPixmap.scaled() with SmoothTransformation runs
-        # bilinear interpolation on an indexed image, it creates intermediate
-        # colors outside the original palette → muddy artifacts.
-        # Only convert indexed images to true-color; skip true-color images.
+        # Comic strips are line art with hard edges. SmoothTransformation
+        # (bilinear) is correct for downscaling but causes two problems:
+        #
+        # 1. On indexed 256-color images, bilinear creates intermediate
+        #    colors outside the original palette → muddy artifacts.
+        #    Fix: convert to ARGB32 first.
+        # 2. With fractional desktop scaling (125%, 150%), the compositor
+        #    re-interpolates the entire window after Qt renders → double
+        #    blur. Fix: render at physical pixel size so the compositor
+        #    has nothing to scale. On 100% scaling, DPR = 1.0 and this
+        #    is a no-op.
+
         img = pixmap.toImage()
         if img.colorTable():
             img = img.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
-        # Calculate logical display size
         logical_size = self.calculate_display_size(pixmap.size())
-
-        # With fractional desktop scaling (125%, 150% on Windows), DWM
-        # re-interpolates the entire window after Qt renders, causing
-        # double blurring. Fix: render at physical pixel size so DWM
-        # has nothing to scale. On 100% scaling (Linux, most desktops),
-        # DPR = 1.0 and this is a no-op.
         dpr = self.devicePixelRatioF()
         target_size = (logical_size * dpr).toSize()
 
-        # Scale to physical pixel size
         scaled_pixmap = QPixmap.fromImage(img).scaled(
             target_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
 
-        # Set the high-res pixmap on the label and set devicePixelRatio
-        # so Qt knows its logical size for layout calculations
         scaled_pixmap.setDevicePixelRatio(dpr)
         self.image_label.setPixmap(scaled_pixmap)
         self.image_label.setFixedSize(logical_size)
