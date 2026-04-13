@@ -317,6 +317,13 @@ class ComicViewer(QWidget):
         if scale != 1.0:
             metadata_text += f"  ({int(scale * 100)}%)"
 
+        # Show current display device pixel ratio
+        win = self.window()
+        dpr = win.devicePixelRatioF() if win else 1.0
+        if dpr < 1.0:
+            dpr = 1.0
+        metadata_text += f"  @ {int(dpr * 100)}%"
+
         self.metadata_label.setText(metadata_text)
         self.metadata_label.setVisible(True)  # Show metadata when we have content
     
