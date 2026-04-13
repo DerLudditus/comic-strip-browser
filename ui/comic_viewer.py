@@ -396,28 +396,34 @@ class ComicViewer(QWidget):
         # palette PNGs. When QPixmap.scaled() with SmoothTransformation runs
         # bilinear interpolation on an indexed image, it creates intermediate
         # colors outside the original palette → muddy artifacts.
-        # Only convert indexed images to true-color; skip true-color images
-        # that are already fine. Use ARGB32_Premultiplied which is the native
-        # format for both Windows GDI/Direct2D and Linux XRender.
+        # Only convert indexed images to true-color; skip true-color images.
         img = pixmap.toImage()
         if img.colorTable():
-            # Indexed image — convert to true-color
             img = img.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        true_color_pixmap = QPixmap.fromImage(img)
 
-        # Calculate appropriate size for display
-        display_size = self.calculate_display_size(true_color_pixmap.size())
+        # Calculate logical display size
+        logical_size = self.calculate_display_size(pixmap.size())
 
-        # Scale pixmap while preserving aspect ratio
-        scaled_pixmap = true_color_pixmap.scaled(
-            display_size,
+        # With fractional desktop scaling (125%, 150% on Windows), DWM
+        # re-interpolates the entire window after Qt renders, causing
+        # double blurring. Fix: render at physical pixel size so DWM
+        # has nothing to scale. On 100% scaling (Linux, most desktops),
+        # DPR = 1.0 and this is a no-op.
+        dpr = self.devicePixelRatioF()
+        target_size = (logical_size * dpr).toSize()
+
+        # Scale to physical pixel size
+        scaled_pixmap = QPixmap.fromImage(img).scaled(
+            target_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
 
-        # Update image label
+        # Set the high-res pixmap on the label and set devicePixelRatio
+        # so Qt knows its logical size for layout calculations
+        scaled_pixmap.setDevicePixelRatio(dpr)
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.setFixedSize(scaled_pixmap.size())
+        self.image_label.setFixedSize(logical_size)
 
         # Resize content widget to fit content (needed with setWidgetResizable=False)
         self._resize_content_widget()
