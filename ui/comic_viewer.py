@@ -398,17 +398,20 @@ class ComicViewer(QWidget):
             img = img.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         true_color_pixmap = QPixmap.fromImage(img)
 
-        # Calculate logical display size (the size the user expects to see)
-        logical_size = self.calculate_display_size(pixmap.size())
+        display_size = self.calculate_display_size(pixmap.size())
 
-        # Get the window's device pixel ratio (e.g. 1.25 at 125% desktop scaling).
-        # This updates automatically when the window moves between monitors.
+        # Guard: if display size is invalid, fall back to original image size
+        if display_size.width() <= 0 or display_size.height() <= 0:
+            display_size = pixmap.size()
+
+        # Get DPR safely — may be 0.0 if widget isn't attached to a window yet
         dpr = self.devicePixelRatioF()
+        if dpr <= 0.0:
+            dpr = 1.0
 
-        # Scale to PHYSICAL pixel size so the compositor/DWM has nothing to
-        # re-interpolate. This prevents the double-blur caused by Qt scaling
-        # + compositor scaling at fractional DPI.
-        physical_size = (logical_size * dpr).toSize()
+        # Scale to physical pixel size so the compositor has nothing to
+        # re-interpolate at fractional DPI (125%, 150%, etc.)
+        physical_size = (display_size * dpr).toSize()
 
         scaled_pixmap = true_color_pixmap.scaled(
             physical_size,
@@ -416,13 +419,16 @@ class ComicViewer(QWidget):
             Qt.TransformationMode.SmoothTransformation
         )
 
-        # CRITICAL: Tell Qt this pixmap represents a high-density image.
-        # Qt will now draw it at its native physical resolution with no
-        # additional scaling → sharp result at any fractional DPI.
-        scaled_pixmap.setDevicePixelRatio(dpr)
+        # Guard: if scaling produced a null pixmap, use the original
+        if scaled_pixmap.isNull():
+            scaled_pixmap = true_color_pixmap
+            dpr = 1.0
+
+        if dpr != 1.0:
+            scaled_pixmap.setDevicePixelRatio(dpr)
 
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.setFixedSize(logical_size)
+        self.image_label.setFixedSize(display_size)
 
         # Resize content widget to fit content (needed with setWidgetResizable=False)
         self._resize_content_widget()
@@ -439,8 +445,8 @@ class ComicViewer(QWidget):
         """
         # Get available space in the scroll area
         available_size = self.scroll_area.size()
-        max_width = available_size.width() - 60  # Account for margins and scrollbars
-        max_height = available_size.height() - 60
+        max_width = max(100, available_size.width() - 60)   # Account for margins
+        max_height = max(100, available_size.height() - 60)
 
         # Handle Sunday comics (typically larger)
         if original_size.width() > original_size.height() * 1.5:
