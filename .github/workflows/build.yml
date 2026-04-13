@@ -21,10 +21,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.4 (Node 24)
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0 (Node 24)
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -40,7 +40,7 @@ jobs:
         shell: pwsh
 
       - name: Upload Windows EXE
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd0750919e6a8f53091  # v4.6.0 (Node 24)
         with:
           name: ComicStripBrowser-Windows
           path: dist/ComicStripBrowser.exe
@@ -58,10 +58,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.4 (Node 24)
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0 (Node 24)
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -85,7 +85,7 @@ jobs:
           python -m PyInstaller comic_browser.spec --clean --noconfirm
 
       - name: Upload binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd0750919e6a8f53091  # v4.6.0 (Node 24)
         with:
           name: ComicStripBrowser-linux-binary
           path: dist/comic-strip-browser
@@ -103,7 +103,7 @@ jobs:
           echo "name=$(basename "$DEB_FILE")" >> "$GITHUB_OUTPUT"
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd0750919e6a8f53091  # v4.6.0 (Node 24)
         with:
           name: ComicStripBrowser-deb
           path: ${{ steps.deb.outputs.path }}
@@ -168,7 +168,7 @@ jobs:
           echo "name=$(basename "$RPM_FILE")" >> "$GITHUB_OUTPUT"
 
       - name: Upload .rpm
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd0750919e6a8f53091  # v4.6.0 (Node 24)
         with:
           name: ComicStripBrowser-rpm
           path: ${{ steps.rpm.outputs.path }}
@@ -195,7 +195,7 @@ jobs:
           ARCH=x86_64 ./appimagetool-x86_64.AppImage "$APPDIR" "dist/comic-strip-browser-${VERSION}.AppImage"
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd0750919e6a8f53091  # v4.6.0 (Node 24)
         with:
           name: ComicStripBrowser-AppImage
           path: dist/comic-strip-browser-*.AppImage
