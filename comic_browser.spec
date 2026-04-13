@@ -47,6 +47,7 @@ if is_windows:
         name='ComicStripBrowser',
         console=False, upx=False, strip=False,
         icon='assets/comic-strip-browser.ico' if (project_root / 'assets' / 'comic-strip-browser.ico').exists() else None,
+        version='version.txt' if (project_root / 'version.txt').exists() else None,
     )
 # ── Linux: onefile ──
 else:
