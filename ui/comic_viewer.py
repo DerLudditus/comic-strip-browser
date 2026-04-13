@@ -400,35 +400,14 @@ class ComicViewer(QWidget):
 
         display_size = self.calculate_display_size(pixmap.size())
 
-        # Guard: if display size is invalid, fall back to original image size
-        if display_size.width() <= 0 or display_size.height() <= 0:
-            display_size = pixmap.size()
-
-        # Get DPR safely — may be 0.0 if widget isn't attached to a window yet
-        dpr = self.devicePixelRatioF()
-        if dpr <= 0.0:
-            dpr = 1.0
-
-        # Scale to physical pixel size so the compositor has nothing to
-        # re-interpolate at fractional DPI (125%, 150%, etc.)
-        physical_size = (display_size * dpr).toSize()
-
         scaled_pixmap = true_color_pixmap.scaled(
-            physical_size,
+            display_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
 
-        # Guard: if scaling produced a null pixmap, use the original
-        if scaled_pixmap.isNull():
-            scaled_pixmap = true_color_pixmap
-            dpr = 1.0
-
-        if dpr != 1.0:
-            scaled_pixmap.setDevicePixelRatio(dpr)
-
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.setFixedSize(display_size)
+        self.image_label.setFixedSize(scaled_pixmap.size())
 
         # Resize content widget to fit content (needed with setWidgetResizable=False)
         self._resize_content_widget()
