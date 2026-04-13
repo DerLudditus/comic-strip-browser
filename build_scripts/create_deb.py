@@ -59,6 +59,12 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     <description>
         <p>A standalone PyQt6 application for browsing comic strips from GoComics.com. Features include calendar navigation, caching, and support for 20 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.</p>
     </description>
+    <screenshots>
+        <screenshot type="default">
+            <caption>Comic Strip Browser showing Garfield</caption>
+            <image>https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/refs/heads/main/ComicStripBrowser.png</image>
+        </screenshot>
+    </screenshots>
     <project_license>MIT</project_license>
     <metadata_license>CC0-1.0</metadata_license>
     <url type="homepage">https://github.com/DerLudditus/comic-strip-browser</url>
