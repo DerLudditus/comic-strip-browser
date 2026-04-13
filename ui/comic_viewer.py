@@ -15,7 +15,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize, QThread, pyqtSlot
 from PyQt6.QtGui import QPixmap, QFont, QPainter, QMovie, QImage
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
-from models.data_models import ComicData
+from models.data_models import ComicData, get_comic_definition
 
 
 class ImageLoader(QThread):
@@ -153,20 +153,30 @@ class ComicViewer(QWidget):
     
     def create_content_section(self, parent_layout):
         """Create the main content area with scrollable image display."""
-        # Scrollable area for comic image
+        # Scrollable area for comic image.
+        # setWidgetResizable(False): we manually size the content_widget.
+        # AlignHCenter | AlignTop: centered horizontally, top-aligned vertically.
         self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.scroll_area.setWidgetResizable(False)
+        self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self.scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
+        # Vertical scrolling when image is taller than viewport
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # No horizontal scrolling — image always fits viewport width
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         # No background color set - use system theme
-        
+
         # Content widget that will contain the comic image or state displays
         self.content_widget = QWidget()
         # No background color set - use system theme
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(20, 20, 20, 20)
-        self.content_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+        self.content_layout.setSpacing(10)
+        # Center all items horizontally
+        self.content_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        # Stretch at the end pushes all content to the top
+        self.content_layout.addStretch()
+
         # Comic image label
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -179,125 +189,60 @@ class ComicViewer(QWidget):
             }
         """)
         self.content_layout.addWidget(self.image_label)
-        
-        # Navigation buttons under the comic
+
+        # Navigation buttons — single row, centered below image
         nav_layout = QHBoxLayout()
         nav_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav_layout.setSpacing(10)
         nav_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins to prevent artifacts
-        
+
+        # --- Button style ---
+        btn_style = """
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #000000;
+                border: 2px solid #bdbdbd;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 2px solid #9e9e9e;
+            }
+            QPushButton:pressed {
+                background-color: #bdbdbd;
+                border: 2px solid #757575;
+            }
+        """
+
         # First button
         self.first_button = QPushButton("First")
-        self.first_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
+        self.first_button.setStyleSheet(btn_style)
         nav_layout.addWidget(self.first_button)
-        
+
         # Previous button
         self.prev_button = QPushButton("Previous")
-        self.prev_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
+        self.prev_button.setStyleSheet(btn_style)
         nav_layout.addWidget(self.prev_button)
-        
+
         # Today button
         self.today_button = QPushButton("Today")
-        self.today_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
+        self.today_button.setStyleSheet(btn_style)
         nav_layout.addWidget(self.today_button)
-        
+
         # Next button
         self.next_button = QPushButton("Next")
-        self.next_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
+        self.next_button.setStyleSheet(btn_style)
         nav_layout.addWidget(self.next_button)
-        
+
         # Random button
         self.random_button = QPushButton("Random")
-        self.random_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
+        self.random_button.setStyleSheet(btn_style)
         nav_layout.addWidget(self.random_button)
-        
+
         self.content_layout.addLayout(nav_layout)
-        
+
         # Loading progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
@@ -305,7 +250,7 @@ class ComicViewer(QWidget):
         self.progress_bar.setMaximumHeight(0)  # Collapse when hidden to prevent artifacts
         self.progress_bar.hide()  # Explicitly hide initially
         self.content_layout.addWidget(self.progress_bar)
-        
+
         # Error/status message area
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -319,14 +264,14 @@ class ComicViewer(QWidget):
         """)
         self.status_label.setVisible(False)  # Hide when empty
         self.content_layout.addWidget(self.status_label)
-        
+
         # Retry button for error states
         self.retry_button = QPushButton("Retry")
         self.retry_button.setVisible(False)
         self.retry_button.setMaximumWidth(100)
         self.retry_button.clicked.connect(self.retry_loading)
         self.content_layout.addWidget(self.retry_button)
-        
+
         self.scroll_area.setWidget(self.content_widget)
         parent_layout.addWidget(self.scroll_area)
     
@@ -349,23 +294,29 @@ class ComicViewer(QWidget):
     def update_header(self, comic_data: ComicData):
         """
         Update the header section with comic metadata.
-        
+
         Args:
             comic_data: ComicData object containing comic information
         """
-        # Set title from extracted HTML title (strip GoComics suffix)
-        clean_title = comic_data.title.replace(" | GoComics", "")
-        self.title_label.setText(clean_title)
-        
-        # Set metadata information
+        # Use the ComicDefinition display_name instead of the HTML <title>.
+        # Format: "Comic Name • Month Day, Year"
+        comic_def = get_comic_definition(comic_data.comic_name)
+        display_name = comic_def.display_name if comic_def else comic_data.comic_name
         date_str = comic_data.date.strftime("%B %d, %Y")
-        # metadata_text =  f"{date_str} • by {comic_data.author}"
-        
+        self.title_label.setText(f"{display_name} • {date_str}")
+
+        # Set metadata information
+        metadata_text = ""
+
         # Add image format and dimensions info
         if comic_data.image_width and comic_data.image_height:
-            # metadata_text += f" • {comic_data.image_width}×{comic_data.image_height} {comic_data.image_format.upper()}"
             metadata_text = f" {comic_data.image_width}×{comic_data.image_height}"
-        
+
+        # Show scale factor when it's not the default 1.0
+        scale = self._get_comic_scale()
+        if scale != 1.0:
+            metadata_text += f"  ({int(scale * 100)}%)"
+
         self.metadata_label.setText(metadata_text)
         self.metadata_label.setVisible(True)  # Show metadata when we have content
     
@@ -462,18 +413,21 @@ class ComicViewer(QWidget):
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
-        
+
         # Update image label
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.resize(scaled_pixmap.size())        
+        self.image_label.setFixedSize(scaled_pixmap.size())
+
+        # Resize content widget to fit content (needed with setWidgetResizable=False)
+        self._resize_content_widget()
     
     def calculate_display_size(self, original_size: QSize) -> QSize:
         """
         Calculate appropriate display size for comic image.
-        
+
         Args:
             original_size: Original size of the comic image
-            
+
         Returns:
             QSize object with calculated display dimensions
         """
@@ -481,20 +435,19 @@ class ComicViewer(QWidget):
         available_size = self.scroll_area.size()
         max_width = available_size.width() - 60  # Account for margins and scrollbars
         max_height = available_size.height() - 60
-        
+
         # Handle Sunday comics (typically larger)
-        # Sunday comics are usually wider, so we give them more space
-        # WRONG LOGIC! Some comics are HIGHER on Sundays, but not necessarily wider!
-        # Also, sometimes we want to be able to zoon in, so...
-        # Currently, I changed the limits
         if original_size.width() > original_size.height() * 1.5:
-            # Likely a Sunday comic - allow more width
-            max_width = min(max_width, 1350) # was 1000
-            max_height = min(max_height, 930) # was 700
+            max_width = min(max_width, 1350)
+            max_height = min(max_height, 930)
         else:
-            # Regular daily comic
-            max_width = min(max_width, 1350) # was 800
-            max_height = min(max_height, 750) # was 600
+            max_width = min(max_width, 1350)
+            max_height = min(max_height, 750)
+
+        # Apply per-comic scale factor (default 1.0)
+        scale = self._get_comic_scale()
+        max_width = int(max_width * scale)
+        max_height = int(max_height * scale)
         
         # Calculate scaled size while preserving aspect ratio
         original_ratio = original_size.width() / original_size.height()
@@ -509,7 +462,43 @@ class ComicViewer(QWidget):
             new_height = int(new_width / original_ratio)
         
         return QSize(new_width, new_height)
-    
+
+    def _get_comic_scale(self) -> float:
+        """
+        Get the per-comic display scale factor from the ComicDefinition.
+
+        Returns:
+            Scale factor (default 1.0). Values < 1.0 scale the comic down.
+        """
+        if self.current_comic_data and self.current_comic_data.comic_name:
+            comic_def = get_comic_definition(self.current_comic_data.comic_name)
+            if comic_def:
+                return comic_def.scale
+        return 1.0
+
+    def _resize_content_widget(self):
+        """
+        Resize the content_widget to fit its actual content.
+
+        With setWidgetResizable(False), the scroll area does NOT auto-resize
+        the content widget. We must set it explicitly so the scroll area's
+        alignment (AlignHCenter | AlignTop) can center it within the viewport.
+        """
+        # Invalidate layout so Qt recalculates sizes
+        self.content_layout.invalidate()
+
+        # Get the total height needed by the layout (excludes the stretch)
+        hint_h = self.content_layout.totalSizeHint().height()
+
+        # Get the preferred width: the widest item in the layout
+        hint_w = self.content_layout.totalSizeHint().width()
+
+        # Clamp width to viewport so we don't exceed available space
+        viewport_w = self.scroll_area.viewport().width()
+        final_w = min(hint_w, viewport_w)
+
+        self.content_widget.setFixedSize(final_w, hint_h)
+
     def show_loading_state(self):
         """Display loading state with progress indicator."""
         self.image_label.clear()
@@ -530,6 +519,9 @@ class ComicViewer(QWidget):
         self.status_label.setText("Downloading comic image...")
         self.status_label.setVisible(True)  # Show status when we have content
         self.retry_button.setVisible(False)
+
+        # Resize content widget to fit content (needed with setWidgetResizable=False)
+        self._resize_content_widget()
     
     def show_error_state(self, error_message: str, error_type: str = "general", recovery_options: list = None):
         """
@@ -596,7 +588,10 @@ class ComicViewer(QWidget):
         
         # Show recovery options
         self._show_recovery_options(recovery_options or ["Retry"])
-    
+
+        # Resize content widget to fit content (needed with setWidgetResizable=False)
+        self._resize_content_widget()
+
     def _show_recovery_options(self, recovery_options: list):
         """
         Show recovery option buttons.
@@ -637,18 +632,23 @@ class ComicViewer(QWidget):
     def show_empty_state(self):
         """Display empty state when no comic is selected."""
         self.image_label.clear()
-        
-        # Create a visually appealing placeholder with emoji and text
-        self.image_label.setText("""
+
+        # Build data URI for the 400x400 welcome image
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
+        data_uri = ""
+        if os.path.exists(icon_path):
+            with open(icon_path, "rb") as f:
+                data_uri = "data:image/png;base64," + __import__("base64").b64encode(f.read()).decode()
+
+        self.image_label.setText(f"""
         <html>
             <body style="text-align: center;">
-                <div style="font-size: 72px; margin-bottom: 20px;">📰</div>
-                <div style="font-size: 24px; font-weight: bold; color: #333333;">Welcome to Comic Strip Browser</div>
-                <div style="font-size: 18px; color: #555555; margin-top: 10px;">Select a comic from the left panel to begin</div>
+                <img src="{data_uri}" width="400" height="400">
+                <div style="font-size: 18px; color: #555555; margin-top: 15px;">Select a comic from the left</div>
             </body>
         </html>
         """)
-        
+
         self.image_label.setStyleSheet("""
             QLabel {
                 border: 1px solid #e0e0e0;
@@ -657,20 +657,15 @@ class ComicViewer(QWidget):
                 padding: 20px;
             }
         """)
-        
+
         self.progress_bar.setVisible(False)
-        self.status_label.setText("Select a comic from the left")
-        self.status_label.setVisible(True)  # Show status when we have content
-        self.status_label.setStyleSheet("""
-            QLabel {
-                color: #333333;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px;
-            }
-        """)
+        self.status_label.setText("")
+        self.status_label.setVisible(False)
         self.retry_button.setVisible(False)
-    
+
+        # Resize content widget to fit content (needed with setWidgetResizable=False)
+        self._resize_content_widget()
+
     def show_image_state(self):
         """Display normal image state (hide loading/error elements)."""
         self.progress_bar.setVisible(False)
@@ -719,7 +714,10 @@ class ComicViewer(QWidget):
     def resizeEvent(self, event):
         """Handle widget resize events to adjust image scaling."""
         super().resizeEvent(event)
-        
+
         # Re-scale current image if available
         if self.current_pixmap and not self.current_pixmap.isNull():
             self.display_image(self.current_pixmap)
+        else:
+            # No comic loaded (welcome/loading/error state) — re-size content widget
+            self._resize_content_widget()

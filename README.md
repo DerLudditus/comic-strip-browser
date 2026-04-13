@@ -1,10 +1,10 @@
 # Comic Strip Browser
 
-A standalone PyQt6 application for browsing a selection of comic strips from GoComics.com. Features include calendar navigation, caching, and support for 15 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
+A standalone PyQt6 application for browsing a selection of comic strips from GoComics.com. Features include calendar navigation, caching, and support for 20 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
 
 This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4.
 
-Three months later, I tried to fix a few bugs and add some extra features. I still don't have a Windows build, but the Linux binaries and packages (`.deb`, `.rpm`) work rather fine in version 1.1.3. 
+Three months later, I tried to fix a few bugs and add some extra features. I still don't have a Windows build, but the Linux binaries and packages (`.deb`, `.rpm`) work rather fine in version 1.1.3.
 
 Kiro (Claude) helped with these minor changes, but it added more bugs than it fixed. I should have hunted the bugs myself and only let Kiro create the RPM `.spec` and other boring stuff. Kiro is even able to be that stupid:
 
@@ -25,7 +25,7 @@ In the end, given the difficulties in building a PyQt6 self-contained Windows bi
 - **Random Access**: Button for display of a Random date for each comic.
 - **Smart Caching**: Stores last 200 comics per strip for fast loading or later consulting from the cache folder.
 - **Offline Viewing**: View cached comics without internet connection.
-- **Cross-Platform**: Works on Linux and should work on Windows someday (it currently doesn't build or doesn't run).
+- **Cross-Platform**: Works on Linux and Windows.
 
 ## Supported Comic Strips
 
@@ -58,77 +58,71 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 ## Releases
 
-📦 **Binaries** can be downloaded:
+📦 **Pre-built binaries** are available on **[Releases](https://github.com/DerLudditus/comic-strip-browser/releases)**:
 
-- from **[Releases](https://github.com/DerLudditus/comic-strip-browser/releases)**.
-
-- from **[SourceForge](https://sourceforge.net/projects/comic-strip-browser/files/releases/)**.
-
-## Installation
-
-### Pre-built Binaries
-**Linux**: 
-
-- `.deb` package for Debian/Ubuntu/Mint
-- `.rpm` package for Fedora/RHEL/CentOS/Alma/Rocky
-- Prebuilt binary with `.desktop` file, icon, and installation script
-- AppImage (just in case)
-
-#### Using the non-packaged binary:
-With `comic-strip-browser`, `comic-strip-browser.desktop`, `comic-strip-browser.png` and `install.sh` in the same folder, make sure the last one is executable (`chmod +x install.sh`) and launch it. It will install to `~/.local/bin/`.
-
-To uninstall the app, launch `~/.local/bin/uninstall-comic-strip-browser`.
+| Platform | Artifact |
+|---|---|
+| Linux binary | `comic-strip-browser` (onefile, ~70 MB) |
+| Linux .deb | `comic-strip-browser_*.deb` (Debian/Ubuntu) |
+| Linux .rpm | `comic-strip-browser-*.rpm` (Fedora/RHEL) |
+| Linux AppImage | `ComicStripBrowser-*.AppImage` |
+| Windows | `ComicStripBrowser-Windows.zip` (onedir) |
 
 ## Building from Source
 
-### Prerequisites:
-```bash
-# For Debian/MX/Ubuntu/Mint
-sudo apt-get update
-sudo apt-get install -y build-essential python3 python3-pip python3-venv
+### Prerequisites
 
-# For Fedora
-sudo dnf -y install rpm-build rpmdevtools python3-devel python3-pip \
-python3-virtualenv
+```bash
+# Python 3.12+
+pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 ```
 
-### Build the binary:
-```bash
-./build_scripts/build_linux.sh
-```
-Alternatively, or for the first time:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python ./build_scripts/build.py
-```
+### Build the onefile binary
 
-### Build the .deb:
-After you have a successfully built binary:
 ```bash
-python3 ./build_scripts/create_deb.py
+./build_scripts/build_binary.sh
 ```
+Output: `dist/onefile/comic-strip-browser`
 
-### Build the .rpm:
+### Build the .deb (Debian/Ubuntu only)
+
+```bash
+./build_scripts/build_deb.sh
+```
+Output: `dist/comic-strip-browser_*.deb`
+
+### Build the .rpm (Fedora/RHEL only)
+
 ```bash
 ./build_scripts/build_rpm.sh
 ```
+Output: `dist/comic-strip-browser-*.rpm`
 
-### Build the AppImage:
+### Build the AppImage
+
 ```bash
-curl -L -o appimagetool-x86_64.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
-chmod +x appimagetool-x86_64.AppImage
-./appimagetool-x86_64.AppImage dist/ComicStripBrowser.AppDir
+./build_scripts/build_appimage.sh
 ```
+Output: `dist/comic-strip-browser-*.AppImage`
 
-### Windows:
-Both [`build_windows.bat`](./build_scripts/build_windows.bat) and [`build_windows_cxfreeze.bat`](./build_scripts/build_windows_cxfreeze.bat) failed in my attempts and in the abomination called GitHub Actions. Read [`WINDOWS_BUILD.md`](./WINDOWS_BUILD.md) if it helps.
+### Windows (PyInstaller onedir)
+
+On a Windows machine with Python installed:
+
+```cmd
+pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
+build_scripts\build_windows.bat
+```
+Output: `dist\ComicStripBrowser\` (directory with executable + DLLs)
+
+### CI Builds
+
+Every push to `main` and every tag triggers a GitHub Actions build for all platforms. Tag a release with `git tag v1.x.x && git push origin v1.x.x` to auto-create a GitHub Release with all artifacts.
 
 ## Known issues
 
 ### **Race conditions can make it forget the name of the selected comic strip**
-Should you click around frantically, repeatedly changing the comic strip from the 15 provided options after having changed the date, you might at some point see error messages about the impossibility of retrieving the “unknown” comic for today, despite the selected day in the calendar being another one. In some cases clicking again on the desired title is useless, but other titles remain functional. Should this happen, close the app and reopen it. Shit happens.
+Should you click around frantically, repeatedly changing the comic strip from the 15 provided options after having changed the date, you might at some point see error messages about the impossibility of retrieving the "unknown" comic for today, despite the selected day in the calendar being another one. In some cases clicking again on the desired title is useless, but other titles remain functional. Should this happen, close the app and reopen it. Shit happens.
 
 ### **Fractional scaling may lead to suboptimal rendering of the comics**
 This is because such a scaling is performed externally, not by the app. Basically, an image is enlarged by the display server or by the window manager. While such a phenomenon is typically associated with X11, Deepin's Wayland-based Treeland is quite a failure in this regard. Compare the rendering in Deepin 25.0.1 with the out-of-the-box **125% desktop scaling** to the normal 100% scaling:

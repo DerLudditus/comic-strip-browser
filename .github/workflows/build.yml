@@ -13,7 +13,7 @@ permissions:
   contents: write  # Required for creating releases
 
 jobs:
-  # ─── Windows ───────────────────────────────────────────────
+  # ─── Windows ──────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
 
@@ -33,7 +33,7 @@ jobs:
 
       - name: Build (onedir)
         run: |
-          python -m PyInstaller comic_browser_onedir.spec --clean --noconfirm
+          python -m PyInstaller comic_browser.spec --clean --noconfirm --onedir
         shell: pwsh
 
       - name: Create ZIP archive
@@ -75,16 +75,25 @@ jobs:
             libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
             libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0 \
-            dpkg-dev rpm  # for .deb and .rpm packaging
+            dpkg-dev rpm file fuse  # for .deb, .rpm, and AppImage packaging
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
 
+      # ── onefile binary ──
       - name: Build binary (onefile)
         run: |
-          python -m PyInstaller comic_browser.spec --clean --noconfirm
+          python -m PyInstaller comic_browser.spec --clean --noconfirm \
+            --distpath dist/onefile --workpath build/onefile
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ComicStripBrowser-linux-binary
+          path: dist/onefile/comic-strip-browser
+          retention-days: 30
 
       # ── .deb package ──
       - name: Build .deb package
@@ -94,7 +103,7 @@ jobs:
       - name: Find .deb artifact
         id: deb
         run: |
-          DEB_FILE=$(find build/ -name "*.deb" -type f | head -1)
+          DEB_FILE=$(find build/ -maxdepth 1 -name "*.deb" -type f | head -1)
           echo "path=$DEB_FILE" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$DEB_FILE")" >> "$GITHUB_OUTPUT"
 
@@ -108,12 +117,59 @@ jobs:
       # ── .rpm package ──
       - name: Build .rpm package
         run: |
-          python3 build_scripts/create_rpm.py
+          VERSION=$(python3 -c "from version import __version__; print(__version__)")
+          RELEASE="1"
+          BINARY="dist/onefile/comic-strip-browser"
+          RPMBUILD="$HOME/rpmbuild"
+          mkdir -p "$RPMBUILD"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          TMPDIR=$(mktemp -d)
+          SRCDIR="$TMPDIR/comic-strip-browser-$VERSION"
+          mkdir -p "$SRCDIR"
+          cp "$BINARY" "$SRCDIR/comic-strip-browser"
+          chmod +x "$SRCDIR/comic-strip-browser"
+          [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$SRCDIR/"
+          ICON_SRC="initial_transparent_alpha.png"
+          [ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
+          [ -f "$ICON_SRC" ] && cp "$ICON_SRC" "$SRCDIR/comic-strip-browser.png"
+          [ -f LICENSE ] && cp LICENSE "$SRCDIR/"
+          [ -f README.md ] && cp README.md "$SRCDIR/"
+          cd "$TMPDIR"
+          tar czf "$RPMBUILD/SOURCES/comic-strip-browser-$VERSION.tar.gz" "comic-strip-browser-$VERSION"
+          cd - >/dev/null
+          rm -rf "$TMPDIR"
+          SPEC="$RPMBUILD/SPECS/comic-strip-browser.spec"
+          cat > "$SPEC" << EOF
+          Name:           comic-strip-browser
+          Version:        $VERSION
+          Release:        $RELEASE
+          Summary:        A standalone comic strip browser for GoComics.com
+          License:        MIT
+          URL:            https://github.com/DerLudditus/comic-strip-browser
+          Source0:        %{name}-%{version}.tar.gz
+          BuildArch:      x86_64
+          %description
+          A standalone PyQt6 application for browsing comic strips from GoComics.com.
+          %prep
+          %autosetup
+          %build
+          %install
+          install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
+          [ -f %{name}.desktop ] && install -D -m 0644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop
+          [ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/pixmaps/%{name}.png
+          %files
+          %{_bindir}/%{name}
+          %{_datadir}/applications/%{name}.desktop
+          %{_datadir}/pixmaps/%{name}.png
+          %changelog
+          * $(date +"%a %b %d %Y") Homo Ludditus <ludditus@etik.com> - ${VERSION}-${RELEASE}
+          - Release $VERSION
+          EOF
+          rpmbuild -bb "$SPEC"
 
       - name: Find .rpm artifact
         id: rpm
         run: |
-          RPM_FILE=$(find build/rpm-build/RPMS/ -name "*.rpm" -type f | head -1)
+          RPM_FILE=$(find "$HOME/rpmbuild/RPMS/" -name "*.rpm" -type f | head -1)
           echo "path=$RPM_FILE" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$RPM_FILE")" >> "$GITHUB_OUTPUT"
 
@@ -127,31 +183,29 @@ jobs:
       # ── AppImage ──
       - name: Create AppImage
         run: |
-          mkdir -p ComicStripBrowser.AppDir
-          cp dist/comic-strip-browser ComicStripBrowser.AppDir/AppRun
-          chmod +x ComicStripBrowser.AppDir/AppRun
-          cp assets/comic-strip-browser.png ComicStripBrowser.AppDir/comic-strip-browser.png 2>/dev/null || true
-
-          cat > ComicStripBrowser.AppDir/comic-strip-browser.desktop << 'EOF'
-          [Desktop Entry]
-          Name=Comic Strip Browser
-          Exec=AppRun
-          Icon=comic-strip-browser
-          Type=Application
-          Categories=Graphics;Viewer;
-          EOF
-
-          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          VERSION=$(python3 -c "from version import __version__; print(__version__)")
+          APPDIR="$PWD/build/ComicStripBrowser.AppDir"
+          mkdir -p "$APPDIR"/{usr/bin,usr/share/applications,usr/share/pixmaps}
+          cp dist/onefile/comic-strip-browser "$APPDIR/usr/bin/comic-strip-browser"
+          chmod +x "$APPDIR/usr/bin/comic-strip-browser"
+          ln -sf usr/bin/comic-strip-browser "$APPDIR/AppRun"
+          [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$APPDIR/"
+          ICON_SRC="initial_transparent_alpha.png"
+          [ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
+          [ -f "$ICON_SRC" ] && {
+            cp "$ICON_SRC" "$APPDIR/comic-strip-browser.png"
+            cp "$ICON_SRC" "$APPDIR/.DirIcon"
+            cp "$ICON_SRC" "$APPDIR/usr/share/pixmaps/comic-strip-browser.png"
+          }
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
-          ARCH=x86_64 ./appimagetool-x86_64.AppImage --no-appstream ComicStripBrowser.AppDir/ ComicStripBrowser-x86_64.AppImage 2>/dev/null || \
-            echo "AppImage build skipped"
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage "$APPDIR" "dist/comic-strip-browser-${VERSION}.AppImage"
 
       - name: Upload AppImage
-        if: hashFiles('ComicStripBrowser-x86_64.AppImage') != ''
         uses: actions/upload-artifact@v4
         with:
           name: ComicStripBrowser-AppImage
-          path: ComicStripBrowser-x86_64.AppImage
+          path: dist/comic-strip-browser-*.AppImage
           retention-days: 30
 
       # ── Release (on tag) ──
@@ -160,7 +214,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            dist/onefile/comic-strip-browser
             ${{ steps.deb.outputs.path }}
             ${{ steps.rpm.outputs.path }}
-            ComicStripBrowser-x86_64.AppImage
+            dist/comic-strip-browser-*.AppImage
           generate_release_notes: true

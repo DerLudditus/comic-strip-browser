@@ -77,7 +77,13 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
         f.write(metainfo_content)
     
     # Copy executable
-    shutil.copy2(project_root / "dist" / "comic-strip-browser", 
+    binary_path = project_root / "dist" / "onefile" / "comic-strip-browser"
+    if not binary_path.exists():
+        binary_path = project_root / "dist" / "comic-strip-browser"
+    if not binary_path.exists():
+        print("✗ Binary not found in dist/onefile/ or dist/")
+        return False
+    shutil.copy2(binary_path,
                  deb_dir / "usr" / "bin" / "comic-strip-browser")
     os.chmod(deb_dir / "usr" / "bin" / "comic-strip-browser", 0o755)
     
@@ -86,10 +92,12 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
         shutil.copy2(project_root / "assets" / "comic-strip-browser.desktop",
                      deb_dir / "usr" / "share" / "applications")
     
-    # Copy icon
-    if (project_root / "assets" / "comic-strip-browser.png").exists():
-        shutil.copy2(project_root / "assets" / "comic-strip-browser.png",
-                     deb_dir / "usr" / "share" / "pixmaps" / "comic-strip-browser.png")
+    # Copy icon (use the app's current icon, not the old asset)
+    icon_src = project_root / "initial_transparent_alpha.png"
+    if not icon_src.exists():
+        icon_src = project_root / "assets" / "comic-strip-browser.png"
+    if icon_src.exists():
+        shutil.copy2(icon_src, deb_dir / "usr" / "share" / "pixmaps" / "comic-strip-browser.png")
     
     # Create copyright file
     copyright_content = """Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/

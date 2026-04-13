@@ -58,13 +58,13 @@ class MainWindow(QMainWindow):
 
  
         
-        # Set application icon to comicicon.png
+        # Set application icon
         import os
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "comicicon.png")
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
-            self.setWindowIcon(QIcon())  # Fallback if icon doesn't exist
+            self.setWindowIcon(QIcon())
         
         # Create central widget and main layout
         central_widget = QWidget()
