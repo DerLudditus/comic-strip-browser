@@ -14,7 +14,7 @@ from typing import Optional
 class ComicData:
     """
     Represents a single comic strip with all its metadata.
-    
+
     This dataclass stores all the information needed to display a comic strip,
     including the image URL, dimensions, title, and caching information.
     """
@@ -28,6 +28,7 @@ class ComicData:
     author: str
     cached_image_path: Optional[str] = None
     retrieved_at: datetime = field(default_factory=datetime.now)
+    scale: float = 1.0  # Per-comic display scale factor (1.0 = full size)
     
     def __post_init__(self):
         """Validate the comic data after initialization."""
@@ -60,7 +61,7 @@ class ComicData:
 class ComicDefinition:
     """
     Represents the definition of a comic strip with its metadata and configuration.
-    
+
     This dataclass contains the static information about each comic strip,
     including its name, display name, base URL, and author information.
     """
@@ -69,6 +70,7 @@ class ComicDefinition:
     base_url: str
     author: str
     earliest_date: Optional[date] = None
+    scale: float = 1.0  # Display scale factor (1.0 = full size). Override for tall/wide comics.
     
     def __post_init__(self):
         """Validate the comic definition after initialization."""
@@ -225,7 +227,7 @@ COMIC_DEFINITIONS = [
         display_name="Mother Goose and Grimm",
         base_url="https://www.gocomics.com/mother-goose-and-grimm",
         author="Mike Peters",
-        earliest_date=date(1984, 10, 1)
+        earliest_date=date(1984, 10, 1),
     ),
     ComicDefinition(
         name="theflyingmccoys",

@@ -5,30 +5,40 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "1.1.3"
-__version_info__ = (1, 1, 3)
+__version__ = "1.8.9"
+__version_info__ = (1, 8, 9)
 
 # Release information
-RELEASE_DATE = "2025-11-14"
+RELEASE_DATE = "2026-04-13"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "1.1.3-1"
+DEB_VERSION = "1.8.9-1"
 DEB_MAINTAINER = "Homo Ludditus <ludditus@etik.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (1.1.3-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (1.8.9-1) stable; urgency=medium
+  * Initial overhauling that improves image rendering, cleans up garbage, and makes Windows builds succeed
+  * Fix blurry scaled images: convert 256-color indexed to RGB32 before smooth scaling
+  * Fix welcome screen centering: use HTML data URI for proper horizontal centering
+  * Replace cx_Freeze Windows build with PyInstaller onedir
+  * Add manual build scripts: build_binary.sh, build_appimage.sh, build_deb.sh, build_rpm.sh
+  * Update GitHub Actions CI to build Windows, Linux (onefile, .deb, .rpm, AppImage)
+
+ -- Homo Ludditus <ludditus@etik.com>  Mon, 13 Apr 2026 05:00:00 +0300
+
+comic-strip-browser (1.1.3-1) stable; urgency=medium
   * Removed Wizard of Id Classics because GoComics stopped publishing it on Oct. 31 (it was a reprint, anyway)
   * Number of strip titles: 20
 
  -- Homo Ludditus <ludditus@etik.com>  Fri, 14 Nov 2025 22:25:00 +0300
- 
+
 comic-strip-browser (1.1.2-1) stable; urgency=medium
   * Added 6 more comic strip titles, to a total of 21
 
  -- Homo Ludditus <ludditus@etik.com>  Fri, 14 Nov 2025 08:25:00 +0300
- 
+
 comic-strip-browser (1.1.1-1) stable; urgency=medium
   * Updated the start dates of each comic regarding their presence on GoComics
   * Added "First" and "Random" buttons for navigation

@@ -3,12 +3,11 @@
 PyInstaller spec file for Comic Strip Browser
 Cross-platform configuration for Windows and Linux builds
 
-Changelog (2026-04-12):
-- Fixed: UPX disabled (upx=True corrupts Qt6 DLLs on Windows)
-- Fixed: PIL/Pillow removed from excludes (used by web_scraper.py for image format detection)
+Changelog:
+- Fixed: UPX disabled (corrupts Qt6 DLLs)
+- Fixed: PIL/Pillow removed from excludes (used by web_scraper.py)
 - Fixed: Added PIL, PIL.Image, io to hiddenimports
-- Fixed: Added explicit Qt platform and imageformat plugin hooks for Windows
-- Fixed: Use --onedir mode (--onefile is unreliable with Qt6 DLL bundles)
+- Fixed: Use onefile for Linux, onedir for Windows (via CI --onedir flag)
 """
 
 import sys
@@ -17,8 +16,8 @@ from pathlib import Path
 
 # Application metadata
 APP_NAME = 'ComicStripBrowser'
-APP_VERSION = '1.1.2'
-APP_DESCRIPTION = 'A standalone comic strip browser for 15 titles from GoComics.com'
+APP_VERSION = '1.8.9'
+APP_DESCRIPTION = 'A standalone comic strip browser for 20 titles from GoComics.com'
 APP_AUTHOR = 'Homo Ludditus <ludditus@etik.com>'
 
 # Build configuration
@@ -39,6 +38,8 @@ datas = [
     ('config.json', '.') if (project_root / 'config.json').exists() else None,
     # Include assets for icons and images
     ('assets', 'assets') if (project_root / 'assets').exists() else None,
+    # App icon and placeholder (used by main_window.py and comic_viewer.py)
+    ('initial_transparent_alpha.png', '.') if (project_root / 'initial_transparent_alpha.png').exists() else None,
 ]
 # Remove None entries
 datas = [item for item in datas if item is not None]

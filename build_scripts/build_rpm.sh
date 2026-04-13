@@ -1,89 +1,84 @@
 #!/bin/bash
-# Build script for creating RPM package for Comic Strip Browser
+# Build .rpm package (Fedora/RHEL only)
+# Usage: ./build_scripts/build_rpm.sh
+# Requires: build_binary.sh run first
 
 set -e
+cd "$(dirname "$0")/.."
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+echo "=== Comic Strip Browser — .rpm Build ==="
 
-echo -e "${GREEN}Comic Strip Browser - RPM Build Script${NC}"
-echo "========================================"
+command -v rpmbuild &>/dev/null || { echo "✗ rpmbuild not found — install rpm-build"; exit 1; }
 
-# Get version from version.py
-VERSION=$(python3 -c "import sys; sys.path.insert(0, '.'); from version import __version__; print(__version__)")
-echo -e "${YELLOW}Building version: ${VERSION}${NC}"
+BINARY="dist/onefile/comic-strip-browser"
+[ -f "$BINARY" ] || { echo "✗ Binary not found — run build_binary.sh first"; exit 1; }
 
-# Set up RPM build environment
-RPMBUILD_DIR="${HOME}/rpmbuild"
-echo "Setting up RPM build environment at ${RPMBUILD_DIR}"
+VERSION=$(python3 -c "from version import __version__; print(__version__)")
+RELEASE="1"
 
-# Create RPM build directory structure
-mkdir -p "${RPMBUILD_DIR}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+RPMBUILD="$HOME/rpmbuild"
+mkdir -p "$RPMBUILD"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
-# Create source tarball
-TARBALL_NAME="comic-strip-browser-${VERSION}.tar.gz"
-echo "Creating source tarball: ${TARBALL_NAME}"
+# Create tarball (binary + desktop + icon + LICENSE/README)
+TMPDIR=$(mktemp -d)
+SRCDIR="$TMPDIR/comic-strip-browser-$VERSION"
+mkdir -p "$SRCDIR"
 
-# Create temporary directory for tarball contents
-TEMP_DIR=$(mktemp -d)
-PACKAGE_DIR="${TEMP_DIR}/comic-strip-browser-${VERSION}"
-mkdir -p "${PACKAGE_DIR}"
+cp "$BINARY" "$SRCDIR/comic-strip-browser"
+chmod +x "$SRCDIR/comic-strip-browser"
+[ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$SRCDIR/"
+ICON_SRC="initial_transparent_alpha.png"
+[ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
+[ -f "$ICON_SRC" ] && cp "$ICON_SRC" "$SRCDIR/comic-strip-browser.png"
+[ -f LICENSE ] && cp LICENSE "$SRCDIR/"
+[ -f README.md ] && cp README.md "$SRCDIR/"
 
-# Copy project files to temporary directory
-echo "Copying project files..."
-cp -r \
-    main.py \
-    version.py \
-    requirements.txt \
-    comic_browser.spec \
-    README.md \
-    LICENSE \
-    models/ \
-    services/ \
-    ui/ \
-    assets/ \
-    "${PACKAGE_DIR}/"
+cd "$TMPDIR" && tar czf "$RPMBUILD/SOURCES/comic-strip-browser-$VERSION.tar.gz" "comic-strip-browser-$VERSION"
+cd - >/dev/null
+rm -rf "$TMPDIR"
 
-# Create tarball
-cd "${TEMP_DIR}"
-tar czf "${TARBALL_NAME}" "comic-strip-browser-${VERSION}"
-mv "${TARBALL_NAME}" "${RPMBUILD_DIR}/SOURCES/"
-cd - > /dev/null
+# Generate spec
+SPEC="$RPMBUILD/SPECS/comic-strip-browser.spec"
+cat > "$SPEC" << EOF
+Name:           comic-strip-browser
+Version:        $VERSION
+Release:        $RELEASE
+Summary:        A standalone comic strip browser for GoComics.com
+License:        MIT
+URL:            https://github.com/DerLudditus/comic-strip-browser
+Source0:        %{name}-%{version}.tar.gz
+BuildArch:      x86_64
 
-# Clean up temporary directory
-rm -rf "${TEMP_DIR}"
+%description
+A standalone PyQt6 application for browsing comic strips from GoComics.com.
 
-# Copy spec file to SPECS directory
-echo "Copying spec file..."
-cp comic-strip-browser.spec "${RPMBUILD_DIR}/SPECS/"
+%prep
+%autosetup
 
-# Build the RPM
-echo -e "${YELLOW}Building RPM package...${NC}"
-cd "${RPMBUILD_DIR}/SPECS"
-rpmbuild -ba comic-strip-browser.spec
+%build
 
-# Check if build was successful
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}RPM build completed successfully!${NC}"
-    echo ""
-    echo "RPM packages created:"
-    echo "  Binary RPM: ${RPMBUILD_DIR}/RPMS/x86_64/comic-strip-browser-${VERSION}-1.*.x86_64.rpm"
-    echo "  Source RPM: ${RPMBUILD_DIR}/SRPMS/comic-strip-browser-${VERSION}-1.*.src.rpm"
-    echo ""
-    
-    # Copy RPMs to releases directory
-    RELEASES_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/releases"
-    mkdir -p "${RELEASES_DIR}"
-    
-    echo "Copying RPMs to releases directory..."
-    cp "${RPMBUILD_DIR}/RPMS/x86_64/comic-strip-browser-${VERSION}"-*.x86_64.rpm "${RELEASES_DIR}/"
-    cp "${RPMBUILD_DIR}/SRPMS/comic-strip-browser-${VERSION}"-*.src.rpm "${RELEASES_DIR}/"
-    
-    echo -e "${GREEN}RPMs copied to: ${RELEASES_DIR}${NC}"
+%install
+install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
+[ -f %{name}.desktop ] && install -D -m 0644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop
+[ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/pixmaps/%{name}.png
+
+%files
+%{_bindir}/%{name}
+%{_datadir}/applications/%{name}.desktop
+%{_datadir}/pixmaps/%{name}.png
+
+%changelog
+* $(date +"%a %b %d %Y") Homo Ludditus <ludditus@etik.com> - ${VERSION}-${RELEASE}
+- Release $VERSION
+EOF
+
+echo "Running rpmbuild..."
+rpmbuild -bb "$SPEC"
+
+RPM_PATH=$(ls "$RPMBUILD/RPMS/x86_64"/comic-strip-browser-${VERSION}-*.x86_64.rpm 2>/dev/null || echo "")
+if [ -n "$RPM_PATH" ]; then
+    cp "$RPM_PATH" dist/
+    echo "✓ dist/$(basename "$RPM_PATH") ($(du -h "$RPM_PATH" | cut -f1))"
 else
-    echo -e "${RED}RPM build failed!${NC}"
-    exit 1
+    echo "✗ RPM not found"; exit 1
 fi
