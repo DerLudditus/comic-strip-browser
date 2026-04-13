@@ -392,25 +392,37 @@ class ComicViewer(QWidget):
             self.show_error_state("Invalid image data")
             return
 
-        # Comic strips are typically 256-color indexed GIFs or palette PNGs.
-        # SmoothTransformation on indexed images creates intermediate colors
-        # outside the original palette → muddy artifacts. Convert to
-        # true-color first to prevent this.
+        # Convert indexed images to true-color to prevent muddy palette artifacts
         img = pixmap.toImage()
         if img.colorTable():
             img = img.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         true_color_pixmap = QPixmap.fromImage(img)
 
-        display_size = self.calculate_display_size(pixmap.size())
+        # Calculate logical display size (the size the user expects to see)
+        logical_size = self.calculate_display_size(pixmap.size())
+
+        # Get the window's device pixel ratio (e.g. 1.25 at 125% desktop scaling).
+        # This updates automatically when the window moves between monitors.
+        dpr = self.devicePixelRatioF()
+
+        # Scale to PHYSICAL pixel size so the compositor/DWM has nothing to
+        # re-interpolate. This prevents the double-blur caused by Qt scaling
+        # + compositor scaling at fractional DPI.
+        physical_size = (logical_size * dpr).toSize()
 
         scaled_pixmap = true_color_pixmap.scaled(
-            display_size,
+            physical_size,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
 
+        # CRITICAL: Tell Qt this pixmap represents a high-density image.
+        # Qt will now draw it at its native physical resolution with no
+        # additional scaling → sharp result at any fractional DPI.
+        scaled_pixmap.setDevicePixelRatio(dpr)
+
         self.image_label.setPixmap(scaled_pixmap)
-        self.image_label.setFixedSize(scaled_pixmap.size())
+        self.image_label.setFixedSize(logical_size)
 
         # Resize content widget to fit content (needed with setWidgetResizable=False)
         self._resize_content_widget()

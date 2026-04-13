@@ -93,18 +93,15 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
-        
+
         self.app = QApplication(sys.argv)
         self.app.setApplicationName("Comic Strip Browser")
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
-        
-        # Set application properties for cross-platform compatibility
-        if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
-            self.app.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
-        if hasattr(Qt.ApplicationAttribute, 'AA_UseHighDpiPixmaps'):
-            self.app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
-        
+
+        # In Qt6, high DPI scaling and pixmaps are always enabled.
+        # AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps are deprecated.
+
         # Connect application aboutToQuit signal for cleanup
         self.app.aboutToQuit.connect(self.shutdown)
     
