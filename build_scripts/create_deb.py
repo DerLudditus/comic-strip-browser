@@ -53,7 +53,7 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     # Create AppStream metadata file
     metainfo_content = """<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-    <id>comic-strip-browser</id>
+    <id>io.github.DerLudditus.ComicStripBrowser</id>
     <name>Comic Strip Browser</name>
     <summary>Browse a selection of GoComics.com strips</summary>
     <description>
@@ -78,8 +78,8 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     <launchable type="desktop-id">comic-strip-browser.desktop</launchable>
 </component>
 """
-    
-    with open(deb_dir / "usr" / "share" / "metainfo" / "comic-strip-browser.metainfo.xml", "w") as f:
+
+    with open(deb_dir / "usr" / "share" / "metainfo" / "io.github.DerLudditus.ComicStripBrowser.metainfo.xml", "w") as f:
         f.write(metainfo_content)
     
     # Copy executable
