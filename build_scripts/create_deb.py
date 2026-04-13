@@ -43,13 +43,13 @@ Maintainer: {DEB_MAINTAINER}
 Homepage: {DEB_HOMEPAGE}
 Description: Comic Strip Browser - Browse a selection of GoComics.com strips
  A standalone PyQt6 application for browsing comic strips from GoComics.com.
- Features include calendar navigation, caching, and support for 15 popular
+ Features include calendar navigation, caching, and support for 20 popular
  comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
 """
-    
+
     with open(deb_dir / "DEBIAN" / "control", "w") as f:
         f.write(control_content)
-    
+
     # Create AppStream metadata file
     metainfo_content = """<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
@@ -57,7 +57,7 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     <name>Comic Strip Browser</name>
     <summary>Browse a selection of GoComics.com strips</summary>
     <description>
-        <p>A standalone PyQt6 application for browsing comic strips from GoComics.com. Features include calendar navigation, caching, and support for 15 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.</p>
+        <p>A standalone PyQt6 application for browsing comic strips from GoComics.com. Features include calendar navigation, caching, and support for 20 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.</p>
     </description>
     <project_license>MIT</project_license>
     <metadata_license>CC0-1.0</metadata_license>
@@ -77,11 +77,9 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
         f.write(metainfo_content)
     
     # Copy executable
-    binary_path = project_root / "dist" / "onefile" / "comic-strip-browser"
+    binary_path = project_root / "dist" / "comic-strip-browser"
     if not binary_path.exists():
-        binary_path = project_root / "dist" / "comic-strip-browser"
-    if not binary_path.exists():
-        print("✗ Binary not found in dist/onefile/ or dist/")
+        print("✗ Binary not found in dist/")
         return False
     shutil.copy2(binary_path,
                  deb_dir / "usr" / "bin" / "comic-strip-browser")

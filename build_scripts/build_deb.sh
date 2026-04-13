@@ -10,7 +10,7 @@ echo "=== Comic Strip Browser — .deb Build ==="
 
 command -v dpkg-deb &>/dev/null || { echo "✗ dpkg-deb not found — install dpkg-dev"; exit 1; }
 
-BINARY="dist/onefile/comic-strip-browser"
+BINARY="dist/comic-strip-browser"
 [ -f "$BINARY" ] || { echo "✗ Binary not found — run build_binary.sh first"; exit 1; }
 
 python3 build_scripts/create_deb.py

@@ -5,26 +5,24 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "1.8.9"
-__version_info__ = (1, 8, 9)
+__version__ = "1.9.0"
+__version_info__ = (1, 9, 0)
 
 # Release information
 RELEASE_DATE = "2026-04-13"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "1.8.9-1"
+DEB_VERSION = "1.9.0-1"
 DEB_MAINTAINER = "Homo Ludditus <ludditus@etik.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (1.8.9-1) stable; urgency=medium
-  * Initial overhauling that improves image rendering, cleans up garbage, and makes Windows builds succeed
-  * Fix blurry scaled images: convert 256-color indexed to RGB32 before smooth scaling
-  * Fix welcome screen centering: use HTML data URI for proper horizontal centering
-  * Replace cx_Freeze Windows build with PyInstaller onedir
-  * Add manual build scripts: build_binary.sh, build_appimage.sh, build_deb.sh, build_rpm.sh
-  * Update GitHub Actions CI to build Windows, Linux (onefile, .deb, .rpm, AppImage)
+CHANGELOG = """comic-strip-browser (1.9.0-1) stable; urgency=medium
+  * Improved displaying on fractional scaling (DPR-aware rendering)
+  * Windows builds now produce a single onefile EXE
+  * Updated GitHub Actions to Node.js 24 compatible actions
+  * Fixed: 15 → 20 comic strips in package metadata
 
  -- Homo Ludditus <ludditus@etik.com>  Mon, 13 Apr 2026 05:00:00 +0300
 
