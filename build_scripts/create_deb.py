@@ -53,7 +53,7 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     # Create AppStream metadata file
     metainfo_content = """<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-    <id>io.github.DerLudditus.ComicStripBrowser</id>
+    <id>comic-strip-browser</id>
     <name>Comic Strip Browser</name>
     <summary>Browse a selection of GoComics.com strips</summary>
     <description>
