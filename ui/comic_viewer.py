@@ -6,6 +6,7 @@ proper scaling, title information, loading states, and error handling.
 """
 
 import os
+import sys
 from typing import Optional
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
@@ -392,17 +393,20 @@ class ComicViewer(QWidget):
             self.show_error_state("Invalid image data")
             return
 
-        # Convert to 32-bit RGB to prevent muddy artifacts when scaling.
+        # Convert to 32-bit RGB to prevent muddy artifacts when scaling on Linux.
         # Comic strips from GoComics are typically 256-color indexed GIFs or
-        # palette PNGs. When QPixmap.scaled() with SmoothTransformation runs
-        # bilinear interpolation on an indexed image, it creates intermediate
-        # colors that don't exist in the original palette → muddy, banded
-        # artifacts. Converting to RGB32 first gives the scaler 16.7M colors
-        # to work with, producing clean downscaled images.
-        true_color_image = pixmap.toImage().convertToFormat(
-            QImage.Format.Format_RGB32
-        )
-        true_color_pixmap = QPixmap.fromImage(true_color_image)
+        # palette PNGs. On Linux, SmoothTransformation on an indexed image
+        # creates intermediate colors outside the original palette → muddy
+        # artifacts. Converting to RGB32 gives the scaler 16.7M colors.
+        # On Windows, this conversion causes over-smoothing/blurriness, so
+        # we skip it and let Windows handle indexed images natively.
+        if sys.platform.startswith('linux'):
+            true_color_image = pixmap.toImage().convertToFormat(
+                QImage.Format.Format_RGB32
+            )
+            true_color_pixmap = QPixmap.fromImage(true_color_image)
+        else:
+            true_color_pixmap = pixmap
 
         # Calculate appropriate size for display
         display_size = self.calculate_display_size(true_color_pixmap.size())
