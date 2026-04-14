@@ -400,7 +400,7 @@ class CalendarWidget(QWidget):
             header_label.setFont(header_font)
             header_label.setStyleSheet("""
                 QLabel {
-                    color: #6c757d;
+                    color: #000000;
                     background-color: #e0e0e0;
                     border-radius: 4px;
                 }
@@ -419,6 +419,7 @@ class CalendarWidget(QWidget):
         self.info_label.setStyleSheet("""
             QLabel {
                 color: #000000;
+                background-color: #f0f0f0;
                 padding: 6px 12px;
             }
         """)

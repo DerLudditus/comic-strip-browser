@@ -5,20 +5,25 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.0.1"
-__version_info__ = (2, 0, 1)
+__version__ = "2.0.2"
+__version_info__ = (2, 0, 2)
 
 # Release information
 RELEASE_DATE = "2026-04-14"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.0.1-1"
+DEB_VERSION = "2.0.2-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.0.1-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.0.2-1) stable; urgency=medium
+  * Small adjustments of background colors.  
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 14 Apr 2026 21:30:00 +0300
+ 
+comic-strip-browser (2.0.1-1) stable; urgency=medium
   * Force light backgrounds even on dark-themed systems.  
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 14 Apr 2026 20:20:00 +0300
