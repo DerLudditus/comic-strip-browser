@@ -16,6 +16,14 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 
 <img src="./ComicStripBrowser.png" alt="" width="100%"/>
 
+### Tested on: 
+
+- Debian 13 (MX 25 XFCE) updated as of April 14, 2025; 
+- Ubuntu 26.04 (pre-release, as of April 14, 2025); 
+- Kubuntu 26.04 (pre-release, live session of the daily build of April 12, 2025); 
+- Ultramarine Linux 43 KDE Plasma Edition (live session);
+- Windows 11 IoT Enterprise LTSC 24H2 (26100.8037).
+
 ### Good to know
 
 - In addition to the **calendar navigation**, **keyboard navigation** is also possible for the currently selected comic title. Left/Right arrows: Previous/Next, Home/End: First/Today.
