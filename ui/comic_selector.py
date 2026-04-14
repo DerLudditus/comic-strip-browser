@@ -24,44 +24,39 @@ class ComicSelectorItem(QWidget):
     feedback for selection state.
     """
     
-    def __init__(self, comic_definition: ComicDefinition):
+    def __init__(self, comic_definition: ComicDefinition, number: int = 0):
         """
         Initialize the comic selector item.
-        
+
         Args:
             comic_definition: ComicDefinition object containing comic metadata
+            number: Display number for the comic item (1-based)
         """
         super().__init__()
         self.comic_definition = comic_definition
+        self.number = number
         self.is_selected = False
         self.setup_ui()
-    
+
     def setup_ui(self):
         """Set up the UI layout and styling for the comic item."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 2, 8, 2)
-        layout.setSpacing(2)
-        
-        # Comic display name
-        self.name_label = QLabel(self.comic_definition.display_name)
+        layout.setSpacing(0)
+
+        # Comic display name with number prefix
+        name_text = f"{self.number} • {self.comic_definition.display_name}" if self.number > 0 else self.comic_definition.display_name
+        self.name_label = QLabel(name_text)
         name_font = QFont()
-        name_font.setPointSize(11)
+        name_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        name_font.setPointSize(12)
         name_font.setBold(True)
+        self.name_label.setContentsMargins(0, 0, 0, 0)
         self.name_label.setFont(name_font)
         self.name_label.setStyleSheet("color: #000000; font-weight: bold;")  # Ensure black text and bold
         self.name_label.setWordWrap(True)
         layout.addWidget(self.name_label)
-        
-        # Author information
-        self.author_label = QLabel(f"by {self.comic_definition.author}")
-        author_font = QFont()
-        author_font.setPointSize(9)
-        author_font.setItalic(True)
-        self.author_label.setFont(author_font)
-        self.author_label.setStyleSheet("color: #666666;")
-        self.author_label.setWordWrap(True)
-        layout.addWidget(self.author_label)
-        
+
         # Set initial styling
         self.update_selection_style()
     
@@ -81,8 +76,8 @@ class ComicSelectorItem(QWidget):
             self.setStyleSheet("""
                 ComicSelectorItem {
                     background-color: #e3f2fd;
-                    border: 2px solid #2196f3;
-                    border-radius: 6px;
+                    border: none;
+                    border-radius: 0;
                 }
             """)
             # Ensure name label styling is preserved
@@ -91,12 +86,11 @@ class ComicSelectorItem(QWidget):
             self.setStyleSheet("""
                 ComicSelectorItem {
                     background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 6px;
+                    border: none;
                 }
                 ComicSelectorItem:hover {
                     background-color: #f5f5f5;
-                    border: 1px solid #bdbdbd;
+                    border: none;
                 }
             """)
             # Ensure name label styling is preserved
@@ -155,7 +149,7 @@ class ComicSelector(QWidget):
         header_frame.setStyleSheet("""
             QFrame {
                 background-color: #e0e0e0;
-                border-bottom: 1px solid #dee2e6;
+                border: none;
             }
         """)
         header_layout = QVBoxLayout(header_frame)
@@ -166,6 +160,7 @@ class ComicSelector(QWidget):
         title_font = QFont()
         title_font.setPointSize(14)
         title_font.setBold(True)
+        title_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         title_label.setFont(title_font)
         title_label.setStyleSheet("color: #000000; font-weight: bold;")  # Ensure black text and bold
         header_layout.addWidget(title_label)
@@ -175,6 +170,7 @@ class ComicSelector(QWidget):
         subtitle_font = QFont()
         subtitle_font.setPointSize(12)
         subtitle_font.setBold(True)
+        subtitle_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         subtitle_label.setFont(subtitle_font)
         subtitle_label.setStyleSheet("color: #000000; font-weight: bold;")  # Make it bold and dark
         header_layout.addWidget(subtitle_label)
@@ -201,8 +197,8 @@ class ComicSelector(QWidget):
             }
         """)
         self.comics_layout = QVBoxLayout(self.comics_container)
-        self.comics_layout.setContentsMargins(4, 4, 4, 4)
-        self.comics_layout.setSpacing(3)
+        self.comics_layout.setContentsMargins(4, 0, 4, 0)
+        self.comics_layout.setSpacing(0)
         
         scroll_area.setWidget(self.comics_container)
         layout.addWidget(scroll_area)
@@ -216,8 +212,8 @@ class ComicSelector(QWidget):
         self.comic_items.clear()
         
         # Add each comic definition as a selectable item
-        for comic_def in COMIC_DEFINITIONS:
-            comic_item = ComicSelectorItem(comic_def)
+        for i, comic_def in enumerate(COMIC_DEFINITIONS, start=1):
+            comic_item = ComicSelectorItem(comic_def, number=i)
             self.comic_items[comic_def.name] = comic_item
             self.comics_layout.addWidget(comic_item)
         

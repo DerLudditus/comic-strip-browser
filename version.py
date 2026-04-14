@@ -5,20 +5,30 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "1.9.0"
-__version_info__ = (1, 9, 0)
+__version__ = "2.0.0"
+__version_info__ = (2, 0, 0)
 
 # Release information
-RELEASE_DATE = "2026-04-13"
+RELEASE_DATE = "2026-04-14"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "1.9.0-1"
-DEB_MAINTAINER = "Homo Ludditus <ludditus@etik.com>"
+DEB_VERSION = "2.0.0-1"
+DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (1.9.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.0.0-1) stable; urgency=medium
+  * Major redesign to add Comics Kingdom 
+  * 40 comic strip titles are now supported  
+  * Better handling of errors
+  * More informative error messages
+  * Many bug fixes
+  * Many bugs still present (or new bugs added)
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 14 Apr 2026 20:00:00 +0300
+
+comic-strip-browser (1.9.0-1) stable; urgency=medium
   * Improved displaying on fractional scaling (DPR-aware rendering)
   * Windows builds now produce a single onefile EXE
   * Updated GitHub Actions to Node.js 24 compatible actions

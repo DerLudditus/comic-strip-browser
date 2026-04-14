@@ -8,17 +8,18 @@ toolbar, status bar, and cross-platform compatibility.
 
 import sys
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QStatusBar, QApplication,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QStatusBar, QApplication, QPushButton,
     QSplitter, QFrame
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QFont
 
 from ui.comic_selector import ComicSelector
 from ui.comic_viewer import ComicViewer
 from ui.calendar_widget import CalendarWidget
 from ui.comic_controller import ComicController
+from ui.about_dialog import AboutDialog
 from models.data_models import get_comic_definition
 from version import __version__
 
@@ -51,7 +52,7 @@ class MainWindow(QMainWindow):
         # Set window properties
         self.setWindowTitle(f"Comic Strip Browser {__version__}")
         self.setMinimumSize(QSize(1000, 700))
-        self.resize(QSize(1200, 840))
+        self.resize(QSize(1280, 850))
 
         # Set up status bar FIRST
         self.create_status_bar()
@@ -85,7 +86,7 @@ class MainWindow(QMainWindow):
         """Create UI components and placeholder frames."""
         # Left panel - Comic selector
         self.comic_selector = ComicSelector()
-        self.comic_selector.setMinimumWidth(250)
+        self.comic_selector.setMinimumWidth(280)
         self.comic_selector.setMaximumWidth(350)
         
         # Connect comic selector signals
@@ -101,8 +102,8 @@ class MainWindow(QMainWindow):
         
         # Right panel - Calendar navigation widget
         self.calendar_widget = CalendarWidget()
-        self.calendar_widget.setMinimumWidth(250)
-        self.calendar_widget.setMaximumWidth(350)
+        self.calendar_widget.setMinimumWidth(280)
+        self.calendar_widget.setMaximumWidth(380)
         
         # Connect calendar widget signals
         self.calendar_widget.date_selected.connect(self.on_date_changed)
@@ -114,7 +115,7 @@ class MainWindow(QMainWindow):
         self.main_splitter.addWidget(self.calendar_widget)
         
         # Set initial splitter proportions
-        self.main_splitter.setSizes([250, 700, 250])
+        self.main_splitter.setSizes([280, 700, 280])
     
 
     
@@ -125,23 +126,50 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.status_bar.setVisible(True)
         self.status_bar.setSizeGripEnabled(True)
-        
+
         # Set minimum height to ensure visibility
         self.status_bar.setMinimumHeight(25)
-        
+
+        # Set consistent font family with other labels
+        status_font = QFont()
+        status_font.setPointSize(11)
+        status_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        self.status_bar.setFont(status_font)
+
         # Set status bar with explicit styling
         self.status_bar.setStyleSheet("""
             QStatusBar {
                 background-color: #f0f0f0;
                 border-top: 1px solid #d0d0d0;
-                color: #333333;
-                font-size: 14px;
+                color: #000000;
                 padding: 2px;
             }
         """)
-        
+
+        # Info button — right side, before size grip
+        self.about_btn = QPushButton("About")
+        self.about_btn.setFixedWidth(56)
+        self.about_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.about_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                border: 1px solid #000000;
+                border-radius: 4px;
+                color: #555555;
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 1px solid #9e9e9e;
+                color: #0d6efd;
+            }
+        """)
+        self.about_btn.clicked.connect(self._show_about)
+        self.status_bar.addPermanentWidget(self.about_btn)
+
         self.setStatusBar(self.status_bar)
-        
+
         # Show ready message with version after a short delay
         from PyQt6.QtCore import QTimer
         QTimer.singleShot(100, lambda: self.status_bar.showMessage(f"Ready - v{__version__}", 0))
@@ -155,7 +183,7 @@ class MainWindow(QMainWindow):
             }
             QFrame {
                 background-color: white;
-                border: 1px solid #d0d0d0;
+                border: 1px solid #cccccc;
             }
             QToolBar {
                 border: none;
@@ -165,7 +193,6 @@ class MainWindow(QMainWindow):
                 background-color: #f0f0f0;
                 border-top: 1px solid #d0d0d0;
                 color: #333333;
-                font-size: 14px;
                 min-height: 25px;
                 padding: 2px;
             }
@@ -214,8 +241,9 @@ class MainWindow(QMainWindow):
         
         # Navigate to target date and load comic (don't emit signal to prevent double-load)
         self.calendar_widget.navigate_to_date(target_date, emit_signal=False)
+        self.calendar_widget.set_comic_info(comic_name)
         self.comic_controller.load_comic(comic_name, target_date)
-        
+
         self.comic_selected.emit(comic_name)
     
     def on_date_changed(self, date):
@@ -241,6 +269,7 @@ class MainWindow(QMainWindow):
             self.update_status(f"Invalid comic selection: {current_comic}", 3000)
             return
         
+        self.calendar_widget.set_comic_info(current_comic)
         self.comic_controller.load_comic(current_comic, date)
         self.date_changed.emit(date)
     
@@ -841,6 +870,19 @@ class MainWindow(QMainWindow):
         self.update_status(f"No {comic_display_name} found in 31 days from random date", 3000)
 
     
+    def _show_about(self):
+        """Show the About dialog."""
+        dlg = AboutDialog(self)
+        dlg.exec()
+
+    def keyPressEvent(self, event):
+        """Handle key press events — F1 opens About dialog."""
+        if event.key() == Qt.Key.Key_F1:
+            self._show_about()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
     def get_comic_controller(self) -> ComicController:
         """Get the comic controller instance."""
         return self.comic_controller

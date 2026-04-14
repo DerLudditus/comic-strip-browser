@@ -41,10 +41,10 @@ Priority: optional
 Architecture: amd64
 Maintainer: {DEB_MAINTAINER}
 Homepage: {DEB_HOMEPAGE}
-Description: Comic Strip Browser - Browse a selection of GoComics.com strips
- A standalone PyQt6 application for browsing comic strips from GoComics.com.
- Features include calendar navigation, caching, and support for 20 popular
- comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.
+Description: Comic Strip Browser - Browse a selection of comic strips
+ A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom.
+ Features include calendar navigation, caching, and support for 40 popular titles,
+ including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 """
 
     with open(deb_dir / "DEBIAN" / "control", "w") as f:
@@ -58,7 +58,8 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     <name>Comic Strip Browser</name>
     <summary>Browse a selection of GoComics.com strips</summary>
     <description>
-        <p>A standalone PyQt6 application for browsing comic strips from GoComics.com. Features include calendar navigation, caching, and support for 20 popular comic strips including Calvin and Hobbes, Peanuts, Garfield, and more.</p>
+        <p>A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for 40 popular titles,
+ including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.</p>
     </description>
     <screenshots>
         <screenshot type="default">
@@ -107,7 +108,7 @@ Description: Comic Strip Browser - Browse a selection of GoComics.com strips
     # Create copyright file
     copyright_content = """Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: comic-strip-browser
-Upstream-Contact: Homo Ludditus <ludditus@etik.com>
+Upstream-Contact: Homo Ludditus <DerLudditus@gmail.com>
 Source: https://github.com/DerLudditus/comic-strip-browser
 
 Files: *

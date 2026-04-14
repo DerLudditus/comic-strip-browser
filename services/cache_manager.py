@@ -182,19 +182,43 @@ class CacheManager:
         """Save the cache index for a specific comic to disk."""
         comic_dir = self._get_comic_cache_dir(comic_name)
         index_file = comic_dir / "cache_index.json"
-        
+
         if comic_name not in self._cache_index:
             return
-        
+
         try:
             index_data = {}
             for date_key, cache_entry in self._cache_index[comic_name].items():
                 index_data[date_key] = self._serialize_cache_entry(cache_entry)
-            
+
             with open(index_file, 'w') as f:
                 json.dump(index_data, f, indent=2)
         except (IOError, json.JSONEncodeError) as e:
             print(f"Failed to save cache index for {comic_name}: {e}")
+
+    def invalidate_comic_date(self, comic_name: str, comic_date: date) -> None:
+        """Remove a cached entry for a specific comic and date."""
+        date_key = self._get_date_key(comic_date)
+
+        # Remove from in-memory index
+        if comic_name in self._cache_index:
+            self._cache_index[comic_name].pop(date_key, None)
+
+        # Remove cached image file
+        image_path = self.cache_dir / comic_name / f"{date_key}.jpg"
+        if image_path.exists():
+            image_path.unlink()
+        image_path = self.cache_dir / comic_name / f"{date_key}.png"
+        if image_path.exists():
+            image_path.unlink()
+        # Also try to find any extension
+        parent = self.cache_dir / comic_name
+        if parent.exists():
+            for f in parent.glob(f"{date_key}.*"):
+                f.unlink()
+
+        # Save updated index
+        self._save_cache_index(comic_name)
     
     def _cleanup_old_entries(self, comic_name: str) -> None:
         """Remove oldest cache entries when limit is exceeded."""

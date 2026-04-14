@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QDate
 from PyQt6.QtGui import QFont, QPalette, QColor
 
-from models.data_models import ComicDefinition
+from models.data_models import ComicDefinition, get_comic_definition
 
 
 class CalendarDayButton(QPushButton):
@@ -204,57 +204,47 @@ class CalendarWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        
+
         # Header section
         self.create_header_section(layout)
-        
+
+        # Day of week headers (outside calendar frame to sit higher)
+        self.create_day_headers(layout)
+
         # Calendar grid section
         self.create_calendar_section(layout)
-        
+
+        # Info text section
+        self.create_info_section(layout)
+
+        # Push everything to the top
+        layout.addStretch(1)
+
         # Set size policy
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        self.setMinimumWidth(290)
     
     def create_header_section(self, parent_layout):
-        """Create compact navigation controls without the big header box."""
-        # Month/Year navigation - compact layout without big header frame
-        nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(6)
-        nav_layout.setContentsMargins(8, 4, 8, 4)  # Minimal margins
-        
-        # Previous year button - outermost left (logical order)
-        self.prev_year_btn = QPushButton("‹‹")
-        self.prev_year_btn.setFixedSize(QSize(30, 20))
-        self.prev_year_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 10px;
-                font-size: 10px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
-            }
-            QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
-            }
-        """)
-        self.prev_year_btn.clicked.connect(self.go_to_previous_year)
-        nav_layout.addWidget(self.prev_year_btn)
-        
-        # Previous month button - inside year buttons
+        """Create navigation controls with month on top, year buttons below."""
+        header_layout = QVBoxLayout()
+        header_layout.setSpacing(2)
+        header_layout.setContentsMargins(4, 4, 4, 4)
+
+        # Row 1: Previous month | Month Year | Next month
+        month_nav_layout = QHBoxLayout()
+        month_nav_layout.setSpacing(4)
+        month_nav_layout.setContentsMargins(4, 2, 4, 2)
+
+        # Previous month button — larger, prominent
         self.prev_month_btn = QPushButton("‹")
-        self.prev_month_btn.setFixedSize(QSize(25, 25))
+        self.prev_month_btn.setFixedSize(QSize(36, 32))
         self.prev_month_btn.setStyleSheet("""
             QPushButton {
                 background-color: #e0e0e0;
                 color: #000000;
                 border: 2px solid #bdbdbd;
-                border-radius: 12px;
-                font-size: 14px;
+                border-radius: 14px;
+                font-size: 20px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -267,28 +257,28 @@ class CalendarWidget(QWidget):
             }
         """)
         self.prev_month_btn.clicked.connect(self.go_to_previous_month)
-        nav_layout.addWidget(self.prev_month_btn)
-        
-        # Month/Year display - center
+        month_nav_layout.addWidget(self.prev_month_btn)
+
+        # Month/Year display — center, prominent
         self.month_year_label = QLabel()
         month_year_font = QFont()
-        month_year_font.setPointSize(11)
+        month_year_font.setPointSize(13)
         month_year_font.setBold(True)
         self.month_year_label.setFont(month_year_font)
         self.month_year_label.setStyleSheet("color: #000000; font-weight: bold;")
         self.month_year_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        nav_layout.addWidget(self.month_year_label, 1)
-        
-        # Next month button - inside year buttons
+        month_nav_layout.addWidget(self.month_year_label, 1)
+
+        # Next month button — larger, prominent
         self.next_month_btn = QPushButton("›")
-        self.next_month_btn.setFixedSize(QSize(25, 25))
+        self.next_month_btn.setFixedSize(QSize(36, 32))
         self.next_month_btn.setStyleSheet("""
             QPushButton {
                 background-color: #e0e0e0;
                 color: #000000;
                 border: 2px solid #bdbdbd;
-                border-radius: 12px;
-                font-size: 14px;
+                border-radius: 14px;
+                font-size: 20px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -301,34 +291,75 @@ class CalendarWidget(QWidget):
             }
         """)
         self.next_month_btn.clicked.connect(self.go_to_next_month)
-        nav_layout.addWidget(self.next_month_btn)
-        
-        # Next year button - outermost right (logical order)
-        self.next_year_btn = QPushButton("››")
-        self.next_year_btn.setFixedSize(QSize(30, 20))
+        month_nav_layout.addWidget(self.next_month_btn)
+
+        header_layout.addLayout(month_nav_layout)
+
+        # Row 2: Previous year | spacer | Next year
+        year_nav_layout = QHBoxLayout()
+        year_nav_layout.setSpacing(4)
+        year_nav_layout.setContentsMargins(4, 0, 4, 2)
+
+        # Previous year button — shows the year it would navigate to
+        self.prev_year_btn = QPushButton()
+        self.prev_year_btn.setFixedHeight(32)
+        self.prev_year_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #000000;
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                font-size: 16px;
+                padding: 0px 8px;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 1px solid #9e9e9e;
+            }
+            QPushButton:pressed {
+                background-color: #bdbdbd;
+                border: 1px solid #757575;
+            }
+            QPushButton:disabled {
+                color: #aaaaaa;
+            }
+        """)
+        self.prev_year_btn.clicked.connect(self.go_to_previous_year)
+        year_nav_layout.addWidget(self.prev_year_btn)
+
+        # Spacer
+        year_nav_layout.addStretch(1)
+
+        # Next year button — shows the year it would navigate to
+        self.next_year_btn = QPushButton()
+        self.next_year_btn.setFixedHeight(32)
         self.next_year_btn.setStyleSheet("""
             QPushButton {
                 background-color: #e0e0e0;
                 color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 10px;
-                font-size: 10px;
-                font-weight: bold;
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                font-size: 16px;
+                padding: 0px 8px;
             }
             QPushButton:hover {
                 background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
+                border: 1px solid #9e9e9e;
             }
             QPushButton:pressed {
                 background-color: #bdbdbd;
-                border: 2px solid #757575;
+                border: 1px solid #757575;
+            }
+            QPushButton:disabled {
+                color: #aaaaaa;
             }
         """)
         self.next_year_btn.clicked.connect(self.go_to_next_year)
-        nav_layout.addWidget(self.next_year_btn)
-        
-        # Add the compact navigation directly to parent layout (no big header frame)
-        parent_layout.addLayout(nav_layout)
+        year_nav_layout.addWidget(self.next_year_btn)
+
+        header_layout.addLayout(year_nav_layout)
+
+        parent_layout.addLayout(header_layout)
     
     def create_calendar_section(self, parent_layout):
         """Create the calendar grid section."""
@@ -337,24 +368,19 @@ class CalendarWidget(QWidget):
         calendar_frame.setStyleSheet("""
             QFrame {
                 background-color: #e0e0e0;
+                border: 1px solid #c0c0c0;
             }
         """)
-        
+
         calendar_layout = QVBoxLayout(calendar_frame)
-        calendar_layout.setContentsMargins(12, 6, 12, 12)  # Reduced top margin
-        calendar_layout.setSpacing(4)  # Reduced spacing between elements
-        
-        # Day of week headers
-        self.create_day_headers(calendar_layout)
-        
+        calendar_layout.setContentsMargins(12, 0, 12, 12)  # Zero top margin
+        calendar_layout.setSpacing(0)
+
         # Calendar grid
         self.calendar_grid = QGridLayout()
-        self.calendar_grid.setSpacing(2)
+        self.calendar_grid.setSpacing(3)
         calendar_layout.addLayout(self.calendar_grid)
-        
-        # Legend
-        self.create_legend(calendar_layout)
-        
+
         parent_layout.addWidget(calendar_frame)
     
     def create_day_headers(self, parent_layout):
@@ -382,62 +408,33 @@ class CalendarWidget(QWidget):
             headers_layout.addWidget(header_label)
         
         parent_layout.addLayout(headers_layout)
-    
-    def create_legend(self, parent_layout):
-        """Create a compact vertical legend with minimal spacing."""
-        # Create a compact vertical layout
-        legend_layout = QVBoxLayout()
-        legend_layout.setSpacing(1)  # Very minimal spacing between items
-        legend_layout.setContentsMargins(4, 2, 4, 2)  # Minimal margins
-        
-        # Legend title - readable size
-        legend_title = QLabel("Legend:")
-        legend_font = QFont()
-        legend_font.setPointSize(11)  # Readable font size
-        legend_font.setBold(True)
-        legend_title.setFont(legend_font)
-        legend_title.setStyleSheet("color: #6c757d;")
-        legend_title.setFixedHeight(24)  # Adequate height
-        legend_layout.addWidget(legend_title)
-        
-        # Legend items - very compact
-        legend_items = [
-            ("🔵", "Selected"),
-            ("🟠", "Today")
-        ]
-        
-        for symbol, description in legend_items:
-            # Create horizontal layout for each item
-            item_layout = QHBoxLayout()
-            item_layout.setSpacing(3)  # Very small spacing
-            item_layout.setContentsMargins(0, 0, 0, 0)  # No margins
-            
-            # Symbol
-            symbol_label = QLabel(symbol)
-            symbol_label.setFixedSize(QSize(8, 8))  # Very small symbols
-            symbol_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            item_layout.addWidget(symbol_label)
-            
-            # Description - readable font
-            desc_label = QLabel(description)
-            desc_font = QFont()
-            desc_font.setPointSize(10)  # Readable font size
-            desc_label.setFont(desc_font)
-            desc_label.setStyleSheet("color: #6c757d;")
-            desc_label.setFixedHeight(22)  # Adequate height
-            item_layout.addWidget(desc_label)
-            
-            item_layout.addStretch()  # Push to left
-            
-            # Create widget to contain the layout
-            item_widget = QWidget()
-            item_widget.setLayout(item_layout)
-            item_widget.setFixedHeight(30)  # Fixed adequate height for entire item
-            legend_layout.addWidget(item_widget)
-        
-        # Add the compact legend layout
-        parent_layout.addLayout(legend_layout)
-    
+
+    def create_info_section(self, parent_layout):
+        """Create info text area below the calendar."""
+        self.info_label = QLabel("")
+        info_font = QFont()
+        info_font.setPointSize(13)
+        info_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        self.info_label.setFont(info_font)
+        self.info_label.setStyleSheet("""
+            QLabel {
+                color: #000000;
+                padding: 6px 12px;
+            }
+        """)
+        self.info_label.setWordWrap(True)
+        self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.info_label.setMinimumHeight(30)
+        parent_layout.addWidget(self.info_label)
+
+    def set_comic_info(self, comic_name: str):
+        """Update the info text for the currently selected comic."""
+        comic_def = get_comic_definition(comic_name)
+        if comic_def and comic_def.info:
+            self.info_label.setText(comic_def.info)
+        else:
+            self.info_label.setText("")
+
     def populate_calendar(self):
         """Populate the calendar grid with day buttons for the current month."""
         # Clear existing buttons
@@ -464,6 +461,15 @@ class CalendarWidget(QWidget):
             "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."
         ]
         self.month_year_label.setText(f"{month_names[self.current_date.month - 1]} {self.current_date.year}")
+
+        # Update year buttons to show target years
+        prev_year = self.current_date.year - 1
+        next_year = self.current_date.year + 1
+        self.prev_year_btn.setText(f"← {prev_year}")
+        self.next_year_btn.setText(f"{next_year} →")
+
+        # Disable next year button if it would go past today's year
+        self.next_year_btn.setEnabled(next_year <= date.today().year)
         
         # Create day buttons
         self.day_buttons.clear()

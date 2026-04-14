@@ -191,62 +191,7 @@ class DateManager:
     def _optimized_discovery(self, comic_name: str, base_url: str, progress_callback=None) -> Optional[date]:
         """
         NOT USED ANYMORE, BUT LEFT HERE JUST IN CASE.
-        Optimized discovery algorithm that uses smarter starting points and fewer requests.
-        
-        Args:
-            comic_name: Name of the comic strip
-            base_url: Base URL for the comic
-            progress_callback: Optional callback for progress updates
-            
-        Returns:
-            Earliest available date, or None if not found
         """
-        # Smart starting points based on known comic history
-        comic_start_estimates = {
-            'garfield': 1978,
-            'peanuts': 1950,
-            'calvinandhobbes': 1985,
-            'pearlsbeforeswine': 2002,
-            'wizardofid': 1964,
-            'bc': 1958,
-            'pickles': 1990,
-            'shoe': 1977,
-            'wumo': 2005,
-            'speedbump': 1994,
-            'freerange': 2006,
-            'offthemark': 1987,
-            'mother-goose-and-grimm': 1984,
-            'theflyingmccoys': 2005,
-            'duplex': 1996,
-            'realitycheck': 1997,
-            'adamathome': 1995,
-            'ziggy': 1971
-        }
-        
-        # Get estimated start year or use conservative default
-        estimated_start = comic_start_estimates.get(comic_name, 1990)
-        current_year = date.today().year
-        
-        if progress_callback:
-            progress_callback(f"Checking {comic_name} from ~{estimated_start}...")
-        
-        # Phase 1: Quick verification - test estimated year first
-        test_date = date(estimated_start, 1, 1)
-        if self._test_comic_availability(comic_name, base_url, test_date):
-            # Great! Our estimate was good, now refine backwards
-            earliest_year = self._binary_search_year(comic_name, base_url, estimated_start - 10, estimated_start)
-        else:
-            # Estimate was too early, search forward
-            earliest_year = self._binary_search_year(comic_name, base_url, estimated_start, current_year)
-        
-        if earliest_year is None:
-            return None
-        
-        if progress_callback:
-            progress_callback(f"Found {comic_name} starts in {earliest_year}, refining...")
-        
-        # Phase 2: Refine by months (but only test a few key dates)
-        return self._quick_refine_by_months(comic_name, base_url, earliest_year)
     
     def _binary_search_year(self, comic_name: str, base_url: str, start_year: int, end_year: int) -> Optional[int]:
         """
