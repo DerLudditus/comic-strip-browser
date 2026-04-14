@@ -96,6 +96,15 @@ class ComicViewer(QWidget):
         self.current_pixmap = None
         self.image_loader = None
         self.setup_ui()
+        self.setStyleSheet("""
+                QWidget {
+                 background-color: #e8e8e8;
+                }
+                QLabel {
+                 color: #000000;
+                 background-color: transparent;
+                }
+        """)        
     
     def setup_ui(self):
         """Set up the main UI layout and components."""
@@ -726,16 +735,16 @@ class ComicViewer(QWidget):
         <html>
             <body style="text-align: center;">
                 <img src="{data_uri}" width="240" height="240">
-                <div style="font-size: 18px; font-weight:600; color: #000000; margin-top: 15px;">Select a comic from the left</div>
+                <div style="font-size: 18px; font-weight:600; color: #000000; margin-top: 15px;">⟵ Select a comic from the left 🙂</div>
             </body>
         </html>
         """)
 
         self.image_label.setStyleSheet("""
             QLabel {
-                border: 1px solid #e0e0e0;
+                border: 1px solid #595959;
                 border-radius: 8px;
-                background-color: #f8f8f8;
+                background-color: #faeeae;
                 padding: 20px;
             }
         """)
@@ -761,7 +770,7 @@ class ComicViewer(QWidget):
             QLabel {
                 border: none;
                 border-radius: 8px;
-                background-color: white;
+                background-color: transparent;
             }
         """)
     
