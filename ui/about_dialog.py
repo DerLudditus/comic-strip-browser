@@ -23,6 +23,15 @@ class AboutDialog(QDialog):
         self.setFixedSize(420, 320)
         self.setModal(True)
         self._build_ui()
+        self.setStyleSheet("""
+                QDialog {
+                 background-color: #e8e8e8;
+                }
+                QLabel {
+                 color: #000000;
+                 background-color: transparent;
+                }
+        """)
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -35,7 +44,7 @@ class AboutDialog(QDialog):
         name_font.setPointSize(18)
         name_font.setBold(True)
         name_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
-        name_label.setStyleSheet("color: #000000; font-weight: bold; border:none") 
+        name_label.setStyleSheet("font-weight: bold; border:none") 
         name_label.setFont(name_font)
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(name_label)
@@ -46,7 +55,7 @@ class AboutDialog(QDialog):
         ver_font.setPointSize(13)
         ver_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         ver_label.setFont(ver_font)
-        ver_label.setStyleSheet("color: #000000; font-weight: bold; border:none")         
+        ver_label.setStyleSheet("font-weight: bold; border:none")         
         ver_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(ver_label)
 
@@ -62,9 +71,8 @@ class AboutDialog(QDialog):
         desc_font.setBold(True)
         desc_label.setContentsMargins(24, 20, 24, 16)
         desc_label.setFont(desc_font)
-        desc_label.setStyleSheet("color: #000000; font-weight: bold; border:none")         
+        desc_label.setStyleSheet("font-weight: bold; background-color: #ffffff")         
         desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        desc_label.setStyleSheet("color: #000000;")
         desc_label.setWordWrap(True)
         layout.addWidget(desc_label)
 
@@ -77,7 +85,7 @@ class AboutDialog(QDialog):
         link_font.setPointSize(12)
         link_font.setBold(True)
         link_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
-        link_label.setStyleSheet("color: #000000; font-weight: bold; border:none")         
+        link_label.setStyleSheet("font-weight: bold; border:none")         
         link_label.setFont(link_font)
         link_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         link_label.setTextFormat(Qt.TextFormat.RichText)
