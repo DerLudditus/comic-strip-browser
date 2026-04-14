@@ -179,10 +179,10 @@ class MainWindow(QMainWindow):
         # Set consistent style across platforms
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f0f0f0;
+                background-color: #e8e8e8;
             }
             QFrame {
-                background-color: white;
+                background-color: transparent;
                 border: 1px solid #cccccc;
             }
             QToolBar {
