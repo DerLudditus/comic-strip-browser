@@ -263,12 +263,10 @@ class ComicController(QObject):
     def _on_comic_loaded(self, comic_data: ComicData):
         """
         Handle successful comic loading.
-        
+
         Args:
             comic_data: Loaded comic data
         """
-        # self.logger.info(f"Comic loaded successfully: {comic_data.comic_name} for {comic_data.date}")
-        
         # Emit signals
         self.comic_loaded.emit(comic_data)
         self.comic_loading_finished.emit(comic_data.comic_name, comic_data.date)
@@ -300,13 +298,15 @@ class ComicController(QObject):
     def _classify_error(self, error: Exception) -> str:
         """
         Classify error type for appropriate UI handling.
-        
+
         Args:
             error: Exception to classify
-            
+
         Returns:
             Error type string for UI handling
         """
+        error_str = str(error).lower()
+
         if isinstance(error, ComicUnavailableError):
             return "unavailable"
         elif isinstance(error, NetworkError):
@@ -318,6 +318,15 @@ class ComicController(QObject):
         elif hasattr(error, '__class__') and 'connection' in error.__class__.__name__.lower():
             return "network"
         elif hasattr(error, '__class__') and 'timeout' in error.__class__.__name__.lower():
+            return "network"
+        # ComicServiceError wrapping a "not available" message
+        elif str(error).lower().startswith("comic ") and " not available for " in error_str:
+            return "unavailable"
+        # "No og:image" = page loaded but no comic image = unavailable for this date
+        elif "no og:image" in error_str:
+            return "unavailable"
+        # Bunny Shield security challenge = network/block issue
+        elif "security challenge" in error_str or "ip may be blocked" in error_str:
             return "network"
         else:
             return "general"

@@ -2,8 +2,8 @@
 """
 Comic Strip Browser - Main Entry Point
 
-A standalone PyQt6 application for browsing comic strips from GoComics.com.
-Supports 15 predefined comic strips with calendar navigation and caching.
+A standalone PyQt6 application for browsing comic strips from from GoComics and Comics Kingdom.
+Supports 40 predefined comic strips with calendar navigation and caching.
 """
 
 import sys

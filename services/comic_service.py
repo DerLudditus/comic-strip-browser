@@ -97,7 +97,6 @@ class ComicService:
         # Try to get from cache first
         cached_comic = self.cache_manager.get_cached_comic(comic_name, comic_date)
         if cached_comic:
-            # self.logger.info(f"Found cached comic {comic_name} for {comic_date}")
             return cached_comic
         
         # Not in cache, try to fetch from web
@@ -151,39 +150,45 @@ class ComicService:
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
             
         except WebScrapingError as e:
-            # self.logger.warning(f"Failed to fetch {comic_name} for {comic_date}: {e}")
-            
-            # If requesting today's comic and it failed, try yesterday
-            if comic_date == date.today():
+            error_str = str(e).lower()
+
+            # If the server returned content for a wrong date, invalidate the cache for that date
+            if 'wrong date' in error_str:
+                try:
+                    self.cache_manager.invalidate_comic_date(comic_name, comic_date)
+                except AttributeError:
+                    pass  # Method may not exist, skip
+
+            # Try previous day as fallback for date mismatch or today
+            if comic_date == date.today() or 'wrong date' in error_str:
                 yesterday = comic_date - timedelta(days=1)
-                # self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
-                
                 try:
                     return self.get_comic(comic_name, yesterday)
                 except ComicServiceError:
                     pass  # Fall through to main error
-            
+
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
     
     def _fetch_comic_from_web(self, comic_name: str, comic_date: date) -> ComicData:
         """
         Fetch comic data from the web.
-        
+
         Args:
             comic_name: Name of the comic strip
             comic_date: Date to retrieve
-            
+
         Returns:
             ComicData object with comic information
-            
+
         Raises:
             WebScrapingError: If comic cannot be fetched
         """
         comic_def = get_comic_definition(comic_name)
         if not comic_def:
             raise WebScrapingError(f"Unknown comic: {comic_name}")
-        
-        return self.web_scraper.get_comic_data(comic_name, comic_def.base_url, comic_date)
+
+        comic_data = self.web_scraper.get_comic_data(comic_name, comic_def.base_url, comic_date)
+        return comic_data
     
     def validate_comic_availability(self, comic_name: str, comic_date: date) -> bool:
         """
@@ -395,10 +400,10 @@ class ComicService:
     def get_user_friendly_error_message(self, error: Exception) -> str:
         """
         Get a user-friendly error message for an exception.
-        
+
         Args:
             error: The exception to get a message for
-            
+
         Returns:
             User-friendly error message
         """
@@ -408,28 +413,52 @@ class ComicService:
             if "not available" in error_msg:
                 # Try to extract comic name and date from the original error message
                 original_msg = str(error)
-                
+
                 # Parse the original message: "Comic wumo not available for 2013-10-14"
                 import re
                 from datetime import datetime
-                
+
                 # Extract comic name and date
                 comic_name = "unknown"
                 error_date = date.today()
-                
+
                 # Try to parse: "Comic COMIC_NAME not available for YYYY-MM-DD"
-                match = re.search(r'Comic (\w+) not available for (\d{4}-\d{2}-\d{2})', original_msg)
+                match = re.search(r'Comic ([\w-]+) not available for (\d{4}-\d{2}-\d{2})', original_msg)
                 if match:
                     comic_name = match.group(1)
                     try:
                         error_date = datetime.strptime(match.group(2), '%Y-%m-%d').date()
                     except ValueError:
                         pass
-                
+
                 # Create a ComicUnavailableError with correct info
                 from services.error_handler import ComicUnavailableError
                 comic_error = ComicUnavailableError(str(error), comic_name, error_date)
                 return self.error_handler.get_user_friendly_message(comic_error)
+            elif "no og:image" in error_msg or "no image" in error_msg:
+                # Page loaded but no comic image = unavailable for this date
+                original_msg = str(error)
+                import re
+                from datetime import datetime
+
+                comic_name = "unknown"
+                error_date = date.today()
+
+                # Try to parse: "Could not retrieve COMIC_NAME for YYYY-MM-DD: ..."
+                match = re.search(r'Could not retrieve ([\w-]+) for (\d{4}-\d{2}-\d{2})', original_msg)
+                if match:
+                    comic_name = match.group(1)
+                    try:
+                        error_date = datetime.strptime(match.group(2), '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+
+                from services.error_handler import ComicUnavailableError
+                comic_error = ComicUnavailableError(str(error), comic_name, error_date)
+                return self.error_handler.get_user_friendly_message(comic_error)
+            elif "security challenge" in error_msg or "ip may be blocked" in error_msg:
+                # GoComics Bunny Shield — IP blocked
+                return "GoComics has found your IP suspicious. If you are using a VPN, please disconnect it."
             elif "network" in error_msg or "connection" in error_msg:
                 from services.error_handler import NetworkError
                 network_error = NetworkError(str(error))
@@ -438,11 +467,11 @@ class ComicService:
                 from services.error_handler import ComicError, ErrorType, ErrorSeverity
                 comic_error = ComicError(str(error), ErrorType.UNKNOWN_ERROR, ErrorSeverity.MEDIUM)
                 return self.error_handler.get_user_friendly_message(comic_error)
-        
+
         # Handle ErrorHandler exceptions directly
         if hasattr(error, 'error_type'):
             return self.error_handler.get_user_friendly_message(error)
-        
+
         # Default fallback message
         return "An unexpected error occurred. Please try again."
     

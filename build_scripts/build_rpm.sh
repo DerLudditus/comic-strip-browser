@@ -43,14 +43,14 @@ cat > "$SPEC" << EOF
 Name:           comic-strip-browser
 Version:        $VERSION
 Release:        $RELEASE
-Summary:        A standalone comic strip browser for GoComics.com
+Summary:        A standalone comic strip browser for GoComics and Comics Kingdom
 License:        MIT
 URL:            https://github.com/DerLudditus/comic-strip-browser
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      x86_64
 
 %description
-A standalone PyQt6 application for browsing comic strips from GoComics.com.
+A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom.
 
 %prep
 %autosetup
@@ -68,7 +68,7 @@ install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
 %{_datadir}/pixmaps/%{name}.png
 
 %changelog
-* $(date +"%a %b %d %Y") Homo Ludditus <ludditus@etik.com> - ${VERSION}-${RELEASE}
+* $(date +"%a %b %d %Y") Homo Ludditus <DerLudditus@gmail.com> - ${VERSION}-${RELEASE}
 - Release $VERSION
 EOF
 

@@ -41,13 +41,13 @@ class WebScraper:
     def fetch_page(self, url: str) -> str:
         """
         Retrieve web page content using requests with retry logic.
-        
+
         Args:
             url: The URL to fetch
-            
+
         Returns:
             HTML content as string
-            
+
         Raises:
             WebScrapingError: If the page cannot be retrieved
         """
@@ -57,7 +57,10 @@ class WebScraper:
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
                 'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive'
+                'Connection': 'keep-alive',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
             response = requests.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
             response.raise_for_status()
@@ -105,9 +108,33 @@ class WebScraper:
         """
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
-            
+
             title = self._extract_title(soup)
+
+            # Detect Bunny Shield / security challenge (GoComics IP block)
+            page_text = soup.get_text()
+            if "security service" in page_text and ("secure connection" in page_text or "Please enable JavaScript" in page_text):
+                raise WebScrapingError(
+                    f"GoComics security challenge detected — IP may be blocked for {comic_name} on {date}"
+                )
+
             image_url = self._extract_og_image(soup)
+
+            # CRITICAL CHECK: Verify the returned page matches the requested date.
+            # Comics Kingdom may return cached content for a different date at the
+            # requested URL. If the title contains a different date, it's wrong.
+            if title:
+                # Try to find a date in YYYY-MM-DD format in the title
+                import re
+                title_dates = re.findall(r'(\d{4}-\d{2}-\d{2})', title)
+                if title_dates:
+                    returned_date_str = title_dates[0]
+                    requested_date_str = date.strftime("%Y-%m-%d")
+                    if returned_date_str != requested_date_str:
+                        raise WebScrapingError(
+                            f"Server returned comic for wrong date {returned_date_str} instead of requested {requested_date_str}"
+                        )
+
             image_width = self._extract_og_image_width(soup)
             image_height = self._extract_og_image_height(soup)
             image_format = self._detect_image_format(image_url)
@@ -123,7 +150,10 @@ class WebScraper:
                 image_format=image_format,
                 author=author
             )
-            
+
+        except WebScrapingError:
+            # Don't swallow date mismatch errors - let them propagate
+            raise
         except Exception as e:
             try:
                 fallback_result = self.error_handler.handle_parsing_error(e, html_content, comic_name, date)
@@ -132,7 +162,7 @@ class WebScraper:
                     return fallback_result
             except ParsingError:
                 pass
-            
+
             # self.logger.error(f"Failed to parse comic data: {e}")
             raise WebScrapingError(f"Failed to parse comic data: {e}")
     
@@ -275,26 +305,26 @@ class WebScraper:
     def get_comic_data(self, comic_name: str, base_url: str, date: datetime.date) -> ComicData:
         """
         Retrieve and parse comic data for a specific date.
-        
+
         Args:
             comic_name: Name of the comic strip
             base_url: Base URL for the comic
             date: Date to retrieve
-            
+
         Returns:
             ComicData object with all extracted information
-            
+
         Raises:
             WebScrapingError: If comic data cannot be retrieved or parsed
         """
-        url = f"{base_url}/{date.year:04d}/{date.month:02d}/{date.day:02d}"
-        
-        # self.logger.info(f"Fetching comic data from {url}")
-        
+        # Handle different URL formats for GoComics vs Comics Kingdom
+        if 'comicskingdom.com' in base_url:
+            url = f"{base_url}/{date.year:04d}-{date.month:02d}-{date.day:02d}"
+        else:
+            url = f"{base_url}/{date.year:04d}/{date.month:02d}/{date.day:02d}"
+
         html_content = self.fetch_page(url)
-        
+
         comic_data = self.parse_comic_data(html_content, comic_name, date)
-        
-        # self.logger.info(f"Successfully extracted comic data for {comic_name} on {date}")
-        
+
         return comic_data

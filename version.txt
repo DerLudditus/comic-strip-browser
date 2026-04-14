@@ -1,8 +1,8 @@
 # UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 9, 0, 0),
-    prodvers=(1, 9, 0, 0),
+    filevers=(2, 0, 0, 0),
+    prodvers=(2, 0, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x4,
@@ -14,13 +14,13 @@ VSVersionInfo(
     StringFileInfo([
       StringTable('040904B0', [
         StringStruct('CompanyName', 'Homo Ludditus'),
-        StringStruct('FileDescription', 'Comic Strip Browser — Browse a selection of GoComics.com strips'),
-        StringStruct('FileVersion', '1.9.0.0'),
+        StringStruct('FileDescription', 'Comic Strip Browser — Browse a selection of comic strips from GoComics and Comics Kingdom'),
+        StringStruct('FileVersion', '2.0.0.0'),
         StringStruct('InternalName', 'ComicStripBrowser'),
         StringStruct('LegalCopyright', 'Copyright © 2026 Homo Ludditus. All rights reserved.'),
         StringStruct('OriginalFilename', 'ComicStripBrowser.exe'),
         StringStruct('ProductName', 'Comic Strip Browser'),
-        StringStruct('ProductVersion', '1.9.0.0'),
+        StringStruct('ProductVersion', '2.0.0.0'),
       ])
     ]),
     VarFileInfo([

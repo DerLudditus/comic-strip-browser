@@ -331,21 +331,6 @@ class ErrorHandler:
                     
                     # Get author from default mapping
                     author_mapping = {
-                        'calvinandhobbes': 'Bill Watterson',
-                        'peanuts': 'Charles M. Schulz',
-                        'peanuts-begins': 'Charles M. Schulz',
-                        'garfield': 'Jim Davis',
-                        'wizardofid': 'Brant Parker and Johnny Hart',
-                        'wizard-of-id-classics': 'Brant Parker and Johnny Hart',
-                        'pearlsbeforeswine': 'Stephan Pastis',
-                        'shoe': 'Jeff MacNelly',
-                        'bc': 'Johnny Hart',
-                        'back-to-bc': 'Johnny Hart',
-                        'pickles': 'Brian Crane',
-                        'wumo': 'Mikael Wulff and Anders Morgenthaler',
-                        'speedbump': 'Dave Coverly',
-                        'freerange': 'Bill Whitehead',
-                        'offthemark': 'Mark Parisi'
                     }
                     
                     author = author_mapping.get(comic_name, 'Unknown Author')
@@ -442,31 +427,46 @@ class ErrorHandler:
     def get_user_friendly_message(self, error: ComicError) -> str:
         """
         Generate a user-friendly error message.
-        
+
         Args:
             error: The error to generate a message for
-            
+
         Returns:
             User-friendly error message
         """
+        from models.data_models import get_comic_definition
+
         if error.error_type == ErrorType.NETWORK_ERROR:
             if isinstance(error, NetworkError) and error.status_code == 404:
                 return "This comic is not available for the selected date. Try a different date."
             else:
                 return "Unable to connect to the comic website. Please check your internet connection and try again."
-        
+
         elif error.error_type == ErrorType.PARSING_ERROR:
             return "Unable to load the comic. The website format may have changed. Please try again later."
-        
+
         elif error.error_type == ErrorType.CACHE_ERROR:
             return "There was an issue with local storage, but the comic should still load from the internet."
-        
+
         elif error.error_type == ErrorType.COMIC_UNAVAILABLE:
             if isinstance(error, ComicUnavailableError):
-                return f"The comic '{error.comic_name}' is not available for {error.comic_date.strftime('%B %d, %Y')}. Try a different date."
+                from models.data_models import get_comic_definition
+                comic_def = get_comic_definition(error.comic_name)
+                date_str = error.comic_date.strftime('%B %d, %Y')
+
+                # Special scheduling info for comics with regular availability patterns
+                unavailable_msgs = {
+                    "foxtrot": "Daily between 1988-04-11 and 2006-12-31. Weekly ON SUNDAYS since 2007-01-07.",
+                    "foxtrotclassics": "Daily EXCEPT for Sundays, when you're supposed to read Foxtrot instead.",
+                }
+                if comic_def and comic_def.name in unavailable_msgs:
+                    return f"Not available for {date_str}.\n{unavailable_msgs[comic_def.name]}"
+
+                # Generic fallback for comics with gaps or limited availability
+                return f"Not available for {date_str}."
             else:
                 return "This comic is not available for the selected date."
-        
+
         else:
             return "An unexpected error occurred. Please try again."
     
