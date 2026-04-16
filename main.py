@@ -99,6 +99,12 @@ class ComicStripBrowser:
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
 
+        # Immediately restore the default cursor so GNOME/Wayland releases
+        # the startup busy spinner before any blocking initialization runs.
+        from PyQt6.QtGui import QCursor
+        self.app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        self.app.restoreOverrideCursor()
+
         # In Qt6, high DPI scaling and pixmaps are always enabled.
         # AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps are deprecated.
 
