@@ -10,5 +10,5 @@ Terminal=false
 Categories=Graphics;Viewer;
 MimeType=
 Keywords=comic;comics;strips;gocomics;entertainment;
-StartupNotify=true
+StartupNotify=false
 StartupWMClass=ComicStripBrowser
