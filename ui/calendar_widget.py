@@ -79,7 +79,6 @@ class CalendarDayButton(QPushButton):
     def update_style(self):
         """Update the button styling based on current state."""
         if self.is_selected:
-            # Selected state - blue background
             self.setStyleSheet("""
                 QPushButton {
                     background-color: #2196f3;
@@ -92,35 +91,35 @@ class CalendarDayButton(QPushButton):
                     background-color: #1976d2;
                 }
             """)
+            self.setEnabled(True)
+        elif not self.is_available:
+            # Future date or before comic start — gray, not clickable
+            self.setStyleSheet("""
+                QPushButton {
+                    background-color: #f0f0f0;
+                    color: #c0c0c0;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 17px;
+                }
+            """)
+            self.setEnabled(False)
         elif self.is_today:
-            # Today's date - orange outline
-            if self.is_available:
-                self.setStyleSheet("""
-                    QPushButton {
-                        background-color: white;
-                        color: #333333;
-                        border: 2px solid #ff9800;
-                        border-radius: 17px;
-                        font-weight: bold;
-                    }
-                    QPushButton:hover {
-                        background-color: #fff3e0;
-                    }
-                """)
-            else:
-                self.setStyleSheet("""
-                    QPushButton {
-                        background-color: #f5f5f5;
-                        color: #cccccc;
-                        border: 2px solid #ffcc80;
-                        border-radius: 17px;
-                        font-weight: bold;
-                    }
-                """)
-                # Always enable today's date regardless of availability
-                self.setEnabled(True)
-        elif self.is_available:
-            # Available date - normal style
+            # Today — orange outline, clickable
+            self.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    color: #333333;
+                    border: 2px solid #ff9800;
+                    border-radius: 17px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #fff3e0;
+                }
+            """)
+            self.setEnabled(True)
+        else:
+            # Normal available date
             self.setStyleSheet("""
                 QPushButton {
                     background-color: white;
@@ -139,31 +138,6 @@ class CalendarDayButton(QPushButton):
                 }
             """)
             self.setEnabled(True)
-        else:
-            # CRITICAL FIX: Unavailable date - improved styling to look more enabled
-            # Use a lighter gray for background and darker text for better visibility
-            self.setStyleSheet("""
-                QPushButton {
-                    background-color: #f8f8f8;
-                    color: #555555;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 17px;
-                }
-                QPushButton:hover {
-                    background-color: #f0f0f0;
-                    border: 1px solid #bdbdbd;
-                    color: #333333;
-                }
-                QPushButton:pressed {
-                    background-color: #e0e0e0;
-                    border: 1px solid #bdbdbd;
-                }
-            """)
-        
-        # CRITICAL FIX: Always enable all dates regardless of availability
-        # This ensures dates are clickable even when navigating to past years
-        self.setEnabled(True)
-
 
 class CalendarWidget(QWidget):
     """
@@ -190,6 +164,7 @@ class CalendarWidget(QWidget):
         self.selected_date = None
         self.available_dates: Set[date] = set()
         self.comic_date_ranges: Dict[str, tuple] = {}  # Maps comic name to (start_date, end_date)
+        self.current_comic_name: Optional[str] = None  # Track selected comic for date constraints
         
         # UI components
         self.day_buttons: Dict[date, CalendarDayButton] = {}
@@ -429,7 +404,8 @@ class CalendarWidget(QWidget):
         parent_layout.addWidget(self.info_label)
 
     def set_comic_info(self, comic_name: str):
-        """Update the info text for the currently selected comic."""
+        """Update the info text and date constraints for the currently selected comic."""
+        self.current_comic_name = comic_name
         comic_def = get_comic_definition(comic_name)
         if comic_def and comic_def.info:
             self.info_label.setText(comic_def.info)
@@ -471,6 +447,15 @@ class CalendarWidget(QWidget):
 
         # Disable next year button if it would go past today's year
         self.next_year_btn.setEnabled(next_year <= date.today().year)
+
+        # Disable prev navigation if already at the comic's earliest month
+        at_earliest = False
+        if self.current_comic_name:
+            comic_def = get_comic_definition(self.current_comic_name)
+            if comic_def and comic_def.earliest_date:
+                at_earliest = self.current_date <= comic_def.earliest_date.replace(day=1)
+        self.prev_month_btn.setEnabled(not at_earliest)
+        self.prev_year_btn.setEnabled(not at_earliest)
         
         # Create day buttons
         self.day_buttons.clear()
@@ -489,9 +474,6 @@ class CalendarWidget(QWidget):
                 day_button.set_available(self.is_date_available(day_date))
                 day_button.set_today(day_date == today)
                 day_button.set_selected(day_date == self.selected_date)
-                
-                # CRITICAL FIX: Ensure button is enabled regardless of availability
-                day_button.setEnabled(True)
                 
                 # Connect button signal - ensure proper connection for all buttons
                 day_button.clicked.connect(lambda checked, d=day_date: self.on_date_clicked(d))
@@ -547,6 +529,14 @@ class CalendarWidget(QWidget):
     
     def go_to_previous_month(self):
         """Navigate to the previous month."""
+        # Don't go before the comic's start month
+        if self.current_comic_name:
+            comic_def = get_comic_definition(self.current_comic_name)
+            if comic_def and comic_def.earliest_date:
+                earliest_month = comic_def.earliest_date.replace(day=1)
+                if self.current_date <= earliest_month:
+                    return
+
         if self.current_date.month == 1:
             self.current_date = self.current_date.replace(year=self.current_date.year - 1, month=12)
         else:
@@ -574,20 +564,26 @@ class CalendarWidget(QWidget):
         self.month_changed.emit(self.current_date.month, self.current_date.year)
     
     def go_to_previous_year(self):
-        """Navigate to the previous year."""
+        """Navigate to the previous year, clamping to the comic's earliest month if needed."""
         try:
-            # CRITICAL FIX: Add defensive check for year navigation
-            self.current_date = self.current_date.replace(year=self.current_date.year - 1)
-            # Clear and repopulate the calendar to ensure proper refresh
+            prev_year = self.current_date.year - 1
+            candidate = self.current_date.replace(year=prev_year)
+
+            if self.current_comic_name:
+                comic_def = get_comic_definition(self.current_comic_name)
+                if comic_def and comic_def.earliest_date:
+                    earliest_month = comic_def.earliest_date.replace(day=1)
+                    if candidate < earliest_month:
+                        if prev_year < comic_def.earliest_date.year:
+                            return  # Already at or before the start year, do nothing
+                        candidate = earliest_month  # Clamp to start month
+
+            self.current_date = candidate
             self.clear_calendar_grid()
             self.populate_calendar()
-            # Ensure all buttons are properly connected and enabled
-            for button in self.day_buttons.values():
-                button.setEnabled(True)
             self.month_changed.emit(self.current_date.month, self.current_date.year)
         except Exception as e:
             print(f"Error navigating to previous year: {e}")
-            # Fallback to ensure calendar remains functional
             self.populate_calendar()
     
     def go_to_next_year(self):
@@ -601,12 +597,8 @@ class CalendarWidget(QWidget):
                 
             # CRITICAL FIX: Add defensive check for year navigation
             self.current_date = self.current_date.replace(year=next_year)
-            # Clear and repopulate the calendar to ensure proper refresh
             self.clear_calendar_grid()
             self.populate_calendar()
-            # Ensure all buttons are properly connected and enabled
-            for button in self.day_buttons.values():
-                button.setEnabled(True)
             self.month_changed.emit(self.current_date.month, self.current_date.year)
         except Exception as e:
             print(f"Error navigating to next year: {e}")
@@ -721,22 +713,16 @@ class CalendarWidget(QWidget):
     def is_date_available(self, date_obj: date) -> bool:
         """
         Check if a date has available comic content.
-        
-        Args:
-            date_obj: Date to check
-            
-        Returns:
-            True if comic is available for this date
+        A date is available if it is today or in the past, and not before
+        the selected comic's earliest date.
         """
-        # CRITICAL FIX: Enhanced edge case handling
-        # If no available dates are set, allow all dates (for navigation)
-        # This prevents the calendar from becoming unusable when navigating to past years
-        if not self.available_dates:
-            return True
-            
-        # Check if date is in available dates
-        # This is used for visual indication only, not for clickability
-        return date_obj in self.available_dates
+        if date_obj > date.today():
+            return False
+        if self.current_comic_name:
+            comic_def = get_comic_definition(self.current_comic_name)
+            if comic_def and comic_def.earliest_date and date_obj < comic_def.earliest_date:
+                return False
+        return True
     
     def get_current_month_year(self) -> tuple[int, int]:
         """

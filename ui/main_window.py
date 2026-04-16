@@ -344,7 +344,6 @@ class MainWindow(QMainWindow):
         self.comic_controller.comic_loading_started.connect(self.on_comic_loading_started)
         self.comic_controller.comic_loading_finished.connect(self.on_comic_loading_finished)
         self.comic_controller.loading_error.connect(self.on_loading_error)
-        self.comic_controller.available_dates_updated.connect(self.on_available_dates_updated)
         
         # Add debounce tracking
         self._last_error_time = 0
@@ -573,13 +572,6 @@ class MainWindow(QMainWindow):
         calendar = QCalendarWidget()
         calendar.setMaximumDate(date.today())
         
-        # Set available dates if we have a current comic
-        current_comic = self.comic_selector.get_selected_comic()
-        if current_comic:
-            available_dates = self.comic_controller.get_available_dates(current_comic)
-            # Note: QCalendarWidget doesn't have a direct way to highlight specific dates
-            # In a full implementation, we'd customize the calendar widget
-        
         layout.addWidget(calendar)
         
         # Buttons
@@ -627,19 +619,6 @@ class MainWindow(QMainWindow):
             self.comic_selector.setStyleSheet(original_style)
         
         QTimer.singleShot(3000, remove_highlight)
-    
-    def on_available_dates_updated(self, comic_name: str, available_dates):
-        """
-        Handle available dates update event.
-        
-        Args:
-            comic_name: Name of the comic
-            available_dates: Set of available dates for the comic
-        """
-        # Update calendar widget with available dates if this is the current comic
-        current_comic = self.comic_selector.get_selected_comic()
-        if current_comic == comic_name:
-            self.calendar_widget.set_available_dates(available_dates)
     
     def go_to_first(self):
         """Navigate to the first available comic (start date)."""

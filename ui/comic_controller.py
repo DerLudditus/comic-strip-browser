@@ -8,11 +8,11 @@ error management, and state synchronization.
 
 # import logging
 from datetime import date, datetime
-from typing import Optional, Set
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, QTimer
+from typing import Optional
+from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QMessageBox
 
-from models.data_models import ComicData, get_comic_definition, COMIC_DEFINITIONS
+from models.data_models import ComicData, get_comic_definition
 from services.comic_service import ComicService, ComicServiceError
 from services.error_handler import ComicUnavailableError, NetworkError, ParsingError
 
@@ -84,7 +84,6 @@ class ComicController(QObject):
     comic_loading_finished = pyqtSignal(str, date)  # comic_name, date
     comic_loaded = pyqtSignal(ComicData)  # Successfully loaded comic
     loading_error = pyqtSignal(str, str, str)  # error_message, recovery_suggestions, error_type
-    available_dates_updated = pyqtSignal(str, set)  # comic_name, available_dates
     
     def __init__(self, comic_service: Optional[ComicService] = None):
         """
@@ -101,86 +100,6 @@ class ComicController(QObject):
         self.current_comic_name: Optional[str] = None
         self.current_date: Optional[date] = None
         self.loading_worker: Optional[ComicLoadingWorker] = None
-        
-        # Available dates cache for each comic
-        self.available_dates_cache: dict[str, Set[date]] = {}
-        
-        # Initialize service if needed
-        self.initialization_timer = QTimer()
-        self.initialization_timer.setSingleShot(True)
-        self.initialization_timer.timeout.connect(self._initialize_service)
-        self.initialization_timer.start(100)  # Start initialization after UI is ready
-    
-    def _initialize_service(self):
-        """Initialize the comic service in the background."""
-        try:
-            # self.logger.info("Initializing comic service...")
-            
-            # Check if initialization is needed
-            if self.comic_service.initialize_if_needed():
-                # self.logger.info("Comic service initialization completed")
-                # Update available dates for all comics
-                self._update_all_available_dates()
-            else:
-                # self.logger.info("Comic service already initialized")
-                # Still update available dates from config
-                self._update_all_available_dates()
-                
-        except Exception as e:
-            # self.logger.error(f"Failed to initialize comic service: {e}")
-            error_msg = self.comic_service.get_user_friendly_error_message(e)
-            suggestions = self.comic_service.get_recovery_suggestions(e)
-            self.loading_error.emit(error_msg, "; ".join(suggestions), "network")
-    
-    def _update_all_available_dates(self):
-        """Update available dates for all comics based on configuration."""
-        for comic_def in COMIC_DEFINITIONS:
-            self._update_available_dates_for_comic(comic_def.name)
-    
-    def _update_available_dates_for_comic(self, comic_name: str):
-        """
-        Update available dates for a specific comic.
-        
-        Args:
-            comic_name: Name of the comic to update
-        """
-        try:
-            # Get start date from configuration
-            start_date = self.comic_service.config_manager.get_start_date(comic_name)
-            if not start_date:
-                # If no start date, assume comic is available from a reasonable default
-                start_date = date(2000, 1, 1)  # Default fallback
-            
-            # Generate available dates from start date to today
-            available_dates = set()
-            current = start_date
-            today = date.today()
-            
-            # For performance, we'll only generate dates for the current year and previous year
-            # In a real application, this would be more sophisticated
-            year_start = date(today.year - 1, 1, 1)
-            if start_date > year_start:
-                current = start_date
-            else:
-                current = year_start
-            
-            while current <= today:
-                available_dates.add(current)
-                # Use timedelta for proper date arithmetic
-                from datetime import timedelta
-                current = current + timedelta(days=1)
-                
-                # Safety check to prevent infinite loops
-                if len(available_dates) > 1000:
-                    break
-            
-            # Cache and emit the available dates
-            self.available_dates_cache[comic_name] = available_dates
-            self.available_dates_updated.emit(comic_name, available_dates)
-            
-        except Exception as e:
-            # self.logger.error(f"Failed to update available dates for {comic_name}: {e}")
-            pass
     
     def select_comic(self, comic_name: str):
         """
@@ -189,17 +108,11 @@ class ComicController(QObject):
         Args:
             comic_name: Name of the selected comic
         """
-        # self.logger.info(f"Comic selected: {comic_name}")
         self.current_comic_name = comic_name
         
-        # Update available dates for the selected comic
-        self._update_available_dates_for_comic(comic_name)
-        
-        # Load current date's comic if we have a date selected
         if self.current_date:
             self.load_comic(comic_name, self.current_date)
         else:
-            # Load today's comic by default
             self.load_comic(comic_name, date.today())
     
     def select_date(self, selected_date: date):
@@ -342,31 +255,9 @@ class ComicController(QObject):
         # self.logger.debug(f"Loading progress: {progress_message}")
         # Progress messages are handled by the UI components directly
     
-    def get_available_dates(self, comic_name: str) -> Set[date]:
-        """
-        Get available dates for a specific comic.
-        
-        Args:
-            comic_name: Name of the comic
-            
-        Returns:
-            Set of available dates for the comic
-        """
-        return self.available_dates_cache.get(comic_name, set())
-    
-    def is_date_available(self, comic_name: str, comic_date: date) -> bool:
-        """
-        Check if a comic is available for a specific date.
-        
-        Args:
-            comic_name: Name of the comic
-            comic_date: Date to check
-            
-        Returns:
-            True if comic is available for the date
-        """
-        available_dates = self.get_available_dates(comic_name)
-        return comic_date in available_dates
+    def get_available_dates(self, comic_name: str) -> set:
+        """Get available dates for a specific comic (always empty — availability is date-based)."""
+        return set()
     
     def retry_current_comic(self):
         """Retry loading the current comic."""
@@ -393,10 +284,6 @@ class ComicController(QObject):
             comic_service: ComicService instance to use
         """
         self.comic_service = comic_service
-        # self.logger.info("Comic service injected into controller")
-        
-        # Re-initialize with the new service
-        self._initialize_service()
     
     def show_error_dialog(self, title: str, message: str, suggestions: str = ""):
         """
@@ -423,6 +310,3 @@ class ComicController(QObject):
         if self.loading_worker and self.loading_worker.isRunning():
             self.loading_worker.quit()
             self.loading_worker.wait()
-        
-        if self.initialization_timer.isActive():
-            self.initialization_timer.stop()
