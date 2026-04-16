@@ -99,12 +99,6 @@ class ComicStripBrowser:
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
 
-        # Immediately restore the default cursor so GNOME/Wayland releases
-        # the startup busy spinner before any blocking initialization runs.
-        from PyQt6.QtGui import QCursor
-        self.app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
-        self.app.restoreOverrideCursor()
-
         # In Qt6, high DPI scaling and pixmaps are always enabled.
         # AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps are deprecated.
 
@@ -228,19 +222,10 @@ class ComicStripBrowser:
         msg_box.exec()
     
     def initialize_main_window(self):
-        """Initialize the main window with services."""
-        
+        """Initialize and show the main window immediately."""
         try:
             self.main_window = MainWindow()
-            
-            # Inject services into the main window's controller
-            if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
-                controller = self.main_window.comic_controller
-                if hasattr(controller, 'set_comic_service'):
-                    controller.set_comic_service(self.comic_service)
-            
             self.main_window.show()
-            
         except Exception as e:
             self.show_error_dialog("Startup Error", f"Failed to initialize main window: {e}")
             raise
@@ -295,49 +280,45 @@ class ComicStripBrowser:
         try:
             # Initialize PyQt6 application
             self.initialize_application()
-            
-            # Initialize service layer
-            self.initialize_services()
-            
-            # Validate configuration
-            self.validate_configuration()
-            
-            # Show main window immediately so GNOME/Wayland releases the busy cursor
+
+            # Show the main window immediately so the xdg-activation startup
+            # notification completes as soon as the window maps — before any
+            # blocking I/O runs. This is the correct Wayland/GNOME behaviour.
             self.initialize_main_window()
-            
+
+            # Defer the rest of initialization to after the event loop starts
+            # (and the window has actually been presented to the compositor).
+            QTimer.singleShot(0, self._deferred_initialization)
+
             # Start the application event loop
             return self.app.exec()
-            
+
         except Exception as e:
             if self.app:
                 self.show_error_dialog("Startup Error", f"Fatal error during startup: {e}")
             return 1
 
+    def _deferred_initialization(self):
+        """Run blocking initialization after the window is visible."""
+        try:
+            self.initialize_services()
+            self.validate_configuration()
+
+            # Inject the now-ready services into the controller
+            if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
+                controller = self.main_window.comic_controller
+                if hasattr(controller, 'set_comic_service'):
+                    controller.set_comic_service(self.comic_service)
+
+        except Exception as e:
+            self.show_error_dialog("Startup Error", f"Fatal error during initialization: {e}")
+            self.shutdown()
+            sys.exit(1)
+
 
 def main():
     """Main entry point for the application."""
     try:
-        # Notify the desktop that startup is complete so GNOME/Wayland
-        # releases the busy cursor immediately instead of waiting for the
-        # 30-60 second timeout.
-        import os
-        startup_id = os.environ.get("DESKTOP_STARTUP_ID", "")
-        if startup_id:
-            try:
-                import subprocess
-                subprocess.Popen(
-                    ["gdbus", "call", "--session",
-                     "--dest", "org.gnome.Shell",
-                     "--object-path", "/org/gnome/Shell",
-                     "--method", "org.gnome.Shell.AppActivationToken",
-                     startup_id],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-                )
-            except Exception:
-                pass
-            # Unset it so Qt doesn't try to handle it and stall
-            del os.environ["DESKTOP_STARTUP_ID"]
-
         browser = ComicStripBrowser()
         return browser.run()
     except Exception as e:
