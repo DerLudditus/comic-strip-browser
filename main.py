@@ -296,11 +296,8 @@ class ComicStripBrowser:
             # Validate configuration
             self.validate_configuration()
             
-            # Show progress dialog and start background initialization
-            self.show_initialization_progress()
-            
-            # Use QTimer to start background initialization after event loop starts
-            QTimer.singleShot(100, self.run_background_initialization)
+            # Show main window immediately so GNOME/Wayland releases the busy cursor
+            self.initialize_main_window()
             
             # Start the application event loop
             return self.app.exec()
