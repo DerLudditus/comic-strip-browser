@@ -26,6 +26,7 @@ def create_deb_package():
         "usr/bin",
         "usr/share/applications",
         "usr/share/pixmaps",
+        "usr/share/icons/hicolor/256x256/apps",
         "usr/share/doc/comic-strip-browser",
         "usr/share/metainfo"
     ]
@@ -91,7 +92,7 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database /usr/share/applications
 fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-    gtk-update-icon-cache -f -t /usr/share/pixmaps 2>/dev/null || true
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
 fi
 """
     postinst_path = deb_dir / "DEBIAN" / "postinst"
@@ -125,12 +126,13 @@ fi
         shutil.copy2(project_root / "assets" / "comic-strip-browser.desktop",
                      deb_dir / "usr" / "share" / "applications")
     
-    # Copy icon (use the app's current icon, not the old asset)
+    # Copy icon to both pixmaps and hicolor theme (GNOME prefers hicolor)
     icon_src = project_root / "initial_transparent_alpha.png"
     if not icon_src.exists():
         icon_src = project_root / "assets" / "comic-strip-browser.png"
     if icon_src.exists():
         shutil.copy2(icon_src, deb_dir / "usr" / "share" / "pixmaps" / "comic-strip-browser.png")
+        shutil.copy2(icon_src, deb_dir / "usr" / "share" / "icons" / "hicolor" / "256x256" / "apps" / "comic-strip-browser.png")
     
     # Create copyright file
     copyright_content = """Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/

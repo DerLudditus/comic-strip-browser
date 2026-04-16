@@ -150,17 +150,25 @@ jobs:
           install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
           [ -f %{name}.desktop ] && install -D -m 0644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop
           [ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/pixmaps/%{name}.png
+          [ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/%{name}.png
           %files
           %{_bindir}/%{name}
           %{_datadir}/applications/%{name}.desktop
           %{_datadir}/pixmaps/%{name}.png
+          %{_datadir}/icons/hicolor/256x256/apps/%{name}.png
           %post
           if command -v update-desktop-database >/dev/null 2>&1; then
               update-desktop-database %{_datadir}/applications
           fi
+          if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+              gtk-update-icon-cache -f -t %{_datadir}/icons/hicolor 2>/dev/null || true
+          fi
           %postun
           if command -v update-desktop-database >/dev/null 2>&1; then
               update-desktop-database %{_datadir}/applications
+          fi
+          if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+              gtk-update-icon-cache -f -t %{_datadir}/icons/hicolor 2>/dev/null || true
           fi
           %changelog
           * $(date +"%a %b %d %Y") Homo Ludditus <ludditus@etik.com> - ${VERSION}-${RELEASE}
