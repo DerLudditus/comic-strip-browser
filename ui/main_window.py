@@ -683,6 +683,7 @@ class MainWindow(QMainWindow):
             
             # Show progress
             self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
+            self.comic_viewer.show_loading_state()
             QApplication.processEvents()
             
             # Try to fetch this comic using the existing service
@@ -746,6 +747,7 @@ class MainWindow(QMainWindow):
             
             # Show progress
             self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
+            self.comic_viewer.show_loading_state()
             QApplication.processEvents()  # Keep UI responsive
             
             # Try to fetch this comic using the existing service (but catch errors quickly)
@@ -819,6 +821,7 @@ class MainWindow(QMainWindow):
             
             # Show progress
             self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d, %Y')}...")
+            self.comic_viewer.show_loading_state()
             QApplication.processEvents()
             
             # Try to fetch this comic
