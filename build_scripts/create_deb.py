@@ -84,6 +84,33 @@ Description: Comic Strip Browser - Browse a selection of comic strips
     with open(deb_dir / "usr" / "share" / "metainfo" / "comic-strip-browser.metainfo.xml", "w") as f:
         f.write(metainfo_content)
     
+    # Create postinst script
+    postinst_content = """#!/bin/sh
+set -e
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/pixmaps 2>/dev/null || true
+fi
+"""
+    postinst_path = deb_dir / "DEBIAN" / "postinst"
+    with open(postinst_path, "w") as f:
+        f.write(postinst_content)
+    os.chmod(postinst_path, 0o755)
+
+    # Create postrm script (clean up on uninstall)
+    postrm_content = """#!/bin/sh
+set -e
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications
+fi
+"""
+    postrm_path = deb_dir / "DEBIAN" / "postrm"
+    with open(postrm_path, "w") as f:
+        f.write(postrm_content)
+    os.chmod(postrm_path, 0o755)
+
     # Copy executable
     binary_path = project_root / "dist" / "comic-strip-browser"
     if not binary_path.exists():

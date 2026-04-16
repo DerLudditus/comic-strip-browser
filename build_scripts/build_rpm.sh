@@ -67,6 +67,16 @@ install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/pixmaps/%{name}.png
 
+%post
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database %{_datadir}/applications
+fi
+
+%postun
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database %{_datadir}/applications
+fi
+
 %changelog
 * $(date +"%a %b %d %Y") Homo Ludditus <DerLudditus@gmail.com> - ${VERSION}-${RELEASE}
 - Release $VERSION

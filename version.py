@@ -20,13 +20,9 @@ DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 # Changelog entry (most recent first)
 CHANGELOG = """comic-strip-browser (2.1.0-1) stable; urgency=medium
   * Fixed "Previous", "Next" or "Random" buttons not triggering "Loading comic..." and "Downloading comic image..." feedback.
-  * Setting StartupNotify=false in .desktop is the nuclear fix for the initial "wait" cursor staying unchanged under Wayland 
-  for about 60 seconds.
-  Apparently, PyQt6 and PySide6 do not implement the xdg-activation token completion on Wayland. 
-  Qt C++ apps do it because QGuiApplication does it internally at the C++ level, 
-  but the Python bindings don't expose the hook that triggers it. Apparently.
+  * Fixed the missing update-desktop-database.
 
- -- Homo Ludditus <DerLudditus@gmail.com>  Fri, 17 Apr 2026 00:21:00 +0300
+ -- Homo Ludditus <DerLudditus@gmail.com>  Fri, 17 Apr 2026 01:05 +0300
  
 comic-strip-browser (2.0.7-1) stable; urgency=medium
   * This should really fix the initial wait cursor on Wayland.
