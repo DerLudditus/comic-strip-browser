@@ -5,20 +5,25 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.0.5"
-__version_info__ = (2, 0, 5)
+__version__ = "2.0.6"
+__version_info__ = (2, 0, 6)
 
 # Release information
 RELEASE_DATE = "2026-04-16"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.0.5-1"
+DEB_VERSION = "2.0.6-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.0.5-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.0.6-1) stable; urgency=medium
+  * If this doesn't fix the initial wait cursor on Wayland, I don't know what else would do it.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Thu, 16 Apr 2026 23:06:00 +0300
+ 
+comic-strip-browser (2.0.5-1) stable; urgency=medium
   * Cleanup of the code regarding the calendar widget.
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Thu, 16 Apr 2026 22:20:00 +0300

@@ -317,6 +317,27 @@ class ComicStripBrowser:
 def main():
     """Main entry point for the application."""
     try:
+        # Notify the desktop that startup is complete so GNOME/Wayland
+        # releases the busy cursor immediately instead of waiting for the
+        # 30-60 second timeout.
+        import os
+        startup_id = os.environ.get("DESKTOP_STARTUP_ID", "")
+        if startup_id:
+            try:
+                import subprocess
+                subprocess.Popen(
+                    ["gdbus", "call", "--session",
+                     "--dest", "org.gnome.Shell",
+                     "--object-path", "/org/gnome/Shell",
+                     "--method", "org.gnome.Shell.AppActivationToken",
+                     startup_id],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+            # Unset it so Qt doesn't try to handle it and stall
+            del os.environ["DESKTOP_STARTUP_ID"]
+
         browser = ComicStripBrowser()
         return browser.run()
     except Exception as e:
