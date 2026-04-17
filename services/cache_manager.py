@@ -83,10 +83,9 @@ class CacheManager:
         return date_obj.strftime("%Y-%m-%d")
     
     def _get_image_filename(self, comic_data: ComicData) -> str:
-        """Generate a filename for the cached image."""
+        """Generate a filename for the cached image (no extension — detected after download)."""
         date_str = self._get_date_key(comic_data.date)
-        extension = self._get_file_extension(comic_data.image_url, comic_data.image_format)
-        return f"{date_str}.{extension}"
+        return date_str
     
     def _get_file_extension(self, url: str, image_format: str) -> str:
         """Determine the file extension for an image."""
@@ -272,14 +271,32 @@ class CacheManager:
         if comic_name not in self._cache_index:
             self._cache_index[comic_name] = {}
         
-        # Download and cache the image
+        # Download and cache the image — save first, then detect format from file
         comic_dir = self._get_comic_cache_dir(comic_name)
-        image_filename = self._get_image_filename(comic_data)
-        image_path = comic_dir / image_filename
-        
-        if not self._download_image(comic_data.image_url, image_path):
+        base_filename = self._get_image_filename(comic_data)  # no extension
+        tmp_path = comic_dir / base_filename
+
+        if not self._download_image(comic_data.image_url, tmp_path):
             return False
-        
+
+        # Detect format from saved file content (no extra network request)
+        try:
+            from PIL import Image
+            with Image.open(tmp_path) as img:
+                fmt = (img.format or 'JPEG').lower()
+                if fmt == 'jpg':
+                    fmt = 'jpeg'
+        except Exception:
+            fmt = 'jpeg'
+
+        # Rename to include the correct extension
+        ext = 'jpg' if fmt == 'jpeg' else fmt
+        image_path = comic_dir / f"{base_filename}.{ext}"
+        tmp_path.rename(image_path)
+
+        # Update comic_data with detected format
+        comic_data.image_format = fmt
+
         # Update comic data with cached image path
         comic_data.cached_image_path = str(image_path)
         

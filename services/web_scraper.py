@@ -5,7 +5,6 @@ Web scraping functionality for retrieving comic data from GoComics.com.
 import re
 # import logging
 from typing import Optional
-from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from models.data_models import ComicData
 import datetime
@@ -66,8 +65,8 @@ class WebScraper:
             response.raise_for_status()
             if not response.text:
                 raise WebScrapingError(f"Empty response from {url}")
-            return response.text
-        
+            self._last_fetched_url = response.url  # track final URL after redirects
+            return response.text        
         try:
             return self.error_handler.retry_with_backoff(_fetch_with_requests)
         except HTTPError as e:
@@ -216,51 +215,11 @@ class WebScraper:
     
     def _detect_image_format(self, image_url: str) -> str:
         """
-        Detect image format by downloading and inspecting the actual image data.
-        
-        Args:
-            image_url: URL of the image
-            
-        Returns:
-            Image format (e.g., 'jpeg', 'png', 'gif')
+        Return a default image format — actual format is detected from the
+        saved file in cache_manager after download, avoiding a redundant
+        network request.
         """
-        try:
-            # Download the image to detect its actual format
-            import requests
-            from PIL import Image
-            from io import BytesIO
-            
-            response = requests.get(image_url, timeout=5)
-            response.raise_for_status()
-            
-            # Open the image and get its format
-            image = Image.open(BytesIO(response.content))
-            format_name = image.format.lower() if image.format else 'jpeg'
-            
-            # Normalize format names
-            if format_name == 'jpg':
-                format_name = 'jpeg'
-            
-            return format_name
-                
-        except Exception:
-            # Fallback: try to detect from URL extension
-            try:
-                parsed_url = urlparse(image_url)
-                path = parsed_url.path.lower()
-                
-                if path.endswith('.jpg') or path.endswith('.jpeg'):
-                    return 'jpeg'
-                elif path.endswith('.png'):
-                    return 'png'
-                elif path.endswith('.gif'):
-                    return 'gif'
-                elif path.endswith('.webp'):
-                    return 'webp'
-            except Exception:
-                pass
-            
-            return 'jpeg'
+        return 'jpeg'
     
     def _extract_author(self, title: str, comic_name: str) -> str:
         """
@@ -324,7 +283,26 @@ class WebScraper:
             url = f"{base_url}/{date.year:04d}/{date.month:02d}/{date.day:02d}"
 
         html_content = self.fetch_page(url)
+        actual_url = self._last_fetched_url  # Track where we actually landed
+
+        # GoComics uses a meta refresh redirect for dates with no comic
+        # (e.g. Foxtrot on a non-Sunday redirects to the previous Sunday).
+        # requests doesn't follow meta refresh, so we detect and handle it here.
+        soup_check = BeautifulSoup(html_content, 'html.parser')
+        meta_refresh = soup_check.find('meta', attrs={'http-equiv': lambda x: x and x.lower() == 'refresh'})
+        if meta_refresh and meta_refresh.get('content'):
+            import re
+            m = re.search(r'url=(.+)', meta_refresh['content'], re.IGNORECASE)
+            if m:
+                redirect_path = m.group(1).strip()
+                # Extract the date from the redirect URL
+                date_match = re.search(r'/(\d{4})/(\d{2})/(\d{2})', redirect_path)
+                if date_match:
+                    actual_date = datetime.date(int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3)))
+                    if actual_date != date:
+                        raise WebScrapingError(
+                            f"GoComics meta-refresh to {actual_date} instead of requested {date} for {comic_name}"
+                        )
 
         comic_data = self.parse_comic_data(html_content, comic_name, date)
-
         return comic_data

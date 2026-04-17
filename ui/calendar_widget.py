@@ -448,14 +448,21 @@ class CalendarWidget(QWidget):
         # Disable next year button if it would go past today's year
         self.next_year_btn.setEnabled(next_year <= date.today().year)
 
-        # Disable prev navigation if already at the comic's earliest month
-        at_earliest = False
+        # Disable prev navigation based on comic's earliest date
         if self.current_comic_name:
             comic_def = get_comic_definition(self.current_comic_name)
             if comic_def and comic_def.earliest_date:
-                at_earliest = self.current_date <= comic_def.earliest_date.replace(day=1)
-        self.prev_month_btn.setEnabled(not at_earliest)
-        self.prev_year_btn.setEnabled(not at_earliest)
+                earliest_month = comic_def.earliest_date.replace(day=1)
+                # Prev month: disable if already at the earliest month
+                self.prev_month_btn.setEnabled(self.current_date > earliest_month)
+                # Prev year: disable if going back a year would be before the earliest year
+                self.prev_year_btn.setEnabled(self.current_date.year > comic_def.earliest_date.year)
+            else:
+                self.prev_month_btn.setEnabled(True)
+                self.prev_year_btn.setEnabled(True)
+        else:
+            self.prev_month_btn.setEnabled(True)
+            self.prev_year_btn.setEnabled(True)
         
         # Create day buttons
         self.day_buttons.clear()

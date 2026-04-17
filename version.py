@@ -5,20 +5,26 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.1.0"
-__version_info__ = (2, 1, 0)
+__version__ = "2.2.0"
+__version_info__ = (2, 2, 0)
 
 # Release information
 RELEASE_DATE = "2026-04-17"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.1.0-1"
+DEB_VERSION = "2.2.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.1.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.2.0-1) stable; urgency=medium
+  * Several functionality improvements and bug fixes.
+  * Some bugs remain.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Fri, 17 Apr 2026 03:25 +0300
+ 
+comic-strip-browser (2.1.0-1) stable; urgency=medium
   * Fixed "Previous", "Next" or "Random" buttons not triggering "Loading comic..." and "Downloading comic image..." feedback.
   * Fixed the missing update-desktop-database.
 

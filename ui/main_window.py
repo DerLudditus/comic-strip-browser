@@ -407,15 +407,20 @@ class MainWindow(QMainWindow):
     def on_comic_loading_finished(self, comic_name: str, comic_date):
         """
         Handle comic loading finished event.
-        
+
         Args:
             comic_name: Name of the comic that finished loading
             comic_date: Date of the comic that finished loading
         """
-        # Stop auto-advancing when we successfully load a comic
         if hasattr(self, '_auto_advancing'):
             self._auto_advancing = False
-        
+
+        # Sync calendar to the actual date that was loaded.
+        # The service may have silently fallen back to an earlier date
+        # (e.g. today's comic not yet available → yesterday's returned).
+        if self.calendar_widget.get_selected_date() != comic_date:
+            self.calendar_widget.navigate_to_date(comic_date, emit_signal=False)
+
         self.update_status("Ready", 2000)
     
     def on_loading_error(self, error_message: str, recovery_suggestions: str, error_type: str = "general"):
