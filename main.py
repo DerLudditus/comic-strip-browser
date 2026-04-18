@@ -93,15 +93,14 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
-        # Unset DESKTOP_STARTUP_ID before QApplication is created.
-        # On Wayland/GNOME, even with StartupNotify=false in the .desktop file,
-        # the shell may still set this variable when launching from a menu.
-        # Qt picks it up and attempts an xdg-activation handshake that never
-        # completes, causing a 60-second busy cursor. Removing it prevents that.
-        import os
-        os.environ.pop("DESKTOP_STARTUP_ID", None)
-
         self.app = QApplication(sys.argv)
+        
+        # Set the desktop file name to match comic-strip-browser.desktop.
+        # This allows Wayland/GNOME to correctly match the window to the launcher
+        # and complete the xdg-activation handshake, preventing the "busy" cursor.
+        if sys.platform == "linux":
+            self.app.setDesktopFileName("comic-strip-browser")
+
         self.app.setApplicationName("Comic Strip Browser")
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
