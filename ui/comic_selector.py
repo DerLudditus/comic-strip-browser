@@ -53,7 +53,7 @@ class ComicSelectorItem(QWidget):
         name_font.setBold(True)
         self.name_label.setContentsMargins(0, 0, 0, 0)
         self.name_label.setFont(name_font)
-        self.name_label.setStyleSheet("color: #000000; font-weight: bold;")  # Ensure black text and bold
+        self.name_label.setStyleSheet("color: #000000;")  # Ensure black text and bold
         self.name_label.setWordWrap(True)
         layout.addWidget(self.name_label)
 
@@ -81,7 +81,7 @@ class ComicSelectorItem(QWidget):
                 }
             """)
             # Ensure name label styling is preserved
-            self.name_label.setStyleSheet("color: #000000; font-weight: bold;")
+            self.name_label.setStyleSheet("color: #000000;")
         else:
             self.setStyleSheet("""
                 ComicSelectorItem {
@@ -94,7 +94,7 @@ class ComicSelectorItem(QWidget):
                 }
             """)
             # Ensure name label styling is preserved
-            self.name_label.setStyleSheet("color: #000000; font-weight: bold;")
+            self.name_label.setStyleSheet("color: #000000;")
     
     def mousePressEvent(self, event):
         """Handle mouse press events for selection."""
@@ -162,7 +162,7 @@ class ComicSelector(QWidget):
         title_font.setBold(True)
         title_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         title_label.setFont(title_font)
-        title_label.setStyleSheet("color: #000000; font-weight: bold;")  # Ensure black text and bold
+        title_label.setStyleSheet("color: #000000;")  # Ensure black text and bold
         header_layout.addWidget(title_label)
         
         # Subtitle
@@ -172,7 +172,7 @@ class ComicSelector(QWidget):
         subtitle_font.setBold(True)
         subtitle_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         subtitle_label.setFont(subtitle_font)
-        subtitle_label.setStyleSheet("color: #000000; font-weight: bold;")  # Make it bold and dark
+        subtitle_label.setStyleSheet("color: #000000;")  # Make it bold and dark
         header_layout.addWidget(subtitle_label)
         
         layout.addWidget(header_frame)

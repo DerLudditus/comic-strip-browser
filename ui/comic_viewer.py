@@ -156,7 +156,7 @@ class ComicViewer(QWidget):
         title_font.setBold(True)
         title_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
         self.title_label.setFont(title_font)
-        self.title_label.setStyleSheet("color: #000000; font-weight: bold; border:none")  # Ensure dark text and bold
+        self.title_label.setStyleSheet("color: #000000; border:none")  # Ensure dark text and bold
         self.title_label.setWordWrap(True)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         header_layout.addWidget(self.title_label)
@@ -227,7 +227,6 @@ class ComicViewer(QWidget):
                 border: 2px solid #bdbdbd;
                 border-radius: 4px;
                 padding: 6px 12px;
-                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #d0d0d0;
@@ -300,8 +299,7 @@ class ComicViewer(QWidget):
                 color: #000000;
                 font-size: 16px;
                 font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
-                padding: 10px;
-            }
+                }
         """)
         self.status_label.setVisible(False)  # Hide when empty
         self.content_layout.addWidget(self.status_label)
@@ -668,7 +666,6 @@ class ComicViewer(QWidget):
                 background-color: {bg_color};
                 color: {text_color};
                 font-size: 22px;
-                font-weight: bold;
                 font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
             }}
         """)
@@ -681,7 +678,6 @@ class ComicViewer(QWidget):
                 color: {text_color};
                 font-size: 18px;
                 padding: 10px;
-                font-weight: bold;                
                 background-color: {bg_color};
                 border-radius: 4px;
                 margin: 5px;
@@ -748,7 +744,7 @@ class ComicViewer(QWidget):
         <html>
             <body style="text-align: center;">
                 <img src="{data_uri}" width="240" height="240">
-                <div style="font-size: 18px; font-weight:600; color: #000000; margin-top: 15px;">⟵ Select a comic from the left 🙂</div>
+                <div style="font-size: 18px; color: #000000; margin-top: 15px;">⟵ Select a comic from the left 🙂</div>
             </body>
         </html>
         """)

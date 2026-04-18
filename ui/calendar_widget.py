@@ -86,7 +86,6 @@ class CalendarDayButton(QPushButton):
                     color: white;
                     border: 2px solid #1976d2;
                     border-radius: 17px;
-                    font-weight: bold;
                 }
                 QPushButton:hover {
                     background-color: #1976d2;
@@ -112,7 +111,6 @@ class CalendarDayButton(QPushButton):
                     color: #333333;
                     border: 2px solid #ff9800;
                     border-radius: 17px;
-                    font-weight: bold;
                 }
                 QPushButton:hover {
                     background-color: #fff3e0;
@@ -241,7 +239,7 @@ class CalendarWidget(QWidget):
         month_year_font.setPointSize(13)
         month_year_font.setBold(True)
         self.month_year_label.setFont(month_year_font)
-        self.month_year_label.setStyleSheet("color: #000000; font-weight: bold;")
+        self.month_year_label.setStyleSheet("color: #000000;")
         self.month_year_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         month_nav_layout.addWidget(self.month_year_label, 1)
 
