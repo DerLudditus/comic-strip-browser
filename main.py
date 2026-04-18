@@ -94,10 +94,13 @@ class ComicStripBrowser:
         for env_var in ["DESKTOP_STARTUP_ID", "XDG_ACTIVATION_TOKEN", "XDG_ACTIVATION_ID"]:
             os.environ.pop(env_var, None)
 
-        # PORTAL BYPASS: Disable XDG Desktop Portal integration. 
-        # This fixes a "Failed to register with host portal" DBus error 
-        # caused by PyInstaller's multi-process model on GNOME 50.
+        # PORTAL & GIO BYPASS: Disable XDG Desktop Portal and GVFS integration. 
+        # This prevents library conflicts and DBus delays caused by PyInstaller's 
+        # bundled glib conflicting with the host system's gvfs modules.
         os.environ["QT_NO_XDG_DESKTOP_PORTAL"] = "1"
+        os.environ["GIO_USE_VFS"] = "local"
+        os.environ["GIO_USE_VOLUME_MONITOR"] = "unix"
+        os.environ["GIO_MODULE_DIR"] = ""
 
         self.app = QApplication(sys.argv)
         
