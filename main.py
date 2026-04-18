@@ -269,6 +269,12 @@ class ComicStripBrowser:
             # notification completes as soon as the window maps.
             self.initialize_main_window()
 
+            # Force the cursor to be a normal arrow immediately.
+            # This can override the compositor's "wait" state for our window.
+            self.app.setOverrideCursor(Qt.CursorShape.ArrowCursor)
+            # Restore it after 1 second so the app behaves normally afterward
+            QTimer.singleShot(1000, self.app.restoreOverrideCursor)
+
             # Start background initialization using status bar instead of dialog
             self.initialization_worker = InitializationWorker(self)
             self.initialization_worker.progress_updated.connect(self._on_bg_init_progress)
