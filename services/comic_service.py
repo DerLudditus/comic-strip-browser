@@ -206,16 +206,8 @@ class ComicService:
         if not comic_def:
             return False
         
-        # Check if date is not in the future
-        if comic_date > date.today():
-            return False
-        
-        # Check against known start date if available
-        start_date = self.config_manager.get_start_date(comic_name)
-        if start_date and comic_date < start_date:
-            return False
-        
-        return True
+        # Check against complex availability logic
+        return comic_def.is_available(comic_date)
     
     def discover_earliest_dates(self, progress_callback=None) -> Dict[str, date]:
         """

@@ -720,15 +720,14 @@ class CalendarWidget(QWidget):
     def is_date_available(self, date_obj: date) -> bool:
         """
         Check if a date has available comic content.
-        A date is available if it is today or in the past, and not before
-        the selected comic's earliest date.
+        Uses the complex availability logic defined in the comic's definition.
         """
         if date_obj > date.today():
             return False
         if self.current_comic_name:
             comic_def = get_comic_definition(self.current_comic_name)
-            if comic_def and comic_def.earliest_date and date_obj < comic_def.earliest_date:
-                return False
+            if comic_def:
+                return comic_def.is_available(date_obj)
         return True
     
     def get_current_month_year(self) -> tuple[int, int]:
