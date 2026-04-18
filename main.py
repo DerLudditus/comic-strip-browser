@@ -26,31 +26,26 @@ class InitializationWorker(QThread):
     """Worker thread for application initialization tasks."""
     
     progress_updated = pyqtSignal(str, int)  # message, percentage
-    initialization_complete = pyqtSignal(bool, str)  # success, message
+    initialization_complete = pyqtSignal(bool, str, object)  # success, message, comic_service
     
-    def __init__(self, comic_service):
+    def __init__(self, browser_instance):
         super().__init__()
-        self.comic_service = comic_service
+        self.browser = browser_instance
             
     def run(self):
         """Run initialization tasks in background thread."""
         try:
-            self.progress_updated.emit("Initializing configuration...", 10)
+            self.progress_updated.emit("Initializing configuration...", 20)
+            self.browser.initialize_services()
             
-            # Configuration is already loaded in ComicService constructor
-            self.progress_updated.emit("Verifying cache integrity...", 30)
-            
-            # Cache integrity is verified in CacheManager constructor
-            self.progress_updated.emit("Checking for first-run setup...", 50)
-            
-            # Configuration is automatically populated with hard-coded dates
-            self.progress_updated.emit("Loading comic configuration...", 80)
+            self.progress_updated.emit("Verifying cache integrity...", 60)
+            self.browser.validate_configuration()
             
             self.progress_updated.emit("Initialization complete", 100)
-            self.initialization_complete.emit(True, "Application initialized successfully")
+            self.initialization_complete.emit(True, "Application initialized successfully", self.browser.comic_service)
             
         except Exception as e:
-            self.initialization_complete.emit(False, f"Initialization failed: {e}")
+            self.initialization_complete.emit(False, f"Initialization failed: {e}", None)
 
 
 class ComicStripBrowser:
@@ -93,15 +88,22 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
+        # Scrub ALL startup/activation tokens. This tells Qt to ignore 
+        # any launch context from the shell/compositor, preventing 
+        # the "Wait" cursor from ever being triggered.
+        import os
+        for env_var in ["DESKTOP_STARTUP_ID", "XDG_ACTIVATION_TOKEN", "XDG_ACTIVATION_ID"]:
+            os.environ.pop(env_var, None)
+
         self.app = QApplication(sys.argv)
         
-        # Set the desktop file name to match comic-strip-browser.desktop.
-        # This allows Wayland/GNOME to correctly match the window to the launcher
-        # and complete the xdg-activation handshake, preventing the "busy" cursor.
+        # Consistent ID for Linux desktop integration
         if sys.platform == "linux":
             self.app.setDesktopFileName("comic-strip-browser")
+            self.app.setApplicationName("comic-strip-browser")
+        else:
+            self.app.setApplicationName("Comic Strip Browser")
 
-        self.app.setApplicationName("Comic Strip Browser")
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
 
@@ -161,58 +163,34 @@ class ComicStripBrowser:
         """Show initialization progress dialog."""
         self.progress_dialog = QProgressDialog(
             "Initializing Comic Strip Browser...",
-            None,  # No cancel button to avoid auto-cancel issues
+            None,  # No cancel button
             0, 100
         )
         self.progress_dialog.setWindowTitle("Comic Strip Browser")
         self.progress_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.progress_dialog.setMinimumDuration(0)
         self.progress_dialog.setValue(0)
-        self.progress_dialog.setCancelButton(None)  # Explicitly disable cancel button
+        self.progress_dialog.setCancelButton(None)
         self.progress_dialog.show()
-    
-    def on_initialization_canceled(self):
-        """Handle initialization cancellation."""
-        if self.initialization_worker and self.initialization_worker.isRunning():
-            self.initialization_worker.terminate()
-            self.initialization_worker.wait()
-        
-        self.shutdown()
-        sys.exit(1)
-    
-    def run_background_initialization(self):
-        """Run initialization tasks directly (no threading to avoid Qt issues in binary)."""
-        
-        try:
-            # Run initialization directly instead of in a separate thread
-            self.on_initialization_progress("Initializing configuration...", 10)
-            self.on_initialization_progress("Verifying cache integrity...", 30)
-            self.on_initialization_progress("Checking for first-run setup...", 50)
-            self.on_initialization_progress("Loading comic configuration...", 80)
-            self.on_initialization_progress("Initialization complete", 100)
-            
-            # Complete initialization successfully
-            self.on_initialization_complete(True, "Application initialized successfully")
-            
-        except Exception as e:
-            self.on_initialization_complete(False, f"Initialization failed: {e}")
     
     def on_initialization_progress(self, message: str, percentage: int):
         """Handle initialization progress updates."""
         if self.progress_dialog:
             self.progress_dialog.setLabelText(message)
             self.progress_dialog.setValue(percentage)
-        
-
     
-    def on_initialization_complete(self, success: bool, message: str):
+    def on_initialization_complete(self, success: bool, message: str, comic_service):
         """Handle initialization completion."""
         if self.progress_dialog:
             self.progress_dialog.close()
             self.progress_dialog = None
         
         if success:
-            self.initialize_main_window()
+            # Inject the now-ready services into the controller
+            if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
+                controller = self.main_window.comic_controller
+                if hasattr(controller, 'set_comic_service'):
+                    controller.set_comic_service(comic_service)
         else:
             self.show_error_dialog("Initialization Error", message)
             self.shutdown()
@@ -288,13 +266,14 @@ class ComicStripBrowser:
             self.initialize_application()
 
             # Show the main window immediately so the xdg-activation startup
-            # notification completes as soon as the window maps — before any
-            # blocking I/O runs. This is the correct Wayland/GNOME behaviour.
+            # notification completes as soon as the window maps.
             self.initialize_main_window()
 
-            # Defer the rest of initialization to after the event loop starts
-            # (and the window has actually been presented to the compositor).
-            QTimer.singleShot(0, self._deferred_initialization)
+            # Start background initialization using status bar instead of dialog
+            self.initialization_worker = InitializationWorker(self)
+            self.initialization_worker.progress_updated.connect(self._on_bg_init_progress)
+            self.initialization_worker.initialization_complete.connect(self.on_initialization_complete)
+            self.initialization_worker.start()
 
             # Start the application event loop
             return self.app.exec()
@@ -304,22 +283,10 @@ class ComicStripBrowser:
                 self.show_error_dialog("Startup Error", f"Fatal error during startup: {e}")
             return 1
 
-    def _deferred_initialization(self):
-        """Run blocking initialization after the window is visible."""
-        try:
-            self.initialize_services()
-            self.validate_configuration()
-
-            # Inject the now-ready services into the controller
-            if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
-                controller = self.main_window.comic_controller
-                if hasattr(controller, 'set_comic_service'):
-                    controller.set_comic_service(self.comic_service)
-
-        except Exception as e:
-            self.show_error_dialog("Startup Error", f"Fatal error during initialization: {e}")
-            self.shutdown()
-            sys.exit(1)
+    def _on_bg_init_progress(self, message: str, percentage: int):
+        """Update progress in the main window status bar."""
+        if self.main_window:
+            self.main_window.update_status(f"{message} ({percentage}%)")
 
 
 def main():

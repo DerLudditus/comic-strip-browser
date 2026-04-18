@@ -9,5 +9,5 @@ Icon=comic-strip-browser
 Terminal=false
 Categories=Graphics;Viewer;
 Keywords=comic;comics;strips;gocomics;garfield;peanuts;entertainment;
-StartupNotify=true
+StartupNotify=false
 StartupWMClass=comic-strip-browser

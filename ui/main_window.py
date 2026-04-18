@@ -59,13 +59,14 @@ class MainWindow(QMainWindow):
 
  
         
-        # Set application icon
-        import os
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
-        else:
-            self.setWindowIcon(QIcon())
+        # Set application icon (handled by .desktop file on Linux/Wayland)
+        if sys.platform != "linux":
+            import os
+            icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
+            if os.path.exists(icon_path):
+                self.setWindowIcon(QIcon(icon_path))
+            else:
+                self.setWindowIcon(QIcon())
         
         # Create central widget and main layout
         central_widget = QWidget()
@@ -331,8 +332,9 @@ class MainWindow(QMainWindow):
     
     def setup_controller_integration(self):
         """Set up the comic controller and integrate it with UI components."""
-        # Create the comic controller
-        self.comic_controller = ComicController()
+        # Create the comic controller with NO service initially.
+        # The service will be injected later from main.py after background init.
+        self.comic_controller = ComicController(comic_service=None)
         
         # Connect UI components to controller
         # NOTE: Don't connect these to controller - we handle them in on_comic_selected and on_date_changed
