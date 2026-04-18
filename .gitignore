@@ -27,6 +27,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Fucksters
+GEMINI.md
+QWEN.md
+CLAUDE.md
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
