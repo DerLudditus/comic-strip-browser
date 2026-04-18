@@ -15,8 +15,8 @@ from PyQt6.QtWidgets import (
     QStatusBar, QApplication, QPushButton,
     QSplitter, QFrame
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QUrl
+from PyQt6.QtGui import QIcon, QFont, QDesktopServices
 
 from ui.comic_selector import ComicSelector
 from ui.comic_viewer import ComicViewer
@@ -969,8 +969,9 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def _open_cache_folder(self):
-        """Open the cache folder in the system's file manager."""
-        cache_path = os.path.join(os.getcwd(), "cache")
+        """Open the cache folder in the system's file manager using QDesktopServices."""
+        # Get absolute path to the cache directory
+        cache_path = os.path.abspath(os.path.join(os.getcwd(), "cache"))
         
         # Ensure directory exists
         if not os.path.exists(cache_path):
@@ -980,16 +981,12 @@ class MainWindow(QMainWindow):
                 self.update_status(f"Error creating cache folder: {e}", 3000)
                 return
 
-        try:
-            system = platform.system()
-            if system == "Windows":
-                os.startfile(cache_path)
-            elif system == "Darwin":  # macOS
-                subprocess.run(["open", cache_path])
-            else:  # Linux and others
-                subprocess.run(["xdg-open", cache_path])
-        except Exception as e:
-            self.update_status(f"Could not open cache folder: {e}", 3000)
+        # QDesktopServices is more robust than subprocess, especially in AppImages
+        # as it handles environment escaping and OS-specific URL schemes.
+        success = QDesktopServices.openUrl(QUrl.fromLocalFile(cache_path))
+        if not success:
+            self.update_status(f"Could not open cache folder: {cache_path}", 3000)
+
 
     def keyPressEvent(self, event):
         """Handle key press events — F1 opens About dialog."""

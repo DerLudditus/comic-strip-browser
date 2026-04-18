@@ -5,20 +5,25 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.3.1"
-__version_info__ = (2, 3, 1)
+__version__ = "2.3.2"
+__version_info__ = (2, 3, 2)
 
 # Release information
 RELEASE_DATE = "2026-04-19"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.3.1-1"
+DEB_VERSION = "2.3.2-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.3.1-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.3.2-1) stable; urgency=medium
+  * Fix AppImage not being able to open the cache folder using the button.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 19 Apr 2026 01:20 +0300
+ 
+comic-strip-browser (2.3.1-1) stable; urgency=medium
   * Cosmetic fix: bold was heavier under KDE because of applying the bold attribute twice: setBold and setStyleSheet (XFCE/GNOME ignored bold-over-bold).
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 19 Apr 2026 00:42 +0300
