@@ -88,10 +88,14 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
+        import os
+        print(f"DEBUG: Process started. PID: {os.getpid()}, Parent PID: {os.getppid()}")
+        print(f"DEBUG: DESKTOP_STARTUP_ID: {os.environ.get('DESKTOP_STARTUP_ID')}")
+        print(f"DEBUG: XDG_ACTIVATION_TOKEN: {os.environ.get('XDG_ACTIVATION_TOKEN')}")
+
         # Scrub ALL startup/activation tokens. This tells Qt to ignore 
         # any launch context from the shell/compositor, preventing 
         # the "Wait" cursor from ever being triggered.
-        import os
         for env_var in ["DESKTOP_STARTUP_ID", "XDG_ACTIVATION_TOKEN", "XDG_ACTIVATION_ID"]:
             os.environ.pop(env_var, None)
 
@@ -258,9 +262,10 @@ class ComicStripBrowser:
     def cleanup_on_exit(self):
         """Cleanup function called on application exit."""
         self.shutdown()
-    
+
     def run(self):
         """Start the application main loop."""
+        import os
         try:
             # Initialize PyQt6 application
             self.initialize_application()
@@ -268,10 +273,12 @@ class ComicStripBrowser:
             # Show the main window immediately so the xdg-activation startup
             # notification completes as soon as the window maps.
             self.initialize_main_window()
+            print(f"DEBUG: Main window created and show() called. PID: {os.getpid()}")
 
             # Force the cursor to be a normal arrow immediately.
             # This can override the compositor's "wait" state for our window.
             self.app.setOverrideCursor(Qt.CursorShape.ArrowCursor)
+            print("DEBUG: setOverrideCursor(ArrowCursor) called.")
             # Restore it after 1 second so the app behaves normally afterward
             QTimer.singleShot(1000, self.app.restoreOverrideCursor)
 
