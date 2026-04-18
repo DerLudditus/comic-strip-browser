@@ -97,12 +97,7 @@ class ComicService:
         # Try to get from cache first
         cached_comic = self.cache_manager.get_cached_comic(comic_name, comic_date)
         if cached_comic:
-            # Discard cache entries where the stored date doesn't match what was requested.
-            # This can happen if a bad entry was cached before the meta-refresh detection.
-            if cached_comic.date != comic_date:
-                self.cache_manager.invalidate_comic_date(comic_name, comic_date)
-            else:
-                return cached_comic
+            return cached_comic
         
         # Not in cache, try to fetch from web
         try:
@@ -157,24 +152,20 @@ class ComicService:
         except WebScrapingError as e:
             error_str = str(e).lower()
 
-            # If the server returned content for a wrong date, invalidate the cache
-            if 'wrong date' in error_str or 'instead of requested' in error_str:
+            # If the server returned content for a wrong date, invalidate the cache for that date
+            if 'wrong date' in error_str:
                 try:
                     self.cache_manager.invalidate_comic_date(comic_name, comic_date)
                 except AttributeError:
-                    pass
+                    pass  # Method may not exist, skip
 
-            # Search backwards to find the most recent available comic.
-            from datetime import timedelta
-            for days_back in range(1, 32):
-                try_date = comic_date - timedelta(days=days_back)
-                comic_def = get_comic_definition(comic_name)
-                if comic_def and comic_def.earliest_date and try_date < comic_def.earliest_date:
-                    break
+            # Try previous day as fallback for date mismatch or today
+            if comic_date == date.today() or 'wrong date' in error_str:
+                yesterday = comic_date - timedelta(days=1)
                 try:
-                    return self.get_comic(comic_name, try_date)
-                except (ComicServiceError, WebScrapingError):
-                    continue
+                    return self.get_comic(comic_name, yesterday)
+                except ComicServiceError:
+                    pass  # Fall through to main error
 
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
     

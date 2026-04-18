@@ -353,7 +353,7 @@ COMIC_DEFINITIONS = [
         base_url="https://www.gocomics.com/peanuts-begins",
         author="Charles M. Schulz",
         earliest_date=date(1950, 10, 16),
-        info="Peanuts Begins - since 1950-10-16 (reprint series; for old dates can be identical to Peanuts, only in color)."
+        info="Peanuts Begins - since 1950-10-16. HUGE GAPS! Not available: 1953-05-18 to 1954-04-19, and 1956-01-01 to 2022-04-16."
     ),
     ComicDefinition(
         name="pearlsbeforeswine",
@@ -434,7 +434,7 @@ COMIC_DEFINITIONS = [
         base_url="https://www.gocomics.com/wumo",
         author="Mikael Wulff and Anders Morgenthaler",
         earliest_date=date(2013, 10, 13),
-        info="WuMo - since 2013-10-13 (limited GoComics availability, with gaps)."
+        info="WuMo - Only Sundays in Oct. 2013: 13, 20, 27. Daily since 2013-11-04 (limited GoComics availability)."
     ),
     ComicDefinition(
         name="ziggy",
