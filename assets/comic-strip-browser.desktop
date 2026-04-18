@@ -4,7 +4,7 @@ Type=Application
 Name=Comic Strip Browser
 Comment=Browse a selection of comic strips from GoComics and Comics Kingdom
 GenericName=Comic Strips Reader
-Exec=bash -c 'if [[ "$XDG_CURRENT_DESKTOP" =~ "GNOME" && "$XDG_SESSION_TYPE" == "wayland" ]]; then export QT_QPA_PLATFORM=xcb; fi; unset DESKTOP_STARTUP_ID XDG_ACTIVATION_TOKEN; exec comic-strip-browser'
+Exec=sh -c "if echo \\$XDG_CURRENT_DESKTOP | grep -qi GNOME && [ \"\\$XDG_SESSION_TYPE\" = wayland ]; then export QT_QPA_PLATFORM=xcb; fi; unset DESKTOP_STARTUP_ID XDG_ACTIVATION_TOKEN; exec comic-strip-browser"
 Icon=comic-strip-browser
 Terminal=false
 Categories=Graphics;Viewer;
