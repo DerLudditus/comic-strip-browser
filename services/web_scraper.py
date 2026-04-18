@@ -38,18 +38,9 @@ class WebScraper:
         self.error_handler = error_handler or ErrorHandler()
         # self.logger = logging.getLogger(__name__)
         
-    def fetch_page(self, url: str) -> str:
+    def fetch_page(self, url: str, allow_redirects: bool = True) -> str:
         """
         Retrieve web page content using requests with retry logic.
-
-        Args:
-            url: The URL to fetch
-
-        Returns:
-            HTML content as string
-
-        Raises:
-            WebScrapingError: If the page cannot be retrieved
         """
         def _fetch_with_requests():
             headers = {
@@ -62,7 +53,12 @@ class WebScraper:
                 'Pragma': 'no-cache',
                 'Expires': '0'
             }
-            response = requests.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
+            response = requests.get(url, headers=headers, timeout=self.timeout, allow_redirects=allow_redirects)
+            
+            # If redirects are disabled and we got a redirect, treat as 404/Unavailable
+            if not allow_redirects and 300 <= response.status_code < 400:
+                raise WebScrapingError(f"Comic not available for this date (redirected to {response.headers.get('Location')})")
+                
             response.raise_for_status()
             if not response.text:
                 raise WebScrapingError(f"Empty response from {url}")
@@ -90,6 +86,7 @@ class WebScraper:
         except Exception as e:
             # self.logger.error(f"Unexpected error fetching {url}: {e}")
             raise WebScrapingError(f"Unexpected error fetching {url}: {e}")
+
 
     def parse_comic_data(self, html_content: str, comic_name: str, date: datetime.date) -> ComicData:
         """
@@ -137,7 +134,7 @@ class WebScraper:
 
             image_width = self._extract_og_image_width(soup)
             image_height = self._extract_og_image_height(soup)
-            image_format = self._detect_image_format(image_url)
+            image_format = ""  # Will be detected by CacheManager during download
             author = self._extract_author(title, comic_name)
             
             return ComicData(
@@ -214,54 +211,6 @@ class WebScraper:
         except (ValueError, TypeError):
             return 300
     
-    def _detect_image_format(self, image_url: str) -> str:
-        """
-        Detect image format by downloading and inspecting the actual image data.
-        
-        Args:
-            image_url: URL of the image
-            
-        Returns:
-            Image format (e.g., 'jpeg', 'png', 'gif')
-        """
-        try:
-            # Download the image to detect its actual format
-            import requests
-            from PIL import Image
-            from io import BytesIO
-            
-            response = requests.get(image_url, timeout=5)
-            response.raise_for_status()
-            
-            # Open the image and get its format
-            image = Image.open(BytesIO(response.content))
-            format_name = image.format.lower() if image.format else 'jpeg'
-            
-            # Normalize format names
-            if format_name == 'jpg':
-                format_name = 'jpeg'
-            
-            return format_name
-                
-        except Exception:
-            # Fallback: try to detect from URL extension
-            try:
-                parsed_url = urlparse(image_url)
-                path = parsed_url.path.lower()
-                
-                if path.endswith('.jpg') or path.endswith('.jpeg'):
-                    return 'jpeg'
-                elif path.endswith('.png'):
-                    return 'png'
-                elif path.endswith('.gif'):
-                    return 'gif'
-                elif path.endswith('.webp'):
-                    return 'webp'
-            except Exception:
-                pass
-            
-            return 'jpeg'
-    
     def _extract_author(self, title: str, comic_name: str) -> str:
         """
         Extract author from title or use default mapping.
@@ -305,17 +254,6 @@ class WebScraper:
     def get_comic_data(self, comic_name: str, base_url: str, date: datetime.date) -> ComicData:
         """
         Retrieve and parse comic data for a specific date.
-
-        Args:
-            comic_name: Name of the comic strip
-            base_url: Base URL for the comic
-            date: Date to retrieve
-
-        Returns:
-            ComicData object with all extracted information
-
-        Raises:
-            WebScrapingError: If comic data cannot be retrieved or parsed
         """
         # Handle different URL formats for GoComics vs Comics Kingdom
         if 'comicskingdom.com' in base_url:
@@ -323,8 +261,15 @@ class WebScraper:
         else:
             url = f"{base_url}/{date.year:04d}/{date.month:02d}/{date.day:02d}"
 
-        html_content = self.fetch_page(url)
+        # Disable redirects for past dates to catch gaps early (GoComics redirects missing past dates to Today)
+        # We define "past" as older than yesterday to allow for TZ differences
+        today = datetime.date.today()
+        yesterday = today - datetime.timedelta(days=1)
+        allow_redirects = (date >= yesterday)
+
+        html_content = self.fetch_page(url, allow_redirects=allow_redirects)
 
         comic_data = self.parse_comic_data(html_content, comic_name, date)
 
         return comic_data
+

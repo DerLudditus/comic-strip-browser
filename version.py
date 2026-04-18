@@ -5,20 +5,26 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.2.2"
-__version_info__ = (2, 2, 2)
+__version__ = "2.3.0"
+__version_info__ = (2, 3, 0)
 
 # Release information
 RELEASE_DATE = "2026-04-18"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.2.2-1"
+DEB_VERSION = "2.3.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.2.2-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.3.0-1) stable; urgency=medium
+  * Major release with speed improvements, better error handling, code cleanup and small fixes.
+  * Known gaps in comic strips availability addressed, so the calendar will be gray for such days, and Random will skip them.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 19 Apr 2026 00:23 +0300
+ 
+comic-strip-browser (2.2.2-1) stable; urgency=medium
   * Interim release to test fixing REGRESSIONS introduced in 2.2.0.
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Sat, 18 Apr 2026 14:25 +0300

@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 import requests
+from PIL import Image
+from io import BytesIO
 
 from models.data_models import ComicData, CacheEntry
 from services.error_handler import ErrorHandler, CacheError
@@ -89,15 +91,15 @@ class CacheManager:
         return f"{date_str}.{extension}"
     
     def _get_file_extension(self, url: str, image_format: str) -> str:
-        """Determine the file extension for an image."""
+        """Determine the file extension for an image, normalized to jpg for JPEGs."""
         # Try to get extension from URL first
-        # Useless in the case of GoComics!
         parsed_url = urlparse(url)
         path = parsed_url.path
         if path and '.' in path:
             ext = path.split('.')[-1].lower()
             if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
-                return ext
+                # Normalize jpeg to jpg
+                return 'jpg' if ext == 'jpeg' else ext
         
         # Fall back to image format
         format_map = {
@@ -107,6 +109,7 @@ class CacheManager:
             'WEBP': 'webp'
         }
         return format_map.get(image_format.upper(), 'jpg')
+
     
     def _download_image(self, image_url: str, target_path: Path) -> bool:
         """
@@ -257,13 +260,7 @@ class CacheManager:
     
     def cache_comic(self, comic_data: ComicData) -> bool:
         """
-        Cache a comic's data and image.
-        
-        Args:
-            comic_data: Comic data to cache
-            
-        Returns:
-            True if caching successful, False otherwise
+        Cache a comic's data and image. Downloads once and detects correct format.
         """
         comic_name = comic_data.comic_name
         date_key = self._get_date_key(comic_data.date)
@@ -272,41 +269,60 @@ class CacheManager:
         if comic_name not in self._cache_index:
             self._cache_index[comic_name] = {}
         
-        # Download and cache the image
-        comic_dir = self._get_comic_cache_dir(comic_name)
-        image_filename = self._get_image_filename(comic_data)
-        image_path = comic_dir / image_filename
-        
-        if not self._download_image(comic_data.image_url, image_path):
-            return False
-        
-        # Update comic data with cached image path
-        comic_data.cached_image_path = str(image_path)
-        
-        # Get file size
         try:
-            file_size = image_path.stat().st_size
-        except OSError:
-            file_size = 0
-        
-        # Create cache entry
-        cache_entry = CacheEntry(
-            comic_data=comic_data,
-            access_count=1,
-            last_accessed=datetime.now(),
-            file_size=file_size
-        )
-        
-        # Store in cache index
-        self._cache_index[comic_name][date_key] = cache_entry
-        
-        # Clean up old entries if needed
-        self._cleanup_old_entries(comic_name)
-        
-        # Save cache index
-        self._save_cache_index(comic_name)
-        
-        return True
+            # Step 1: Download the image into memory (ONLY ONE DOWNLOAD)
+            response = requests.get(comic_data.image_url, timeout=30)
+            response.raise_for_status()
+            image_bytes = response.content
+            
+            # Step 2: Detect ACTUAL format from bytes using PIL
+            try:
+                img = Image.open(BytesIO(image_bytes))
+                actual_format = img.format.lower() if img.format else 'jpeg'
+                if actual_format == 'jpg':
+                    actual_format = 'jpeg'
+            except Exception:
+                actual_format = 'jpeg' # Fallback
+            
+            # Update comic data with the discovered format
+            comic_data.image_format = actual_format
+            
+            # Step 3: Determine final filename and path
+            comic_dir = self._get_comic_cache_dir(comic_name)
+            image_filename = self._get_image_filename(comic_data)
+            image_path = comic_dir / image_filename
+            
+            # Step 4: Save bytes to disk
+            with open(image_path, 'wb') as f:
+                f.write(image_bytes)
+            
+            # Update comic data with cached image path
+            comic_data.cached_image_path = str(image_path)
+            file_size = len(image_bytes)
+            
+            # Create cache entry
+            cache_entry = CacheEntry(
+                comic_data=comic_data,
+                access_count=1,
+                last_accessed=datetime.now(),
+                file_size=file_size
+            )
+            
+            # Store in cache index
+            self._cache_index[comic_name][date_key] = cache_entry
+            
+            # Clean up old entries if needed
+            self._cleanup_old_entries(comic_name)
+            
+            # Save cache index
+            self._save_cache_index(comic_name)
+            
+            return True
+            
+        except Exception as e:
+            self.error_handler.handle_cache_error(e, "download and cache", comic_name)
+            return False
+
     
     def get_cached_comic(self, comic_name: str, comic_date: date) -> Optional[ComicData]:
         """

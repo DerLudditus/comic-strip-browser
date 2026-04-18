@@ -17,6 +17,7 @@ from PyQt6.QtGui import QFont, QPalette, QColor
 
 from models.data_models import ComicDefinition, get_comic_definition
 
+INFO_ICON = "\U0001F4A1"
 
 class CalendarDayButton(QPushButton):
     """
@@ -408,7 +409,7 @@ class CalendarWidget(QWidget):
         self.current_comic_name = comic_name
         comic_def = get_comic_definition(comic_name)
         if comic_def and comic_def.info:
-            self.info_label.setText(comic_def.info)
+            self.info_label.setText(INFO_ICON + " " + comic_def.info)
         else:
             self.info_label.setText("")
 

@@ -50,8 +50,8 @@ class ComicData:
         if not isinstance(self.image_height, int) or self.image_height <= 0:
             raise ValueError("image_height must be a positive integer")
         
-        if not self.image_format or not isinstance(self.image_format, str):
-            raise ValueError("image_format must be a non-empty string")
+        if self.image_format is None:
+            raise ValueError("image_format must be a string")
         
         if not self.author or not isinstance(self.author, str):
             raise ValueError("author must be a non-empty string")

@@ -7,6 +7,9 @@ toolbar, status bar, and cross-platform compatibility.
 """
 
 import sys
+import os
+import subprocess
+import platform
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QStatusBar, QApplication, QPushButton,
@@ -145,6 +148,28 @@ class MainWindow(QMainWindow):
                 padding: 2px;
             }
         """)
+
+        # Cache button — open cache folder
+        self.cache_btn = QPushButton("Cache")
+        self.cache_btn.setFixedWidth(56)
+        self.cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.cache_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                border: 1px solid #000000;
+                border-radius: 4px;
+                color: #555555;
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 1px solid #9e9e9e;
+                color: #198754;
+            }
+        """)
+        self.cache_btn.clicked.connect(self._open_cache_folder)
+        self.status_bar.addPermanentWidget(self.cache_btn)
 
         # Info button — right side, before size grip
         self.about_btn = QPushButton("About")
@@ -298,7 +323,7 @@ class MainWindow(QMainWindow):
         comic_def = get_comic_definition(comic_name)
         if comic_def and comic_def.earliest_date:
             start_date_str = comic_def.earliest_date.strftime("%B %d, %Y")
-            message = f"{comic_def.display_name} on GoComics.com starts on {start_date_str}"
+            message = f"{comic_def.display_name} starts online on {start_date_str}"
             self.update_status(message, 0)  # Permanent message (timeout = 0)
         else:
             # Fallback if no start date found
@@ -942,6 +967,29 @@ class MainWindow(QMainWindow):
         """Show the About dialog."""
         dlg = AboutDialog(self)
         dlg.exec()
+
+    def _open_cache_folder(self):
+        """Open the cache folder in the system's file manager."""
+        cache_path = os.path.join(os.getcwd(), "cache")
+        
+        # Ensure directory exists
+        if not os.path.exists(cache_path):
+            try:
+                os.makedirs(cache_path, exist_ok=True)
+            except Exception as e:
+                self.update_status(f"Error creating cache folder: {e}", 3000)
+                return
+
+        try:
+            system = platform.system()
+            if system == "Windows":
+                os.startfile(cache_path)
+            elif system == "Darwin":  # macOS
+                subprocess.run(["open", cache_path])
+            else:  # Linux and others
+                subprocess.run(["xdg-open", cache_path])
+        except Exception as e:
+            self.update_status(f"Could not open cache folder: {e}", 3000)
 
     def keyPressEvent(self, event):
         """Handle key press events — F1 opens About dialog."""

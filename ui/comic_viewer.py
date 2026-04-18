@@ -66,10 +66,23 @@ class ImageLoader(QThread):
         self.image_loaded.emit(pixmap)
     
     def _load_from_url(self):
-        """Load image from URL (simplified version - in real app would use proper networking)."""
-        # For now, emit a failure since we don't have the full networking implementation
-        # In the complete application, this would use QNetworkAccessManager
-        self.loading_failed.emit("URL loading not implemented in this version")
+        """Load image from URL using requests."""
+        try:
+            import requests
+            response = requests.get(self.image_source, timeout=30)
+            response.raise_for_status()
+            
+            pixmap = QPixmap()
+            pixmap.loadFromData(response.content)
+            
+            if pixmap.isNull():
+                self.loading_failed.emit("Failed to parse image data from URL")
+                return
+                
+            self.image_loaded.emit(pixmap)
+        except Exception as e:
+            self.loading_failed.emit(f"Failed to download image: {str(e)}")
+
 
 
 class ComicViewer(QWidget):
