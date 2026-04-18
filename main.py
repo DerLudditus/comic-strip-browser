@@ -9,8 +9,6 @@ Supports 40 predefined comic strips with calendar navigation and caching.
 import sys
 import atexit
 import signal
-import os
-from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from ui.main_window import MainWindow
 from version import __version__
@@ -40,15 +38,15 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
-        # PORTAL & GIO BYPASS: These fix library/DBus errors seen in GNOME.
-        # We keep them here so the app works correctly even when run from terminal.
-        os.environ["QT_NO_XDG_DESKTOP_PORTAL"] = "1"
-        os.environ["GIO_USE_VFS"] = "local"
-        os.environ["GIO_USE_VOLUME_MONITOR"] = "unix"
-        os.environ["GIO_MODULE_DIR"] = ""
-
         self.app = QApplication(sys.argv)
-        self.app.setApplicationName("Comic Strip Browser")
+        
+        # Consistent IDs for Linux desktop integration
+        if sys.platform == "linux":
+            self.app.setDesktopFileName("comic-strip-browser")
+            self.app.setApplicationName("comic-strip-browser")
+        else:
+            self.app.setApplicationName("Comic Strip Browser")
+
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
 
