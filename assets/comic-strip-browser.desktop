@@ -4,7 +4,7 @@ Type=Application
 Name=Comic Strip Browser
 Comment=Browse a selection of comic strips from GoComics and Comics Kingdom
 GenericName=Comic Strips Reader
-Exec=env -u DESKTOP_STARTUP_ID -u XDG_ACTIVATION_TOKEN QT_NO_XDG_DESKTOP_PORTAL=1 GIO_USE_VFS=local GIO_USE_VOLUME_MONITOR=unix GIO_MODULE_DIR="" comic-strip-browser
+Exec=comic-strip-browser
 Icon=comic-strip-browser
 Terminal=false
 Categories=Graphics;Viewer;

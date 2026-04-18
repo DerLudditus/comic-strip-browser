@@ -90,10 +90,10 @@ class ComicController(QObject):
         Initialize the comic controller.
         
         Args:
-            comic_service: ComicService instance (creates new one if None)
+            comic_service: ComicService instance (can be None for lazy init)
         """
         super().__init__()
-        self.comic_service = comic_service or ComicService()
+        self.comic_service = comic_service
         # self.logger = logging.getLogger(__name__)
         
         # Current state

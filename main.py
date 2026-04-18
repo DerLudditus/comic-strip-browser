@@ -11,8 +11,8 @@ import atexit
 import signal
 import os
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMessageBox, QProgressDialog
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from ui.main_window import MainWindow
 from services.config_manager import ConfigManager
 from services.cache_manager import CacheManager
@@ -68,11 +68,8 @@ class ComicStripBrowser:
         
         # Initialization components
         self.initialization_worker = None
-        self.progress_dialog = None
         
         self.setup_signal_handlers()
-        
-
         
     def setup_signal_handlers(self):
         """Set up signal handlers for graceful shutdown."""
@@ -94,10 +91,12 @@ class ComicStripBrowser:
         for env_var in ["DESKTOP_STARTUP_ID", "XDG_ACTIVATION_TOKEN", "XDG_ACTIVATION_ID"]:
             os.environ.pop(env_var, None)
 
-        # PORTAL & GIO BYPASS: Disable XDG Desktop Portal and GVFS integration. 
-        # This prevents library conflicts and DBus delays caused by PyInstaller's 
-        # bundled glib conflicting with the host system's gvfs modules.
+        # PORTAL BYPASS: Disable XDG Desktop Portal integration. 
+        # This fixes a "Failed to register with host portal" DBus error 
+        # caused by PyInstaller's multi-process model on GNOME 50.
         os.environ["QT_NO_XDG_DESKTOP_PORTAL"] = "1"
+
+        # GIO BYPASS: Force local VFS to prevent library conflicts with gvfs
         os.environ["GIO_USE_VFS"] = "local"
         os.environ["GIO_USE_VOLUME_MONITOR"] = "unix"
         os.environ["GIO_MODULE_DIR"] = ""
@@ -107,7 +106,7 @@ class ComicStripBrowser:
         # Consistent IDs for Linux desktop integration
         if sys.platform == "linux":
             self.app.setDesktopFileName("comic-strip-browser")
-            self.app.setApplicationName("Comic Strip Browser")
+            self.app.setApplicationName("comic-strip-browser")
         else:
             self.app.setApplicationName("Comic Strip Browser")
 
@@ -119,7 +118,6 @@ class ComicStripBrowser:
     
     def initialize_services(self):
         """Initialize all service layer components in proper order."""
-        
         try:
             # Initialize services in dependency order
             self.error_handler = ErrorHandler()
@@ -139,13 +137,11 @@ class ComicStripBrowser:
             )
             
             self.services_initialized = True
-            
         except Exception as e:
             raise
     
     def validate_configuration(self):
         """Validate application configuration and dependencies."""
-        
         try:
             # Validate cache directory
             cache_dir = Path("cache")
@@ -159,7 +155,6 @@ class ComicStripBrowser:
                 test_file.unlink()
             except Exception as e:
                 raise
-            
         except Exception as e:
             raise
     
@@ -194,16 +189,8 @@ class ComicStripBrowser:
             self.show_error_dialog("Startup Error", f"Failed to initialize main window: {e}")
             raise
     
-    def is_first_run(self) -> bool:
-        """Check if this is the first run of the application."""
-        if not self.config_manager:
-            return True
-        
-        return not self.config_manager.has_all_start_dates()
-    
     def shutdown(self):
         """Perform graceful application shutdown."""
-        
         try:
             # Stop any running background tasks
             if self.initialization_worker and self.initialization_worker.isRunning():
@@ -217,7 +204,6 @@ class ComicStripBrowser:
             # Cleanup services
             if self.services_initialized:
                 self.cleanup_services()
-            
         except Exception as e:
             pass
     
@@ -227,7 +213,6 @@ class ComicStripBrowser:
             # Clear error statistics
             if self.error_handler:
                 self.error_handler.clear_error_statistics()
-            
         except Exception as e:
             pass
     
@@ -244,10 +229,6 @@ class ComicStripBrowser:
             # Show the main window immediately
             self.initialize_main_window()
 
-            # Force the cursor to be a normal arrow immediately.
-            self.app.setOverrideCursor(Qt.CursorShape.ArrowCursor)
-            QTimer.singleShot(1000, self.app.restoreOverrideCursor)
-
             # Start background initialization using status bar instead of dialog
             self.initialization_worker = InitializationWorker(self)
             self.initialization_worker.progress_updated.connect(self._on_bg_init_progress)
@@ -256,7 +237,6 @@ class ComicStripBrowser:
 
             # Start the application event loop
             return self.app.exec()
-
         except Exception as e:
             if self.app:
                 self.show_error_dialog("Startup Error", f"Fatal error during startup: {e}")
