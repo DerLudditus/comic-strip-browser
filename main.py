@@ -9,8 +9,16 @@ Supports 40 predefined comic strips with calendar navigation and caching.
 import sys
 import atexit
 import signal
+import os
+from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from ui.main_window import MainWindow
+from services.config_manager import ConfigManager
+from services.cache_manager import CacheManager
+from services.comic_service import ComicService
+from services.date_manager import DateManager
+from services.web_scraper import WebScraper
+from services.error_handler import ErrorHandler
 from version import __version__
 
 
@@ -21,6 +29,16 @@ class ComicStripBrowser:
         """Initialize the comic strip browser application."""
         self.app = None
         self.main_window = None
+        self.services_initialized = False
+        
+        # Service instances
+        self.config_manager = None
+        self.cache_manager = None
+        self.error_handler = None
+        self.web_scraper = None
+        self.date_manager = None
+        self.comic_service = None
+        
         self.setup_signal_handlers()
         
     def setup_signal_handlers(self):
@@ -38,6 +56,13 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
+        # PORTAL & GIO BYPASS: These fix library/DBus errors seen in modern Linux 
+        # when running PyInstaller bundles.
+        os.environ["QT_NO_XDG_DESKTOP_PORTAL"] = "1"
+        os.environ["GIO_USE_VFS"] = "local"
+        os.environ["GIO_USE_VOLUME_MONITOR"] = "unix"
+        os.environ["GIO_MODULE_DIR"] = ""
+
         self.app = QApplication(sys.argv)
         
         # Consistent IDs for Linux desktop integration
@@ -53,13 +78,43 @@ class ComicStripBrowser:
         # Connect application aboutToQuit signal for cleanup
         self.app.aboutToQuit.connect(self.shutdown)
     
-    def initialize_main_window(self):
-        """Initialize and show the main window."""
+    def initialize_services(self):
+        """Initialize all service layer components in proper order."""
         try:
-            self.main_window = MainWindow()
-            self.main_window.show()
+            # Initialize services in dependency order
+            self.error_handler = ErrorHandler()
+            self.config_manager = ConfigManager()
+            self.cache_manager = CacheManager(error_handler=self.error_handler)
+            self.web_scraper = WebScraper(error_handler=self.error_handler)
+            self.date_manager = DateManager(
+                web_scraper=self.web_scraper,
+                config_manager=self.config_manager
+            )
+            self.comic_service = ComicService(
+                web_scraper=self.web_scraper,
+                cache_manager=self.cache_manager,
+                config_manager=self.config_manager,
+                date_manager=self.date_manager,
+                error_handler=self.error_handler
+            )
+            self.services_initialized = True
         except Exception as e:
-            self.show_error_dialog("Startup Error", f"Failed to initialize main window: {e}")
+            raise
+    
+    def validate_configuration(self):
+        """Validate application configuration and dependencies."""
+        try:
+            cache_dir = Path("cache")
+            if not cache_dir.exists():
+                cache_dir.mkdir(exist_ok=True)
+            
+            test_file = cache_dir / "test_write.tmp"
+            try:
+                test_file.write_text("test")
+                test_file.unlink()
+            except Exception:
+                raise
+        except Exception as e:
             raise
     
     def show_error_dialog(self, title: str, message: str):
@@ -74,9 +129,18 @@ class ComicStripBrowser:
     def shutdown(self):
         """Perform graceful application shutdown."""
         try:
-            # Cleanup main window
             if self.main_window:
                 self.main_window.close()
+            if self.services_initialized:
+                self.cleanup_services()
+        except Exception:
+            pass
+    
+    def cleanup_services(self):
+        """Clean up service layer components."""
+        try:
+            if self.error_handler:
+                self.error_handler.clear_error_statistics()
         except Exception:
             pass
     
@@ -90,14 +154,27 @@ class ComicStripBrowser:
             # Initialize PyQt6 application
             self.initialize_application()
 
-            # Show the main window
-            self.initialize_main_window()
+            # Initialize services and configuration
+            self.initialize_services()
+            self.validate_configuration()
+
+            # Create main window
+            self.main_window = MainWindow()
+
+            # Inject initialized services into the controller
+            if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
+                self.main_window.comic_controller.set_comic_service(self.comic_service)
+
+            # Show window
+            self.main_window.show()
 
             # Start the application event loop
             return self.app.exec()
         except Exception as e:
             if self.app:
                 self.show_error_dialog("Startup Error", f"Fatal error during startup: {e}")
+            else:
+                print(f"Startup Error: {e}")
             return 1
 
 
