@@ -9,6 +9,7 @@ Supports 40 predefined comic strips with calendar navigation and caching.
 import sys
 import atexit
 import signal
+import os
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox, QProgressDialog
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -88,31 +89,27 @@ class ComicStripBrowser:
         
     def initialize_application(self):
         """Initialize the PyQt6 application."""
-        import os
-        print(f"DEBUG: Process started. PID: {os.getpid()}, Parent PID: {os.getppid()}")
-        print(f"DEBUG: DESKTOP_STARTUP_ID: {os.environ.get('DESKTOP_STARTUP_ID')}")
-        print(f"DEBUG: XDG_ACTIVATION_TOKEN: {os.environ.get('XDG_ACTIVATION_TOKEN')}")
-
-        # Scrub ALL startup/activation tokens. This tells Qt to ignore 
-        # any launch context from the shell/compositor, preventing 
-        # the "Wait" cursor from ever being triggered.
+        # SILENT STARTUP: Scrub all startup/activation tokens to prevent 
+        # the compositor from showing a "Wait" cursor.
         for env_var in ["DESKTOP_STARTUP_ID", "XDG_ACTIVATION_TOKEN", "XDG_ACTIVATION_ID"]:
             os.environ.pop(env_var, None)
 
+        # PORTAL BYPASS: Disable XDG Desktop Portal integration. 
+        # This fixes a "Failed to register with host portal" DBus error 
+        # caused by PyInstaller's multi-process model on GNOME 50.
+        os.environ["QT_NO_XDG_DESKTOP_PORTAL"] = "1"
+
         self.app = QApplication(sys.argv)
         
-        # Consistent ID for Linux desktop integration
+        # Consistent IDs for Linux desktop integration
         if sys.platform == "linux":
             self.app.setDesktopFileName("comic-strip-browser")
-            self.app.setApplicationName("comic-strip-browser")
+            self.app.setApplicationName("Comic Strip Browser")
         else:
             self.app.setApplicationName("Comic Strip Browser")
 
         self.app.setApplicationVersion(__version__)
         self.app.setOrganizationName("Comic Browser")
-
-        # In Qt6, high DPI scaling and pixmaps are always enabled.
-        # AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps are deprecated.
 
         # Connect application aboutToQuit signal for cleanup
         self.app.aboutToQuit.connect(self.shutdown)
@@ -163,32 +160,8 @@ class ComicStripBrowser:
         except Exception as e:
             raise
     
-    def show_initialization_progress(self):
-        """Show initialization progress dialog."""
-        self.progress_dialog = QProgressDialog(
-            "Initializing Comic Strip Browser...",
-            None,  # No cancel button
-            0, 100
-        )
-        self.progress_dialog.setWindowTitle("Comic Strip Browser")
-        self.progress_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.progress_dialog.setMinimumDuration(0)
-        self.progress_dialog.setValue(0)
-        self.progress_dialog.setCancelButton(None)
-        self.progress_dialog.show()
-    
-    def on_initialization_progress(self, message: str, percentage: int):
-        """Handle initialization progress updates."""
-        if self.progress_dialog:
-            self.progress_dialog.setLabelText(message)
-            self.progress_dialog.setValue(percentage)
-    
     def on_initialization_complete(self, success: bool, message: str, comic_service):
         """Handle initialization completion."""
-        if self.progress_dialog:
-            self.progress_dialog.close()
-            self.progress_dialog = None
-        
         if success:
             # Inject the now-ready services into the controller
             if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
@@ -234,10 +207,6 @@ class ComicStripBrowser:
                 self.initialization_worker.terminate()
                 self.initialization_worker.wait(3000)  # Wait up to 3 seconds
             
-            # Close progress dialog if open
-            if self.progress_dialog:
-                self.progress_dialog.close()
-            
             # Cleanup main window
             if self.main_window:
                 self.main_window.close()
@@ -265,21 +234,15 @@ class ComicStripBrowser:
 
     def run(self):
         """Start the application main loop."""
-        import os
         try:
             # Initialize PyQt6 application
             self.initialize_application()
 
-            # Show the main window immediately so the xdg-activation startup
-            # notification completes as soon as the window maps.
+            # Show the main window immediately
             self.initialize_main_window()
-            print(f"DEBUG: Main window created and show() called. PID: {os.getpid()}")
 
             # Force the cursor to be a normal arrow immediately.
-            # This can override the compositor's "wait" state for our window.
             self.app.setOverrideCursor(Qt.CursorShape.ArrowCursor)
-            print("DEBUG: setOverrideCursor(ArrowCursor) called.")
-            # Restore it after 1 second so the app behaves normally afterward
             QTimer.singleShot(1000, self.app.restoreOverrideCursor)
 
             # Start background initialization using status bar instead of dialog
