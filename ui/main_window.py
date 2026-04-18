@@ -969,8 +969,7 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def _open_cache_folder(self):
-        """Open the cache folder in the system's file manager using QDesktopServices."""
-        # Get absolute path to the cache directory
+        """Open the cache folder in the system's file manager with environment cleaning for AppImages."""
         cache_path = os.path.abspath(os.path.join(os.getcwd(), "cache"))
         
         # Ensure directory exists
@@ -981,11 +980,28 @@ class MainWindow(QMainWindow):
                 self.update_status(f"Error creating cache folder: {e}", 3000)
                 return
 
-        # QDesktopServices is more robust than subprocess, especially in AppImages
-        # as it handles environment escaping and OS-specific URL schemes.
-        success = QDesktopServices.openUrl(QUrl.fromLocalFile(cache_path))
-        if not success:
-            self.update_status(f"Could not open cache folder: {cache_path}", 3000)
+        system = platform.system()
+        try:
+            if system == "Windows":
+                os.startfile(cache_path)
+            elif system == "Darwin":  # macOS
+                subprocess.Popen(["open", cache_path])
+            else:  # Linux
+                # For AppImage compatibility: clean the environment to avoid library clashes
+                # with the system file manager.
+                env = os.environ.copy()
+                if "APPDIR" in env:
+                    # Remove AppImage-specific variables that leak into the system
+                    for var in ["LD_LIBRARY_PATH", "PYTHONPATH", "PYTHONHOME"]:
+                        env.pop(var, None)
+                
+                # Use subprocess.Popen so it doesn't block the main thread
+                subprocess.Popen(["xdg-open", cache_path], env=env)
+        except Exception as e:
+            # Final fallback to standard Qt method
+            QDesktopServices.openUrl(QUrl.fromLocalFile(cache_path))
+            self.update_status(f"Opening cache folder... (Fallback used: {e})", 2000)
+
 
 
     def keyPressEvent(self, event):
