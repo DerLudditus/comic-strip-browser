@@ -706,7 +706,7 @@ class MainWindow(QMainWindow):
         search_date = current_date
         days_attempted = 0
         
-        while days_attempted < 14:
+        while days_attempted < 7:
             search_date -= timedelta(days=1)
             
             # Don't go before comic start
@@ -793,7 +793,7 @@ class MainWindow(QMainWindow):
         search_date = current_date
         days_attempted = 0
         
-        while days_attempted < 14:
+        while days_attempted < 7:
             search_date += timedelta(days=1)
             
             # Don't go beyond today
@@ -897,7 +897,7 @@ class MainWindow(QMainWindow):
         search_date = random_date
         days_attempted = 0
         
-        while days_attempted < 14:
+        while days_attempted < 7:
             # Don't go beyond today
             if search_date > today:
                 self.update_status("Reached today's date", 3000)

@@ -276,7 +276,8 @@ class ComicViewer(QWidget):
                 background-color: #fafafa;
             }
         """)
-        self.content_layout.addWidget(self.image_label)
+        # Point 3: Explicitly set the centered flag
+        self.content_layout.addWidget(self.image_label, 0, Qt.AlignmentFlag.AlignHCenter)
 
         # Stretch at the end pushes all content to the top
         self.content_layout.addStretch()
@@ -358,11 +359,6 @@ class ComicViewer(QWidget):
         # Add image format and dimensions info
         if comic_data.image_width and comic_data.image_height:
             metadata_text = f" {comic_data.image_width}×{comic_data.image_height}"
-
-        # Show scale factor when it's not the default 1.0
-        scale = self._get_comic_scale()
-        if scale != 1.0:
-            metadata_text += f"  ({int(scale * 100)}%)"
 
         # Show current display device pixel ratio
         win = self.window()
@@ -495,85 +491,60 @@ class ComicViewer(QWidget):
     
     def calculate_display_size(self, original_size: QSize) -> QSize:
         """
-        Calculate appropriate display size for comic image.
-
-        Images are never enlarged beyond their original pixel size unless the
-        system display scaling (DPR) is > 1.0. Small images are only shown
-        at their native size (or scaled down to fit the viewport / per-comic
-        scale factor). High-DPI displays get a proportional bump.
-
-        Args:
-            original_size: Original size of the comic image
-
-        Returns:
-            QSize object with calculated display dimensions
+        Calculate appropriate display size using the refined Scaling Hack.
+        Strictly honors image pixels and prevents unwanted enlargement.
         """
-        # Get available space in the scroll area viewport.
-        # We use the viewport size directly — no artificial caps.
         viewport = self.scroll_area.viewport()
-        max_width = max(100, viewport.width() - 40)
-        max_height = max(100, viewport.height() - 40)
+        max_w = viewport.width() - 40
+        
+        w = float(original_size.width())
+        h = float(original_size.height())
+        
+        if w <= 0 or h <= 0:
+            return QSize(400, 300)
 
-        # Images are never scaled down unless they exceed the viewport.
-        # No arbitrary max width/height caps — let tall comics be tall.
+        # 1. Custom Scale Factor (Huge images only)
+        if w > 1535 and w > h: # Landscape
+            h *= (1200/w)
+            w = 1200
+        elif w > 1535 and w < h and h > 2000:
+            h *= 0.35
+            w *= 0.35
+        elif w > 1535 and w < h and h > 1700:
+            h *= 0.45
+            w *= 0.45
+        elif w > 1535 and w < h:
+            h *= 0.5
+            w *= 0.5
+        elif w > 1200 and w < h:
+            h *= 0.65
+            w *= 0.65
+        # One more time!    
+        if w < h and w > 899:
+            h *= 0.8
+            w *= 0.8
 
-        # Landscape comics narrower than 900px are upscaled to 900px.
-        # Portrait comics are never upscaled.
-        is_landscape = original_size.width() >= original_size.height()
-        if is_landscape and original_size.width() < 900:
-            ratio = original_size.height() / original_size.width()
-            original_size = QSize(900, int(900 * ratio))
 
-        # Apply per-comic scale factor (default 1.0) — but ONLY for portrait comics.
-        # Landscape comics (width >= height) are never scaled down by this factor.
-        scale = self._get_comic_scale()
-        is_portrait = original_size.width() < original_size.height()
-        if scale != 1.0 and is_portrait:
-            max_width = int(max_width * scale)
-            max_height = int(max_height * scale)
+        # 2. Target Width Calculation (Image pixels)
+        # Portrait: at least 450px wide for legibility.
+        # Landscape: at least 900px wide for standard viewing.
+        if h > w: # Portrait
+            target_w = max(w, 450.0)
+        else: # Landscape or Square
+            target_w = max(w, 900.0)
+            
+        # Apply the target width and update height proportionally
+        h *= (target_w / w)
+        w = target_w
 
-        # Calculate scaled size while preserving aspect ratio
-        original_ratio = original_size.width() / original_size.height()
-
-        if max_width / max_height > original_ratio:
-            # Height is the limiting factor
-            new_height = max_height
-            new_width = int(new_height * original_ratio)
-        else:
-            # Width is the limiting factor
-            new_width = max_width
-            new_height = int(new_width / original_ratio)
-
-        # Never enlarge beyond the original image size (unless system DPI scaling > 1.0)
-        win = self.window()
-        dpr = win.devicePixelRatioF() if win else 1.0
-        if dpr < 1.0:
-            dpr = 1.0
-
-        max_logical_width = int(original_size.width() * dpr)
-        max_logical_height = int(original_size.height() * dpr)
-
-        if new_width > max_logical_width:
-            new_width = max_logical_width
-            new_height = int(new_width / original_ratio)
-        if new_height > max_logical_height:
-            new_height = max_logical_height
-            new_width = int(new_height * original_ratio)
-
-        return QSize(new_width, new_height)
-
-    def _get_comic_scale(self) -> float:
-        """
-        Get the per-comic display scale factor from the ComicDefinition.
-
-        Returns:
-            Scale factor (default 1.0). Values < 1.0 scale the comic down.
-        """
-        if self.current_comic_data and self.current_comic_data.comic_name:
-            comic_def = get_comic_definition(self.current_comic_data.comic_name)
-            if comic_def:
-                return comic_def.scale
-        return 1.0
+        # 3. Final Window Constraint (DOWNSCALING only)
+        # We only shrink the image if it is wider than the window.
+        # We NEVER enlarge it to fill the window space.
+        if w > max_w:
+            h *= (max_w / w)
+            w = max_w
+            
+        return QSize(int(w), int(h))
 
     def _resize_content_widget(self):
         """

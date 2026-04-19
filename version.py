@@ -5,8 +5,8 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.3.2"
-__version_info__ = (2, 3, 2)
+__version__ = "2.4.0"
+__version_info__ = (2, 4, 0)
 
 # Release information
 RELEASE_DATE = "2026-04-19"
@@ -18,7 +18,15 @@ DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.3.2-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.4.0-1) stable; urgency=medium
+  * Simplified the scaling down of huge comics. 
+  * Defined the gaps in Calvin and Hobbes.
+  * Pluggers is now retrieved from both sites (just like Shoe). There are differences in availability and colors.
+  * Added Mutts, thus increasing to 42 the titles (40 unique, as Shoe and Pluggers are twice).
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 19 Apr 2026 08:30 +0300
+ 
+comic-strip-browser (2.3.2-1) stable; urgency=medium
   * Fix AppImage not being able to open the cache folder using the button.
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 19 Apr 2026 01:20 +0300

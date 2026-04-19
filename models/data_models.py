@@ -28,7 +28,6 @@ class ComicData:
     author: str
     cached_image_path: Optional[str] = None
     retrieved_at: datetime = field(default_factory=datetime.now)
-    scale: float = 1.0  # Per-comic display scale factor (1.0 = full size)
     
     def __post_init__(self):
         """Validate the comic data after initialization."""
@@ -79,7 +78,6 @@ class ComicDefinition:
     weekly_between: Optional[tuple] = None
     daily_between: Optional[tuple] = None
     skip_ranges: Optional[List[Tuple[str, str]]] = None
-    scale: float = 1.0  # Display scale factor (1.0 = full size). Override for tall/wide comics.    
     
     def is_available(self, check_date: date) -> bool:
         """
@@ -212,7 +210,7 @@ class CacheEntry:
             raise ValueError("file_size must be a non-negative integer")
 
 
-# Predefined comic definitions for the 40 supported comic strips
+# Predefined comic definitions for the 42 supported comic strips
 # Earliest dates are hard-coded based on website availability
 COMIC_DEFINITIONS = [
     ComicDefinition(
@@ -263,7 +261,6 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/bizarro",
         author="Wayno & Piraro",
         earliest_date=date(1996, 4, 7),
-        scale=0.8,
         info="On Comics Kingdom, Bizarro starts in 1996 irregularly (1996-02-18, 1996-03-03, 1996-03-31, 1996-04-07), then weekly since 1996-04-07 and daily since 2002-12-29.",
         dates_one_off=("1996-02-18", "1996-03-03", "1996-03-31", "1996-04-07"),
         weekly_between=("1996-04-07", "2002-12-22"),
@@ -291,7 +288,8 @@ COMIC_DEFINITIONS = [
         base_url="https://www.gocomics.com/calvinandhobbes",
         author="Bill Watterson",
         earliest_date=date(1985, 11, 18),
-        info="Calvin and Hobbes - on GoComics since 1985-11-18."
+        info="Calvin and Hobbes - on GoComics since 1985-11-18. The original run ended on 1995-12-31. Reruns started on 2007-01-01. MIND THE GAP!",
+        skip_ranges=(("1996-01-01", "2006-12-31"),)
     ),
     ComicDefinition(
         name="carpe-diem",
@@ -299,7 +297,6 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/carpe-diem",
         author="Niklas Eriksson",
         earliest_date=date(2015, 5, 3),
-        scale=0.8,
         info="Carpe Diem - on Comics Kingdom since 2015-05-03."
     ),     
     ComicDefinition(
@@ -308,7 +305,6 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/crock",
         author="Bill Rechin",
         earliest_date=date(1996, 1, 7),
-        scale=0.4,
         info="On Comics Kingdom, Crock starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-05.",
         weekly_between=("1996-01-07", "1998-10-04"),
         daily_since=date(1998, 10, 5)
@@ -319,9 +315,8 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/dennis-the-menace",
         author="Ketcham, Hamilton & Ferdinand",
         earliest_date=date(1985, 12, 28),
-        scale=0.8,
         info="On Comics Kingdom, Dennis The Menace starts with a one-off on 1985-12-28, then on a weekly base since 1996-01-07, then daily since 1998-10-05.",
-        dates_one_off=("1985-12-28"),
+        dates_one_off=("1985-12-28",),
         weekly_between=("1996-01-07", "1998-10-04"),
         daily_since=date(1998, 10, 5)
     ),     
@@ -347,7 +342,6 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/family-circus",
         author="Bil & Jeff Keane",
         earliest_date=date(1996, 1, 7),
-        scale=0.8,
         info="On Comics Kingdom, The Family Circus starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-04.",
         weekly_between=("1996-01-07", "1998-10-04"),
         daily_since=date(1998, 10, 5)
@@ -421,7 +415,7 @@ COMIC_DEFINITIONS = [
         author="Tom Armstrong",
         earliest_date=date(1996, 1, 7),
         info="On Comics Kingdom, Marvin starts on 1996-01-07 initially with a 2-week jump to 1996-01-21, then weekly, then daily since 1998-10-05.",
-        dates_one_off=("1996-01-07"),
+        dates_one_off=("1996-01-07",),
         weekly_between=("1996-01-21", "1998-10-04"),
         daily_since=date(1998, 10, 5)
     ),         
@@ -433,6 +427,16 @@ COMIC_DEFINITIONS = [
         earliest_date=date(1984, 10, 1),
         info="Mother Goose and Grimm - on GoComics since 2002-11-25 (limited availability)."
     ),
+    ComicDefinition(
+        name="mutts",
+        display_name="Mutts",
+        base_url="https://comicskingdom.com/mutts",
+        author="Patrick McDonnell",
+        earliest_date=date(1994, 9, 11),
+        info="On Comics Kingdom, Mutts starts on 1994-09-11 on a weekly base, then becomes daily on 1998-10-05.",
+        weekly_between=("1994-09-11", "1998-10-04"),
+        daily_since =date(1998, 10, 5)
+    ),             
     ComicDefinition(
         name="offthemark",
         display_name="Off the Mark",
@@ -447,7 +451,6 @@ COMIC_DEFINITIONS = [
         base_url="https://comicskingdom.com/pardon-my-planet",
         author="Vic Lee",
         earliest_date=date(1999, 12, 1),
-        scale=0.8,
         info="Pardon My Planet - on Comics Kingdom since 1999-12-01."
     ),     
     ComicDefinition(
@@ -456,7 +459,7 @@ COMIC_DEFINITIONS = [
         base_url="https://www.gocomics.com/peanuts",
         author="Charles M. Schulz",
         earliest_date=date(1950, 10, 16),
-        info="Peanuts - on GoComics since 1950-10-16."
+        info="Peanuts - on GoComics since 1950-10-16.",
     ),
     ComicDefinition(
         name="peanuts-begins",
@@ -485,14 +488,23 @@ COMIC_DEFINITIONS = [
         info="Pickles - on GoComics since 2003-01-01 (extremely limited availability)."
     ),
     ComicDefinition(
+        name="pluggers2",
+        display_name="Pluggers @ GoComics",
+        base_url="https://www.gocomics.com/pluggers",
+        author="Jeff MacNelly, Gary Brookins, Rick McKee",
+        earliest_date=date(2001, 4, 8),
+        info="On GoComics, Pluggers starts in April 2001 with comics on 8 and 15, then daily since 18 (limited availability).",
+        dates_one_off=("2001-04-08","2001-04-15"),
+        daily_since=date(2001, 4, 18)
+    ),    
+    ComicDefinition(
         name="pluggers",
-        display_name="Pluggers",
+        display_name="Pluggers @ CK",
         base_url="https://comicskingdom.com/pluggers",
         author="Jeff MacNelly, Gary Brookins, Rick McKee",
         earliest_date=date(2021, 11, 7),
-        scale=0.7,
-        info="Pluggers - on Comics Kingdom since 2021-11-07 (extremely limited availability; it skips the Jeff MacNelly and Gary Brookins periods)."
-    ),     
+        info="On Comics Kingdom, Pluggers starts on 2021-11-07 (extremely limited availability; it skips the Jeff MacNelly and Gary Brookins periods). Better colors than on GoComics."
+    ),
     ComicDefinition(
         name="realitycheck",
         display_name="Reality Check",
