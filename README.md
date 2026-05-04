@@ -70,7 +70,7 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 34. **Ginger Meggs** @ GoComics
 35. **Glasbergen Cartoons** @ GoComics
 36. **Hagar The Horrible** @ CK
-37.. **Hi and Lois** @ CK
+37. **Hi and Lois** @ CK
 38. **Lola** @ GoComics
 39. **Marmaduke** @ GoComics
 40. **Marvin** @ CK
