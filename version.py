@@ -5,20 +5,27 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.4.0"
-__version_info__ = (2, 4, 0)
+__version__ = "2.5.0"
+__version_info__ = (2, 5, 0)
 
 # Release information
-RELEASE_DATE = "2026-04-19"
+RELEASE_DATE = "2026-05-04"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.4.0-1"
+DEB_VERSION = "2.5.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.4.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.5.0-1) stable; urgency=medium
+* Added: Animal Crackers, The Argyle Sweater, Aunty Acid, Baby Blues, Baldo, Bliss, Broom Hilda, Close to Home, Day by Dave, Doonesbury, Frazz, The Fusco Brothers, Ginger Meggs, Glasbergen Cartoons, Lola, Marmaduke, Moderately Confused, Non Sequitur, The Other Coast.
+* Total: 62 titles. Not counting duplicates (Animal Crackers, Pluggers, Shoe are on both GoComics and CK): 59.
+* The scaling up logic has been refined to cover the cases of some comic titles. It's not perfect, but reasonable.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Mon, 4 May 2026 23:50 +0300
+
+comic-strip-browser (2.4.0-1) stable; urgency=medium
   * Simplified the scaling down of huge comics. 
   * Defined the gaps in Calvin and Hobbes.
   * Pluggers is now retrieved from both sites (just like Shoe). There are differences in availability and colors.

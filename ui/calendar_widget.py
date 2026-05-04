@@ -410,6 +410,9 @@ class CalendarWidget(QWidget):
             self.info_label.setText(INFO_ICON + " " + comic_def.info)
         else:
             self.info_label.setText("")
+        
+        # Refresh the calendar to update date graying/availability for the new comic
+        self.populate_calendar()
 
     def populate_calendar(self):
         """Populate the calendar grid with day buttons for the current month."""

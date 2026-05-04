@@ -61,7 +61,7 @@ class AboutDialog(QDialog):
 
         # Description
         desc_label = QLabel(
-            "Browse 40 daily comic strips from\n"
+            "Browse daily comic strips from\n"
             "GoComics.com & ComicsKingdom.com\n"
             "with offline caching and calendar navigation."
         )

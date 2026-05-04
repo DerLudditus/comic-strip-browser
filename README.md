@@ -1,6 +1,6 @@
 # Comic Strip Browser
 
-A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for 40 popular titles, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
+A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for about 60 popular titles, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 
 This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4. Three months later, fixing a few bugs and adding a few features led to version 1.1.3.
 
@@ -9,7 +9,7 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 ### Major changes
 	
 - **Comics Kingdom** is now supported in addition to **GoComics**.
-- The number of comic titles increased from **20** to **40**.
+- The number of comic titles increased from **20** to **62** (59 unique; 3 are retrieved from both sites).
 - Builds are now made by GitHub.
 - For the first time, **Windows** binaries are available!
 - **Fractional desktop scaling** is better supported! (I still prefer 100%.)
@@ -18,11 +18,11 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 
 ### Tested on: 
 
-- Debian 13 (MX 25 XFCE) updated as of April 14, 2025; 
-- Ubuntu 26.04 (pre-release, as of April 14, 2025); 
-- Kubuntu 26.04 (pre-release, live session of the daily build of April 12, 2025); 
-- Ultramarine Linux 43 KDE Plasma Edition (live session);
-- Windows 11 IoT Enterprise LTSC 24H2 (26100.8037).
+- MX 25 XFCE (Debian 13); 
+- Ubuntu 26.04 LTS (only versions 2.0.0 to 2.4.0); 
+- Kubuntu 26.04 LTS; 
+- Ultramarine Linux 43 KDE Plasma Edition (only versions 2.0.0 to 2.4.0);
+- Windows 11 IoT Enterprise LTSC 24H2 (26100.8037).
 
 ### Good to know
 
@@ -36,44 +36,66 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 
 1. **Adam@Home** @ GoComics
 2. **Andy Capp** @ GoComics
-3. **B.C.** @ GoComics
-4. **Back to B.C.** @ GoComics
-5. **Beetle Bailey** @ CK
-6. **Bizarro** @ CK
-7. **Blondie** @ CK
-8. **The Brilliant Mind Of Edison Lee** @ CK
-9. **Calvin and Hobbes** @ GoComics
-10. **Carpe Diem** @ CK
-11. **Crock** @ CK
-12. **Dennis The Menace** @ CK
-13. **The Duplex** @ GoComics
-14. **Dustin** @ CK
-15. **The Family Circus** @ CK
-16. **The Flying McCoys** @ GoComics
-17. **Foxtrot** @ GoComics
-18. **Foxtrot Classics** @ GoComics
-19. **Free Range** @ GoComics
-20. **Garfield** @ GoComics
-21. **Hagar The Horrible** @ CK
-22. **Hi and Lois** @ CK
-23. **Marvin** @ CK
-24. **Mother Goose and Grimm** @ GoComics
-25. **Off the Mark** @ GoComics
-26. **Pardon My Planet** @ CK
-27. **Peanuts** @ GoComics
-26. **Peanuts Begins** @ GoComics
-29. **Pearls Before Swine** @ GoComics
-30. **Pickles** @ GoComics
-31. **Pluggers** @ CK
-32. **Reality Check** @ GoComics
-33. **Rhymes with Orange** @ CK
-34. **Shoe** @ GoComics
-35. **Shoe** @ CK
-36. **Speed Bump** @ GoComics
-37. **Wizard of Id** @ GoComics
-38. **WuMo** @ GoComics
-39. **Ziggy** @ GoComics
-40. **Zits** @ CK
+3. **Animal Crackers** @ GoComics
+4. **Animal Crackers** @ CK
+5. **The Argyle Sweater** @ GoComics
+6. **Aunty Acid** @ GoComics
+7. **Baby Blues** @ GoComics
+8. **Baldo** @ GoComics
+9. **B.C.** @ GoComics
+10. **Back to B.C.** @ GoComics
+11. **Beetle Bailey** @ CK
+12. **Bizarro** @ CK
+13. **Bliss** @ GoComics
+14. **Blondie** @ CK
+15. **The Brilliant Mind Of Edison Lee** @ CK
+16. **Broom Hilda** @ GoComics
+17. **Calvin and Hobbes** @ GoComics
+18. **Carpe Diem** @ CK
+19. **Crock** @ CK
+20. **Close to Home** @ GoComics
+21. **Day by Dave** @ GoComics
+22. **Dennis The Menace** @ CK
+23. **Doonesbury** @ GoComics
+24. **The Duplex** @ GoComics
+25. **Dustin** @ CK
+26. **The Family Circus** @ CK
+27. **The Flying McCoys** @ GoComics
+28. **Foxtrot** @ GoComics
+29. **Foxtrot Classics** @ GoComics
+30. **Frazz** @ GoComics
+31. **Free Range** @ GoComics
+32. **The Fusco Brothers** @ GoComics
+33. **Garfield** @ GoComics
+34. **Ginger Meggs** @ GoComics
+35. **Glasbergen Cartoons** @ GoComics
+36. **Hagar The Horrible** @ CK
+37.. **Hi and Lois** @ CK
+38. **Lola** @ GoComics
+39. **Marmaduke** @ GoComics
+40. **Marvin** @ CK
+41. **Moderately Confused** @ GoComics
+42. **Mother Goose and Grimm** @ GoComics
+43. **Mutts** @ CK
+44. **Non Sequitur** @ GoComics
+45. **Off the Mark** @ GoComics
+46. **The Other Coast** @ GoComics
+47. **Pardon My Planet** @ CK
+48. **Peanuts** @ GoComics
+49. **Peanuts Begins** @ GoComics
+50. **Pearls Before Swine** @ GoComics
+51. **Pickles** @ GoComics
+52. **Pluggers** @ GoComics
+53. **Pluggers** @ CK
+54. **Reality Check** @ GoComics
+55. **Rhymes with Orange** @ CK
+56. **Shoe** @ GoComics
+57. **Shoe** @ CK
+58. **Speed Bump** @ GoComics
+59. **Wizard of Id** @ GoComics
+60. **WuMo** @ GoComics
+61. **Ziggy** @ GoComics
+62. **Zits** @ CK
 
 Note that some comic titles, especially in their early days, can have large gaps in availability.
 

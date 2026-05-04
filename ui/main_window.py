@@ -119,6 +119,12 @@ class MainWindow(QMainWindow):
         
         # Set initial splitter proportions
         self.main_splitter.setSizes([280, 700, 280])
+
+        # Manually trigger initial comic selection since the signal was likely emitted during ComicSelector init
+        initial_comic = self.comic_selector.get_selected_comic()
+        if initial_comic:
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(0, lambda: self.on_comic_selected(initial_comic))
     
 
     
@@ -265,8 +271,27 @@ class MainWindow(QMainWindow):
                 target_date = current_date
         
         # Navigate to target date and load comic (don't emit signal to prevent double-load)
-        self.calendar_widget.navigate_to_date(target_date, emit_signal=False)
         self.calendar_widget.set_comic_info(comic_name)
+        
+        # Ensure the target date is available, otherwise go back to find the first available one
+        if comic_def and not comic_def.is_available(target_date):
+            original_target = target_date
+            search_date = target_date
+            found = False
+            # Search back up to 31 days to find an available comic
+            for _ in range(31):
+                search_date -= timedelta(days=1)
+                if comic_def.is_available(search_date):
+                    target_date = search_date
+                    found = True
+                    break
+            
+            if not found:
+                # Fallback to earliest_date if no available date found in search
+                if comic_def.earliest_date:
+                    target_date = comic_def.earliest_date
+        
+        self.calendar_widget.navigate_to_date(target_date, emit_signal=False)
         self.comic_controller.load_comic(comic_name, target_date)
 
         self.comic_selected.emit(comic_name)
@@ -668,7 +693,7 @@ class MainWindow(QMainWindow):
     
     def go_to_today(self):
         """Navigate to today's comic, or yesterday if today not available."""
-        from datetime import date
+        from datetime import date, timedelta
         
         today = date.today()
         
@@ -677,11 +702,30 @@ class MainWindow(QMainWindow):
             self.update_status("Please select a comic first", 3000)
             return
         
-        # Update calendar to today's date (don't emit signal to prevent double-load)
-        self.calendar_widget.navigate_to_date(today, emit_signal=False)
+        comic_def = get_comic_definition(current_comic)
+        target_date = today
         
-        # Try to load today's comic (let the error handler deal with failures)
-        self.comic_controller.load_comic(current_comic, today)
+        # Ensure the target date is available, otherwise go back to find the first available one
+        if comic_def and not comic_def.is_available(target_date):
+            search_date = target_date
+            found = False
+            # Search back up to 31 days to find an available comic
+            for _ in range(31):
+                search_date -= timedelta(days=1)
+                if comic_def.is_available(search_date):
+                    target_date = search_date
+                    found = True
+                    break
+            
+            if not found:
+                if comic_def.earliest_date:
+                    target_date = comic_def.earliest_date
+
+        # Update calendar to target date (don't emit signal to prevent double-load)
+        self.calendar_widget.navigate_to_date(target_date, emit_signal=False)
+        
+        # Load the comic
+        self.comic_controller.load_comic(current_comic, target_date)
     
     def go_to_previous_day(self):
         """Navigate to the previous day's comic - synchronous search."""

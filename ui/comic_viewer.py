@@ -528,10 +528,26 @@ class ComicViewer(QWidget):
         # 2. Target Width Calculation (Image pixels)
         # Portrait: at least 450px wide for legibility.
         # Landscape: at least 900px wide for standard viewing.
-        if h > w: # Portrait
+        # EXCEPT if never_scale_up is True for this comic.
+        comic_def = None
+        if self.current_comic_data:
+            comic_def = get_comic_definition(self.current_comic_data.comic_name)
+
+        if comic_def and comic_def.never_scale_up:
+            if w > h and h < 450.0:
+                # Niche case: Landscape but too short, scale up to 450px height
+                target_w = w * (450.0 / h)
+            else:
+                target_w = w
+        elif h > w: # Portrait
             target_w = max(w, 450.0)
         else: # Landscape or Square
-            target_w = max(w, 900.0)
+            # General rule: Scale up to 900px, 
+            # BUT if it's a small landscape (w <= 450), don't enlarge it.
+            if w <= 450.0:
+                target_w = w
+            else:
+                target_w = max(w, 900.0)
             
         # Apply the target width and update height proportionally
         h *= (target_w / w)
