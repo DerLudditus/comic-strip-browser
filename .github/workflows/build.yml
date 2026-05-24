@@ -46,13 +46,6 @@ jobs:
           path: dist/ComicStripBrowser.exe
           retention-days: 30
 
-      - name: Create Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/ComicStripBrowser.exe
-          generate_release_notes: true
-
   # ─── Linux ─────────────────────────────────────────────────
   build-linux:
     runs-on: ubuntu-24.04
@@ -217,13 +210,22 @@ jobs:
           path: dist/comic-strip-browser-*.AppImage
           retention-days: 30
 
-      - name: Create Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
+  # ─── Release ───────────────────────────────────────────────
+  # Waits for both builds, pulls down all files, and creates exactly ONE release
+  publish-release:
+    needs: [build-windows, build-linux]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ComicStripBrowser-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/comic-strip-browser
-            ${{ steps.deb.outputs.path }}
-            ${{ steps.rpm.outputs.path }}
-            dist/comic-strip-browser-*.AppImage
-          generate_release_notes: true
+          files: release-assets/*
+          body: ${{ github.event.head_commit.message }}
