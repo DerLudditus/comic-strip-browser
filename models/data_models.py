@@ -578,7 +578,7 @@ COMIC_DEFINITIONS = [
     ComicDefinition(
         name="marmaduke",
         display_name="Marmaduke",
-        base_url="https://www.gocomi2004-10-24cs.com/marmaduke",
+        base_url="https://www.gocomics.com/marmaduke",
         author="Brad Anderson",
         earliest_date=date(1996, 12, 30),
         info="Marmaduke - on GoComics since 1996-12-30. No Sundays until 2011-06-05.",
