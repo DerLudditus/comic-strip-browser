@@ -120,6 +120,15 @@ The folder `cache` is saved as follows:
 * In **$HOME** when this is not possible, especially when installed globally from `.deb` or `.rpm` and launched from the menu.
 * Beware that if you launch the app via a launcher triggered by Alt+F2, the current directory is `~/Desktop` in MATE and $HOME in other desktop environments.
 
+### Hint
+
+To run the application directly from the Python source code (`python3 main.py`), a couple of libraries are needed: `beautifulsoup4` and PIL. 
+
+Under Debian or Ubuntu: 
+`sudo apt install python3-bs4 python3-pil`
+
+
+
 ### License
 This project is licensed under the MIT License. See LICENSE file for details.
 
