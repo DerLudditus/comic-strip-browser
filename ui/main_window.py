@@ -155,9 +155,31 @@ class MainWindow(QMainWindow):
             }
         """)
 
+        # Delete Cache button — delete cache folder
+        self.delete_cache_btn = QPushButton("Delete Cache")
+        self.delete_cache_btn.setFixedWidth(80)
+        self.delete_cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.delete_cache_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e0e0e0;
+                border: 1px solid #000000;
+                border-radius: 4px;
+                color: #555555;
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+                border: 1px solid #9e9e9e;
+                color: #dc3545;
+            }
+        """)
+        self.delete_cache_btn.clicked.connect(self._delete_cache_folder)
+        self.status_bar.addPermanentWidget(self.delete_cache_btn)
+
         # Cache button — open cache folder
-        self.cache_btn = QPushButton("Cache")
-        self.cache_btn.setFixedWidth(56)
+        self.cache_btn = QPushButton("Open Cache")
+        self.cache_btn.setFixedWidth(80)
         self.cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.cache_btn.setStyleSheet("""
             QPushButton {
@@ -511,10 +533,14 @@ class MainWindow(QMainWindow):
             # Try the next day automatically
             next_date = current_date + timedelta(days=1)
             today = date.today()
+            import os
+            max_date = today
+            if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+                max_date += timedelta(days=1)
             
-            if next_date > today:
+            if next_date > max_date:
                 self._auto_advancing = False
-                self.update_status("Reached today's date - no more comics available", 3000)
+                self.update_status("Reached tomorrow's date - no more comics available" if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE") else "Reached today's date - no more comics available", 3000)
                 return
             
             # Show progress
@@ -625,7 +651,12 @@ class MainWindow(QMainWindow):
         
         # Calendar widget
         calendar = QCalendarWidget()
-        calendar.setMaximumDate(date.today())
+        import os
+        from datetime import timedelta
+        max_date = date.today()
+        if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+            max_date += timedelta(days=1)
+        calendar.setMaximumDate(max_date)
         
         layout.addWidget(calendar)
         
@@ -832,6 +863,10 @@ class MainWindow(QMainWindow):
         comic_def = get_comic_definition(current_comic)
         comic_display_name = comic_def.display_name if comic_def else current_comic
         today = date.today()
+        import os
+        max_date = today
+        if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+            max_date += timedelta(days=1)
         
         # Search for the next available comic
         search_date = current_date
@@ -841,8 +876,8 @@ class MainWindow(QMainWindow):
             search_date += timedelta(days=1)
             
             # Don't go beyond today
-            if search_date > today:
-                self.update_status("Reached today's date", 3000)
+            if search_date > max_date:
+                self.update_status("Reached tomorrow's date" if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE") else "Reached today's date", 3000)
                 return
             
             # Check for skip range jump
@@ -1046,7 +1081,39 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl.fromLocalFile(cache_path))
             self.update_status(f"Opening cache folder... (Fallback used: {e})", 2000)
 
-
+    def _delete_cache_folder(self):
+        """Confirm and delete the cache folder and all its contents."""
+        from PyQt6.QtWidgets import QMessageBox
+        cache_path = os.path.abspath(os.path.join(os.getcwd(), "cache"))
+        
+        reply = QMessageBox.question(
+            self,
+            "Delete Cache",
+            f"Do you really want to delete the folder {cache_path}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            if not os.path.exists(cache_path):
+                self.update_status("Cache folder does not exist.", 3000)
+                return
+            try:
+                import shutil
+                shutil.rmtree(cache_path)
+                if hasattr(self, 'comic_controller') and self.comic_controller and hasattr(self.comic_controller, 'comic_service') and self.comic_controller.comic_service:
+                    try:
+                        self.comic_controller.comic_service.cache_manager._cache_index.clear()
+                    except Exception:
+                        pass
+                self.update_status("Cache folder deleted successfully.", 3000)
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Deletion Failed",
+                    f"Failed to delete cache folder:\n{e}"
+                )
+                self.update_status(f"Error deleting cache folder: {e}", 4000)
 
     def keyPressEvent(self, event):
         """Handle key press events — F1 opens About dialog."""

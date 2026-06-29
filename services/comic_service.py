@@ -6,7 +6,7 @@ WebScraper, CacheManager, and ConfigManager to provide a unified interface
 for comic retrieval with caching, fallback logic, and availability validation.
 """
 
-# import logging
+import logging
 from datetime import date, timedelta
 from typing import Optional, Dict, List
 
@@ -56,7 +56,7 @@ class ComicService:
             web_scraper=self.web_scraper,
             config_manager=self.config_manager
         )
-        # self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
     
     def get_comic(self, comic_name: str, comic_date: Optional[date] = None) -> ComicData:
         """
@@ -89,10 +89,10 @@ class ComicService:
             raise ComicServiceError(f"Unknown comic: {comic_name}")
         
         # Validate date availability (but allow some flexibility for older dates)
-        # if not self.validate_comic_availability(comic_name, comic_date):
-        #    self.logger.warning(f"Comic {comic_name} may not be available for {comic_date}, but will attempt retrieval")
+        if not self.validate_comic_availability(comic_name, comic_date):
+            self.logger.warning(f"Comic {comic_name} may not be available for {comic_date}, but will attempt retrieval")
         
-        # self.logger.info(f"Retrieving comic {comic_name} for {comic_date}")
+        self.logger.info(f"Retrieving comic {comic_name} for {comic_date}")
         
         # Try to get from cache first
         cached_comic = self.cache_manager.get_cached_comic(comic_name, comic_date)
@@ -105,11 +105,10 @@ class ComicService:
             
             # Cache the successful result
             try:
-                # if 
-                self.cache_manager.cache_comic(comic_data)
-                #    self.logger.info(f"Cached comic {comic_name} for {comic_date}")
-                # else:
-                #    self.logger.warning(f"Failed to cache comic {comic_name} for {comic_date}")
+                if self.cache_manager.cache_comic(comic_data):
+                    self.logger.info(f"Cached comic {comic_name} for {comic_date}")
+                else:
+                    self.logger.warning(f"Failed to cache comic {comic_name} for {comic_date}")
             except Exception as cache_error:
                 # Cache errors are non-fatal, just log them
                 self.error_handler.handle_cache_error(cache_error, "save", comic_name, comic_date)
@@ -118,9 +117,9 @@ class ComicService:
             
         except ComicUnavailableError:
             # Comic not available for this date, try fallback if it's today
-            if comic_date == date.today():
+            if comic_date >= date.today():
                 yesterday = comic_date - timedelta(days=1)
-                # self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
+                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
                 
                 try:
                     return self.get_comic(comic_name, yesterday)
@@ -134,13 +133,13 @@ class ComicService:
             # Try to get from cache as fallback for network/parsing errors
             cached_comic = self.cache_manager.get_cached_comic(comic_name, comic_date)
             if cached_comic:
-                # self.logger.info(f"Using cached comic as fallback for {comic_name} on {comic_date}")
+                self.logger.info(f"Using cached comic as fallback for {comic_name} on {comic_date}")
                 return cached_comic
             
             # If requesting today's comic and it failed, try yesterday
-            if comic_date == date.today():
+            if comic_date >= date.today():
                 yesterday = comic_date - timedelta(days=1)
-                # self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
+                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
                 
                 try:
                     return self.get_comic(comic_name, yesterday)
@@ -160,7 +159,7 @@ class ComicService:
                     pass  # Method may not exist, skip
 
             # Try previous day as fallback for date mismatch or today
-            if comic_date == date.today() or 'wrong date' in error_str:
+            if comic_date >= date.today() or 'wrong date' in error_str:
                 yesterday = comic_date - timedelta(days=1)
                 try:
                     return self.get_comic(comic_name, yesterday)
@@ -227,7 +226,7 @@ class ComicService:
             ComicServiceError: If date discovery fails completely
         """
         try:
-            # self.logger.info("Starting optimized earliest date discovery for all comics")
+            self.logger.info("Starting optimized earliest date discovery for all comics")
             
             if progress_callback:
                 progress_callback("Starting date discovery for all comics...", 0)
@@ -236,7 +235,7 @@ class ComicService:
             total_comics = len(COMIC_DEFINITIONS)
             
             for i, comic_def in enumerate(COMIC_DEFINITIONS):
-                # self.logger.info(f"Discovering earliest date for {comic_def.name} ({i+1}/{total_comics})")
+                self.logger.info(f"Discovering earliest date for {comic_def.name} ({i+1}/{total_comics})")
                 
                 if progress_callback:
                     progress = int((i / total_comics) * 100)
@@ -251,15 +250,15 @@ class ComicService:
                     earliest_date = self.date_manager.discover_earliest_date(comic_def.name, comic_progress)
                     if earliest_date is not None:
                         earliest_dates[comic_def.name] = earliest_date
-                        # self.logger.info(f"Found earliest date for {comic_def.name}: {earliest_date}")
+                        self.logger.info(f"Found earliest date for {comic_def.name}: {earliest_date}")
                         
                         # Save partial results as we go
                         self.config_manager.set_start_date(comic_def.name, earliest_date)
-                    # else:
-                       # self.logger.warning(f"No earliest date found for {comic_def.name}")
+                    else:
+                        self.logger.warning(f"No earliest date found for {comic_def.name}")
                     
                 except Exception as e:
-                    # self.logger.error(f"Failed to discover earliest date for {comic_def.name}: {e}")
+                    self.logger.error(f"Failed to discover earliest date for {comic_def.name}: {e}")
                     # Continue with other comics even if one fails
                     continue
             
@@ -269,12 +268,12 @@ class ComicService:
             # Save all discovered dates to configuration
             if earliest_dates:
                 self.config_manager.save_start_dates(earliest_dates)
-                # self.logger.info(f"Saved {len(earliest_dates)} earliest dates to configuration")
+                self.logger.info(f"Saved {len(earliest_dates)} earliest dates to configuration")
             
             return earliest_dates
             
         except Exception as e:
-            # self.logger.error(f"Date discovery failed: {e}")
+            self.logger.error(f"Date discovery failed: {e}")
             raise ComicServiceError(f"Failed to discover earliest dates: {e}")
     
     def get_available_comics(self) -> List[Dict[str, str]]:
@@ -341,7 +340,7 @@ class ComicService:
             comic_name: Name of comic to clear, or None to clear all
         """
         self.cache_manager.clear_cache(comic_name)
-        # self.logger.info(f"Cleared cache for {comic_name or 'all comics'}")
+        self.logger.info(f"Cleared cache for {comic_name or 'all comics'}")
     
     def initialize_if_needed(self) -> bool:
         """
@@ -357,7 +356,7 @@ class ComicService:
             ComicServiceError: If initialization fails
         """
         if self.config_manager.has_all_start_dates():
-            # self.logger.info("All start dates already available, skipping initialization")
+            self.logger.info("All start dates already available, skipping initialization")
             return False
         
         self.logger.info("Start dates missing, beginning initialization")
@@ -367,13 +366,13 @@ class ComicService:
             
             if len(discovered_dates) < len(COMIC_DEFINITIONS):
                 missing_comics = set(comic_def.name for comic_def in COMIC_DEFINITIONS) - set(discovered_dates.keys())
-                # self.logger.warning(f"Could not discover dates for: {missing_comics}")
+                self.logger.warning(f"Could not discover dates for: {missing_comics}")
             
-            # self.logger.info("Service initialization completed")
+            self.logger.info("Service initialization completed")
             return True
             
         except Exception as e:
-            # self.logger.error(f"Service initialization failed: {e}")
+            self.logger.error(f"Service initialization failed: {e}")
             raise ComicServiceError(f"Failed to initialize service: {e}")
     
     def get_error_statistics(self) -> Dict[str, any]:

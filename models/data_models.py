@@ -88,7 +88,12 @@ class ComicDefinition:
         """
         if self.earliest_date and check_date < self.earliest_date:
             return False
-        if check_date > date.today():
+        import os
+        from datetime import timedelta
+        max_date = date.today()
+        if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+            max_date += timedelta(days=1)
+        if check_date > max_date:
             return False
         
         # Check skip_ranges first (highest priority)

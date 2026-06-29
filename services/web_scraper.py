@@ -3,8 +3,8 @@ Web scraping functionality for retrieving comic data from GoComics.com.
 """
 
 import re
-# import logging
-from typing import Optional
+import logging
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from models.data_models import ComicData
@@ -36,11 +36,11 @@ class WebScraper:
         """
         self.timeout = timeout
         self.error_handler = error_handler or ErrorHandler()
-        # self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
         
-    def fetch_page(self, url: str, allow_redirects: bool = True) -> str:
+    def fetch_page(self, url: str, allow_redirects: bool = True) -> Tuple[str, str]:
         """
-        Retrieve web page content using requests with retry logic.
+        Retrieve web page content and final URL using requests with retry logic.
         """
         def _fetch_with_requests():
             headers = {
@@ -62,7 +62,7 @@ class WebScraper:
             response.raise_for_status()
             if not response.text:
                 raise WebScrapingError(f"Empty response from {url}")
-            return response.text
+            return response.text, response.url
         
         try:
             return self.error_handler.retry_with_backoff(_fetch_with_requests)
@@ -78,13 +78,13 @@ class WebScraper:
                     except (ValueError, IndexError):
                         date_obj = datetime.date.today()
                     self.error_handler.handle_network_error(http_error, url, comic_name, date_obj)
-            # self.logger.error(f"Request failed for {url}: {e}")
+            self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except RequestException as e:
-            # self.logger.error(f"Request failed for {url}: {e}")
+            self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except Exception as e:
-            # self.logger.error(f"Unexpected error fetching {url}: {e}")
+            self.logger.error(f"Unexpected error fetching {url}: {e}")
             raise WebScrapingError(f"Unexpected error fetching {url}: {e}")
 
 
@@ -120,17 +120,63 @@ class WebScraper:
             # CRITICAL CHECK: Verify the returned page matches the requested date.
             # Comics Kingdom may return cached content for a different date at the
             # requested URL. If the title contains a different date, it's wrong.
+            import re
+            
+            # 1. Check og:url, canonical link, and meta refresh for redirected/wrong date URL
+            meta_urls = []
+            og_url = soup.find('meta', property='og:url')
+            if og_url and og_url.get('content'):
+                meta_urls.append(og_url['content'])
+            canonical = soup.find('link', rel='canonical')
+            if canonical and canonical.get('href'):
+                meta_urls.append(canonical['href'])
+            refresh = soup.find('meta', id='__next-page-redirect')
+            if refresh and refresh.get('content'):
+                meta_urls.append(refresh['content'])
+                
+            for m_url in meta_urls:
+                url_dates = re.findall(r'(\d{4}[-/]\d{2}[-/]\d{2})', m_url)
+                if url_dates:
+                    returned_url_date = url_dates[0].replace('/', '-')
+                    requested_date_str = date.strftime("%Y-%m-%d")
+                    if returned_url_date != requested_date_str:
+                        raise WebScrapingError(
+                            f"Server returned comic for wrong date {returned_url_date} in og:url/canonical instead of requested {requested_date_str}"
+                        )
+
             if title:
-                # Try to find a date in YYYY-MM-DD format in the title
-                import re
-                title_dates = re.findall(r'(\d{4}-\d{2}-\d{2})', title)
+                # 2. Try to find a date in YYYY-MM-DD or YYYY/MM/DD format in the title
+                title_dates = re.findall(r'(\d{4}[-/]\d{2}[-/]\d{2})', title)
                 if title_dates:
-                    returned_date_str = title_dates[0]
+                    returned_date_str = title_dates[0].replace('/', '-')
                     requested_date_str = date.strftime("%Y-%m-%d")
                     if returned_date_str != requested_date_str:
                         raise WebScrapingError(
                             f"Server returned comic for wrong date {returned_date_str} instead of requested {requested_date_str}"
                         )
+                else:
+                    # 3. Try to find Month DD, YYYY format (GoComics style, e.g. June 28, 2026)
+                    month_match = re.search(r'([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})', title)
+                    if month_match:
+                        month_str, day_str, year_str = month_match.groups()
+                        try:
+                            parsed_date = None
+                            try:
+                                parsed_date = datetime.datetime.strptime(f"{month_str} {day_str}, {year_str}", "%B %d, %Y").date()
+                            except ValueError:
+                                try:
+                                    parsed_date = datetime.datetime.strptime(f"{month_str} {day_str}, {year_str}", "%b %d, %Y").date()
+                                except ValueError:
+                                    pass
+                            
+                            if parsed_date and parsed_date != date:
+                                raise WebScrapingError(
+                                    f"Server returned comic for wrong date {parsed_date.strftime('%Y-%m-%d')} instead of requested {date.strftime('%Y-%m-%d')}"
+                                )
+                        except WebScrapingError:
+                            raise
+                        except Exception:
+                            pass
 
             image_width = self._extract_og_image_width(soup)
             image_height = self._extract_og_image_height(soup)
@@ -155,25 +201,30 @@ class WebScraper:
             try:
                 fallback_result = self.error_handler.handle_parsing_error(e, html_content, comic_name, date)
                 if fallback_result:
-                    # self.logger.info(f"Fallback parsing successful for {comic_name} on {date}")
+                    self.logger.info(f"Fallback parsing successful for {comic_name} on {date}")
                     return fallback_result
             except ParsingError:
                 pass
 
-            # self.logger.error(f"Failed to parse comic data: {e}")
+            self.logger.error(f"Failed to parse comic data: {e}")
             raise WebScrapingError(f"Failed to parse comic data: {e}")
     
     def _extract_title(self, soup: BeautifulSoup) -> str:
-        """Extract title from HTML title tag."""
-        title_tag = soup.find('title')
-        if not title_tag:
-            raise WebScrapingError("No title tag found")
-        
-        title = title_tag.get_text().strip()
-        if not title:
-            raise WebScrapingError("Empty title tag")
+        """Extract title from HTML title tag or og:title."""
+        og_title = soup.find('meta', property='og:title')
+        if og_title and og_title.get('content'):
+            return og_title['content'].strip()
             
-        return title
+        title_tags = soup.find_all('title')
+        for tag in title_tags:
+            text = tag.get_text().strip()
+            if text and text.lower() != 'gocomics':
+                return text
+                
+        if title_tags and title_tags[0].get_text().strip():
+            return title_tags[0].get_text().strip()
+            
+        raise WebScrapingError("No title tag found")
     
     def _extract_og_image(self, soup: BeautifulSoup) -> str:
         """Extract image URL from og:image meta property."""
@@ -267,7 +318,18 @@ class WebScraper:
         yesterday = today - datetime.timedelta(days=1)
         allow_redirects = (date >= yesterday)
 
-        html_content = self.fetch_page(url, allow_redirects=allow_redirects)
+        html_content, final_url = self.fetch_page(url, allow_redirects=allow_redirects)
+
+        # Check if final_url contains a date pattern different from expected
+        import re
+        url_dates = re.findall(r'(\d{4}[-/]\d{2}[-/]\d{2})', final_url)
+        if url_dates:
+            returned_url_date = url_dates[0].replace('/', '-')
+            requested_date_str = date.strftime("%Y-%m-%d")
+            if returned_url_date != requested_date_str:
+                raise WebScrapingError(
+                    f"Server redirected to comic for wrong date {returned_url_date} instead of requested {requested_date_str}"
+                )
 
         comic_data = self.parse_comic_data(html_content, comic_name, date)
 

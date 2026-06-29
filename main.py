@@ -181,6 +181,23 @@ class ComicStripBrowser:
 def main():
     """Main entry point for the application."""
     try:
+        import logging
+        if "--debug" in sys.argv:
+            logging.basicConfig(
+                filename='comic_browser.log',
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            console = logging.StreamHandler()
+            console.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            console.setFormatter(formatter)
+            logging.getLogger('').addHandler(console)
+        else:
+            logging.disable(logging.CRITICAL)
+
+        if "--future" in sys.argv:
+            os.environ["COMIC_BROWSER_ALLOW_FUTURE"] = "1"
         browser = ComicStripBrowser()
         return browser.run()
     except Exception as e:

@@ -5,20 +5,29 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.5.1"
-__version_info__ = (2, 5, 1)
+__version__ = "2.5.2"
+__version_info__ = (2, 5, 2)
 
 # Release information
-RELEASE_DATE = "2026-05-24"
+RELEASE_DATE = "2026-06-29"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.5.1-1"
+DEB_VERSION = "2.5.2-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.5.1-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.5.2-1) stable; urgency=medium
+* Fixed a caching bug where falling back to yesterday's comic (due to US/local time zone differences) incorrectly saved it under today's date, preventing today's comic from being retrieved once available.
+* Improved the detection of silent redirection by GoComics and Comics Kingdom.
+* Added a button in the bottom right to delete the cache folder.
+* Added a `--debug` CLI argument for debugging comic retrieval errors.
+* Added a `--future` CLI argument to attempt retrieving tomorrow's comic.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Mon, 29 June 2026 17:11 +0300
+
+comic-strip-browser (2.5.1-1) stable; urgency=medium
 * Fixed Marmaduke, which was broken because of a typo.
 * Small changes to build.yml.
 

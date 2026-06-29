@@ -691,7 +691,11 @@ class CalendarWidget(QWidget):
             end_date: Latest available date (None for current date)
         """
         if end_date is None:
+            import os
+            from datetime import timedelta
             end_date = date.today()
+            if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+                end_date += timedelta(days=1)
         
         self.comic_date_ranges[comic_name] = (start_date, end_date)
     
@@ -724,7 +728,12 @@ class CalendarWidget(QWidget):
         Check if a date has available comic content.
         Uses the complex availability logic defined in the comic's definition.
         """
-        if date_obj > date.today():
+        import os
+        from datetime import timedelta
+        max_date = date.today()
+        if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
+            max_date += timedelta(days=1)
+        if date_obj > max_date:
             return False
         if self.current_comic_name:
             comic_def = get_comic_definition(self.current_comic_name)
