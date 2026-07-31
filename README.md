@@ -1,15 +1,17 @@
 # Comic Strip Browser
 
-A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for about 60 popular titles, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
+A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for **80 popular titles**, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 
 This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4. Three months later, fixing a few bugs and adding a few features led to version 1.1.3.
 
 **April 2026 saw a major overhauling of the app, culminating with the release of version 2.0.0.**
 
+**On July 31, Version 2.6.0 brought the number of titles from 62 to 80.**
+
 ### Major changes
 	
 - **Comics Kingdom** is now supported in addition to **GoComics**.
-- The number of comic titles increased from **20** to **62** (59 unique; 3 are retrieved from both sites).
+- The number of comic titles increased from **20** to **80** (4 of which are retrieved from both sites).
 - Builds are now made by GitHub.
 - For the first time, **Windows** binaries are available!
 - **Fractional desktop scaling** is better supported! (I still prefer 100%.)
@@ -48,54 +50,72 @@ This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **
 12. **Bizarro** @ CK
 13. **Bliss** @ GoComics
 14. **Blondie** @ CK
-15. **The Brilliant Mind Of Edison Lee** @ CK
-16. **Broom Hilda** @ GoComics
-17. **Calvin and Hobbes** @ GoComics
-18. **Carpe Diem** @ CK
-19. **Crock** @ CK
-20. **Close to Home** @ GoComics
-21. **Day by Dave** @ GoComics
-22. **Dennis The Menace** @ CK
-23. **Doonesbury** @ GoComics
-24. **The Duplex** @ GoComics
-25. **Dustin** @ CK
-26. **The Family Circus** @ CK
-27. **The Flying McCoys** @ GoComics
-28. **Foxtrot** @ GoComics
-29. **Foxtrot Classics** @ GoComics
-30. **Frazz** @ GoComics
-31. **Free Range** @ GoComics
-32. **The Fusco Brothers** @ GoComics
-33. **Garfield** @ GoComics
-34. **Ginger Meggs** @ GoComics
-35. **Glasbergen Cartoons** @ GoComics
-36. **Hagar The Horrible** @ CK
-37. **Hi and Lois** @ CK
-38. **Lola** @ GoComics
-39. **Marmaduke** @ GoComics
-40. **Marvin** @ CK
-41. **Moderately Confused** @ GoComics
-42. **Mother Goose and Grimm** @ GoComics
-43. **Mutts** @ CK
-44. **Non Sequitur** @ GoComics
-45. **Off the Mark** @ GoComics
-46. **The Other Coast** @ GoComics
-47. **Pardon My Planet** @ CK
-48. **Peanuts** @ GoComics
-49. **Peanuts Begins** @ GoComics
-50. **Pearls Before Swine** @ GoComics
-51. **Pickles** @ GoComics
-52. **Pluggers** @ GoComics
-53. **Pluggers** @ CK
-54. **Reality Check** @ GoComics
-55. **Rhymes with Orange** @ CK
-56. **Shoe** @ GoComics
-57. **Shoe** @ CK
-58. **Speed Bump** @ GoComics
-59. **Wizard of Id** @ GoComics
-60. **WuMo** @ GoComics
-61. **Ziggy** @ GoComics
-62. **Zits** @ CK
+15. **Brewster Rockit** @ GoComics
+16. **The Brilliant Mind Of Edison Lee** @ CK
+17. **Broom Hilda** @ GoComics
+18. **Calvin and Hobbes** @ GoComics
+19. **Carpe Diem** @ CK
+20. **Crankshaft** @ GoComics
+21. **Crock** @ CK
+22. **Close to Home** @ GoComics
+23. **Day by Dave** @ GoComics
+24. **Dennis The Menace** @ CK
+25. **Diamond Lil** @ GoComics
+26. **Dick Tracy** @ GoComics
+27. **Dick Tracy** @ CK
+28. **Doonesbury** @ GoComics
+29. **The Duplex** @ GoComics
+30. **Dustin** @ CK
+31. **The Family Circus** @ CK
+32. **Flo and Friends** @ GoComics
+33. **The Flying McCoys** @ GoComics
+34. **Foxtrot** @ GoComics
+35. **Foxtrot Classics** @ GoComics
+36. **Frazz** @ GoComics
+37. **Free Range** @ GoComics
+38. **The Fusco Brothers** @ GoComics
+39. **Garfield** @ GoComics
+40. **Gasoline Alley** @ GoComics
+41. **Ginger Meggs** @ GoComics
+42. **Glasbergen Cartoons** @ GoComics
+43. **Hagar The Horrible** @ CK
+44. **Heart of the City** @ GoComics
+45. **Hi and Lois** @ CK
+46. **Judge Parker** @ CK
+47. **The Lockhorns** @ GoComics
+48. **Lola** @ GoComics
+49. **Luann** @ GoComics
+50. **Luann Againn** @ GoComics
+51. **Mark Trail** @ CK
+52. **Marmaduke** @ GoComics
+53. **Marvin** @ CK
+54. **Mary Worth** @ CK
+55. **Moderately Confused** @ GoComics
+56. **Mother Goose and Grimm** @ GoComics
+57. **Mutts** @ CK
+58. **Non Sequitur** @ GoComics
+59. **Off the Mark** @ GoComics
+60. **The Other Coast** @ GoComics
+61. **Palurdeando** @ CK
+62. **Pardon My Planet** @ CK
+63. **Peanuts** @ GoComics
+64. **Peanuts Begins** @ GoComics
+65. **Pearls Before Swine** @ GoComics
+66. **Pickles** @ GoComics
+67. **Pluggers** @ GoComics
+68. **Pluggers** @ CK
+69. **Reality Check** @ GoComics
+70. **Rex Morgan M.D.** @ CK
+71. **Rhymes with Orange** @ CK
+72. **Rip Haywire** @ GoComics
+73. **Shoe** @ GoComics
+74. **Shoe** @ CK
+75. **Speed Bump** @ GoComics
+76. **Tina’s Groove** @ GoComics
+77. **Wizard of Id** @ GoComics
+78. **WuMo** @ GoComics
+79. **Ziggy** @ GoComics
+80. **Zits** @ CK
 
 Note that some comic titles, especially in their early days, can have large gaps in availability.
 
