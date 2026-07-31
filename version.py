@@ -5,20 +5,28 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.5.2"
-__version_info__ = (2, 5, 2)
+__version__ = "2.6.0"
+__version_info__ = (2, 6, 0)
 
 # Release information
-RELEASE_DATE = "2026-06-29"
+RELEASE_DATE = "2026-07-30"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.5.2-1"
+DEB_VERSION = "2.6.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.5.2-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (2.6.0-1) stable; urgency=medium
+* Added extra comic titles up to a total of 80, including serialized ones, with stories running several weeks at a time.
+* - from GoComics: Brewster Rockit, Crankshaft, Diamond Lil, Dick Tracy, Flo and Friends, Gasoline Alley, Heart of the City, The Lockhorns, Luann, Luann Againn, Rip Haywire.
+* - from Comics Kingdom: Dick Tracy, Judge Parker, Mark Trail, Mary Worth, Palurdeando, Rex Morgan M.D., Tina’s Groove.
+* Comics that are retrieved from both sites, usually with different starting times: Animal Crackers, Dick Tracy, Pluggers, Shoe.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Fri, 31 July 2026 14:00 +0300
+
+comic-strip-browser (2.5.2-1) stable; urgency=medium
 * Fixed a caching bug where falling back to yesterday's comic (due to US/local time zone differences) incorrectly saved it under today's date, preventing today's comic from being retrieved once available.
 * Improved the detection of silent redirection by GoComics and Comics Kingdom.
 * Added a button in the bottom right to delete the cache folder.

@@ -362,6 +362,14 @@ COMIC_DEFINITIONS = [
         info="Blondie - on Comics Kingdom since 1970-01-01 (extremely limited availability)." 
     ),     
     ComicDefinition(
+        name="brewsterrockit",
+        display_name="Brewster Rockit",
+        base_url="https://www.gocomics.com/brewsterrockit",
+        author="Tim Rickard",
+        earliest_date=date(2004, 7, 5),
+        info="Brewster Rockit - on GoComics since 2004-07-05." 
+    ),
+    ComicDefinition(
         name="brilliant-mind-of-edison-lee",
         display_name="The Brilliant Mind Of Edison Lee",
         base_url="https://comicskingdom.com/brilliant-mind-of-edison-lee",
@@ -396,6 +404,14 @@ COMIC_DEFINITIONS = [
         earliest_date=date(2015, 5, 3),
         info="Carpe Diem - on Comics Kingdom since 2015-05-03."
     ), 
+    ComicDefinition(
+        name="crankshaft",
+        display_name="Crankshaft",
+        base_url="https://www.gocomics.com/crankshaft",
+        author="Tom Batiuk and Dan Davis",
+        earliest_date=date(2003, 4, 1),
+        info="Crankshaft - on GoComics since 2003-04-01 (very limited availability)."
+    ),    
     ComicDefinition(
         name="crock",
         display_name="Crock",
@@ -434,6 +450,36 @@ COMIC_DEFINITIONS = [
         daily_since=date(1998, 10, 5)
     ),
     ComicDefinition(
+        name="diamondlil",
+        display_name="Diamond Lil",
+        base_url="https://www.gocomics.com/diamondlil",
+        author="Brett Koth",
+        earliest_date=date(2002, 6, 12),        
+        daily_since=date(2010, 9, 26),
+        dates_one_off=("2002-06-12", "2002-07-12", "2002-08-12", "2002-09-12", "2002-10-12", "2002-11-12"),
+        info="On GoComics, Diamond Lil starts in 2002 with one-offs on the 12th of June through November. After a huge gap, daily since 2010-09-26."
+    ),
+    ComicDefinition(
+        name="dicktracy",
+        display_name="Dick Tracy @ GoComics",
+        base_url="https://www.gocomics.com/dicktracy",
+        author="Charles Ettinger and Mike Curtis",
+        earliest_date=date(2001, 4, 8),
+        info="On GoComics, Dick Tracy starts in April 2001 with one-offs on 8 and 15, then daily since 18.",
+        dates_one_off=("2001-04-08", "2001-04-15"),
+        daily_since=date(2001, 4, 18)
+    ),
+    ComicDefinition(
+        name="dick-tracy",
+        display_name="Dick Tracy @ CK",
+        base_url="https://www.gocomics.com/dicktracy",
+        author="Joe Staton and Mike Curtis",
+        earliest_date=date(2021, 2, 15),
+        info="On Comics Kingdom, Dick Tracy starts much later than on GoComics, on 2021-02-15, on weekdays. Since 2021-11-07, also on Sundays.",
+        daily_since_no_sundays=date(2021, 2, 15),
+        daily_since=date(2021, 11, 7),
+    ),       
+    ComicDefinition(
         name="doonesbury",
         display_name="Doonesbury",
         base_url="https://www.gocomics.com/doonesbury",
@@ -466,7 +512,17 @@ COMIC_DEFINITIONS = [
         info="On Comics Kingdom, The Family Circus starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-04.",
         weekly_between=("1996-01-07", "1998-10-04"),
         daily_since=date(1998, 10, 5)
-    ),  
+    ), 
+    ComicDefinition(
+        name="floandfriends",
+        display_name="Flo and Friends",
+        base_url="https://www.gocomics.com/floandfriends",
+        author="Jenny Campbell",
+        earliest_date=date(2001, 11, 3),        
+        daily_since=date(2002, 8, 11),
+        dates_one_off=("2001-11-03", "2002-01-01", "2002-01-02", "2002-01-03", "2002-01-04"),
+        info="On GoComics, Flo and Friends starts with one-offs on 2001-11-03, and 2002-01-01 through 04. Daily since 2002-08-11."
+    ),     
     ComicDefinition(
         name="theflyingmccoys",
         display_name="The Flying McCoys",
@@ -529,6 +585,16 @@ COMIC_DEFINITIONS = [
         info="Garfield - on GoComics since 1978-06-19."
     ),
     ComicDefinition(
+        name="gasolinealley",
+        display_name="Gasoline Alley",
+        base_url="https://www.gocomics.com/gasolinealley",
+        author="Jim Scancarelli",
+        earliest_date=date(2001, 4, 8),
+        daily_since=date(2001, 4, 18),        
+        dates_one_off=("2001-04-08", "2001-04-15"),        
+        info="Gasoline Alley - on GoComics with one-offs on 2001-04-08 and 15, then daily since 18 (extremely limited availability)."
+    ), 
+    ComicDefinition(
         name="gingermeggs",
         display_name="Ginger Meggs",
         base_url="https://www.gocomics.com/gingermeggs",
@@ -559,6 +625,14 @@ COMIC_DEFINITIONS = [
         author="Chris Browne",
         earliest_date=date(1975, 1, 1),
         info="On Comics Kingdom, Hagar The Horrible starts on 1975-01-01 (close enough to the original 1973-02-04 start date)." 
+    ),
+    ComicDefinition(
+        name="heartofthecity",
+        display_name="Heart of the City",
+        base_url="https://www.gocomics.com/heartofthecity",
+        author="Steenz",
+        earliest_date=date(1999, 7, 1),
+        info="Heart of the City - on GoComics since 1999-07-01."
     ),     
     ComicDefinition(
         name="hi-and-lois",
@@ -571,6 +645,26 @@ COMIC_DEFINITIONS = [
         daily_since=date(1998, 10, 5)
     ), 
     ComicDefinition(
+        name="judge-parker",
+        display_name="Judge Parker",
+        base_url="https://comicskingdom.com/judge-parker",
+        author="Francesco Marciuliano & Mike Manley",
+        earliest_date=date(1996, 1, 7),
+        info="On Comics Kingdom, Judge Parker starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-05.",
+        weekly_between=("1996-01-07", "1998-10-04"),
+        daily_since=date(1998, 10, 5)
+    ),
+    ComicDefinition(
+        name="lockhorns",
+        display_name="The Lockhorns",
+        base_url="https://www.gocomics.com/lockhorns",
+        author="Bunny Hoest and John Reiner",
+        earliest_date=date(2002, 11, 25),
+        info="The Lockhorns starts on GoComics on 2002-11-25 on weekdays; the first Sunday is 2024-01-07.",
+        daily_since_no_sundays=date(2002, 11, 25),
+        daily_since=date(2024, 1, 7)   
+    ),
+    ComicDefinition(
         name="lola",
         display_name="Lola",
         base_url="https://www.gocomics.com/lola",
@@ -579,7 +673,33 @@ COMIC_DEFINITIONS = [
         info="Lola - on GoComics since 2001-04-18 (after two one-offs on 8 and 15 of the same month).",
         dates_one_off=("2001-04-08","2001-04-15"),
         daily_since=date(2001, 4, 18)
-    ),     
+    ),
+    ComicDefinition(
+        name="luann",
+        display_name="Luann",
+        base_url="https://www.gocomics.com/luann",
+        author="Greg Evans and Karen Evans",
+        earliest_date=date(1985, 3, 17),
+        info="Luann - on GoComics since 1985-03-17."
+    ), 
+    ComicDefinition(
+        name="luann-againn",
+        display_name="Luann Againn",
+        base_url="https://www.gocomics.com/luann-againn",
+        author="Greg Evans",
+        earliest_date=date(2013, 3, 17),
+        info="Luann Againn (reruns) - on GoComics since 2013-03-17."
+    ),  
+    ComicDefinition(
+        name="mark-trail",
+        display_name="Mark Trail",
+        base_url="https://comicskingdom.com/mark-trail",
+        author="Jules Rivera",
+        earliest_date=date(1996, 1, 7),
+        info="On Comics Kingdom, Mark Trail starts on 1996-01-07 initially on a weekly base, then daily since 1999-12-01.",
+        weekly_between=("1996-01-07", "1999-11-28"),
+        daily_since=date(1999, 12, 1)
+    ),           
     ComicDefinition(
         name="marmaduke",
         display_name="Marmaduke",
@@ -602,6 +722,16 @@ COMIC_DEFINITIONS = [
         info="On Comics Kingdom, Marvin starts on 1996-01-07 initially with a 2-week jump to 1996-01-21, then weekly, then daily since 1998-10-05.",
         dates_one_off=("1996-01-07",),
         weekly_between=("1996-01-21", "1998-10-04"),
+        daily_since=date(1998, 10, 5)
+    ),
+    ComicDefinition(
+        name="mary-worth",
+        display_name="Mary Worth",
+        base_url="https://comicskingdom.com/mary-worth",
+        author="Karen Moy & June Brigman",
+        earliest_date=date(1996, 1, 7),
+        info="On Comics Kingdom, Mary Worth starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-05.",
+        weekly_between=("1996-01-07", "1998-10-04"),
         daily_since=date(1998, 10, 5)
     ),
     ComicDefinition(
@@ -658,7 +788,16 @@ COMIC_DEFINITIONS = [
         daily_since=date(2002, 8, 12),
         skip_ranges=(("2003-05-19", "2003-05-25"),),
         skip_days=("2002-08-18", "2002-10-27", "2002-11-03", "2002-11-24", "2003-01-11", "2003-04-06", "2003-06-01", "2003-06-08")
-    ),  
+    ),
+    ComicDefinition(
+        name="palurdeando",
+        display_name="Palurdeando",
+        base_url="https://comicskingdom.com/palurdeando",
+        author="Guillermo Saldaña",
+        earliest_date=date(2024, 4, 1),
+        info="Palurdeando - on Comics Kingdom since 2024-04-01.",
+        never_scale_up=True
+    ),      
     ComicDefinition(
         name="pardon-my-planet",
         display_name="Pardon My Planet",
@@ -728,13 +867,32 @@ COMIC_DEFINITIONS = [
         info="Reality Check - on GoComics since 1997-01-01."
     ),
     ComicDefinition(
+        name="rex-morgan-m-d",
+        display_name="Rex Morgan M.D.",
+        base_url="https://comicskingdom.com/rex-morgan-m-d",
+        author="Terry Beatty",
+        earliest_date=date(1996, 1, 7),
+        info="On Comics Kingdom, Rex Morgan M.D. starts on 1996-01-07 initially on a weekly base, then daily since 1998-10-05.",
+        weekly_between=("1996-01-07", "1998-10-04"),
+        daily_since=date(1998, 10, 5)
+    ),  
+    ComicDefinition(
         name="rhymes-with-orange",
         display_name="Rhymes with Orange",
         base_url="https://comicskingdom.com/rhymes-with-orange",
         author="Hilary Price & Rina Piccolo",
         earliest_date=date(1995, 6, 19),
         info="Rhymes with Orange - on Comics Kingdom since 1995-06-19." 
-    ),     
+    ), 
+    ComicDefinition(
+        name="riphaywire",
+        display_name="Rip Haywire",
+        base_url="https://www.gocomics.com/riphaywire",
+        author="Dan Thompson",
+        earliest_date=date(2009, 1, 5),
+        info="Rip Haywire - on GoComics since 2009-01-05.",
+        never_on_sundays = "true"
+    ),
     ComicDefinition(
         name="shoe",
         display_name="Shoe @ GoComics",
@@ -760,7 +918,17 @@ COMIC_DEFINITIONS = [
         info="On GoComics, Speed Bump starts in Jan. 2002 irregularly (2002-01-01 to 2002-01-04), then daily since 2002-08-11.",
         dates_one_off=("2002-01-01", "2002-01-02", "2002-01-03", "2002-01-04"),
         daily_since=date(2002, 8, 11)
-    ),  
+    ),
+    ComicDefinition(
+        name="tina-s-groove",
+        display_name="Tina’s Groove",
+        base_url="https://comicskingdom.com/tina-s-groove",
+        author="Rina Piccolo",
+        earliest_date=date(2002, 3, 31),
+        info="On Comics Kingdom, Tina’s Groove starts on 2002-03-31 initially on a weekly base, then daily since 2002-07-01.",
+        weekly_between=("2002-03-31", "2002-06-30"),
+        daily_since=date(2002, 7, 1)
+    ),
     ComicDefinition(
         name="wizardofid",
         display_name="Wizard of Id",
