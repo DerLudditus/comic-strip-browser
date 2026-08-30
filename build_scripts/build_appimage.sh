@@ -25,8 +25,7 @@ ln -sf usr/bin/comic-strip-browser "$APPDIR/AppRun"
 
 [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$APPDIR/"
 
-ICON_SRC="initial_transparent_alpha.png"
-[ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
+ICON_SRC="assets/comic-strip-browser.png"
 if [ -f "$ICON_SRC" ]; then
     cp "$ICON_SRC" "$APPDIR/comic-strip-browser.png"
     cp "$ICON_SRC" "$APPDIR/.DirIcon"

@@ -23,6 +23,7 @@ from ui.comic_viewer import ComicViewer
 from ui.calendar_widget import CalendarWidget
 from ui.comic_controller import ComicController
 from ui.about_dialog import AboutDialog
+from ui import get_font_families
 from models.data_models import get_comic_definition
 from version import __version__
 
@@ -54,8 +55,8 @@ class MainWindow(QMainWindow):
         """Set up the main window layout and components."""
         # Set window properties
         self.setWindowTitle(f"Comic Strip Browser {__version__}")
-        self.setMinimumSize(QSize(1000, 700))
-        self.resize(QSize(1280, 850))
+        self.setMinimumSize(QSize(1000, 650))
+        self.resize(QSize(1280, 720))
 
         # Set up status bar FIRST
         self.create_status_bar()
@@ -64,7 +65,7 @@ class MainWindow(QMainWindow):
         
         # Set application icon
         import os
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "comic-strip-browser.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
@@ -76,10 +77,12 @@ class MainWindow(QMainWindow):
         
         # Create main layout using splitter for resizable panels
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
         # Create horizontal splitter for main content areas
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setHandleWidth(2)
         main_layout.addWidget(self.main_splitter)
         
         # Create placeholder frames for future UI components
@@ -89,8 +92,8 @@ class MainWindow(QMainWindow):
         """Create UI components and placeholder frames."""
         # Left panel - Comic selector
         self.comic_selector = ComicSelector()
-        self.comic_selector.setMinimumWidth(280)
-        self.comic_selector.setMaximumWidth(350)
+        self.comic_selector.setMinimumWidth(240)
+        self.comic_selector.setMaximumWidth(400)
         
         # Connect comic selector signals
         self.comic_selector.comic_selected.connect(self.on_comic_selected)
@@ -105,8 +108,8 @@ class MainWindow(QMainWindow):
         
         # Right panel - Calendar navigation widget
         self.calendar_widget = CalendarWidget()
-        self.calendar_widget.setMinimumWidth(280)
-        self.calendar_widget.setMaximumWidth(380)
+        self.calendar_widget.setMinimumWidth(240)
+        self.calendar_widget.setMaximumWidth(320)
         
         # Connect calendar widget signals
         self.calendar_widget.date_selected.connect(self.on_date_changed)
@@ -118,7 +121,7 @@ class MainWindow(QMainWindow):
         self.main_splitter.addWidget(self.calendar_widget)
         
         # Set initial splitter proportions
-        self.main_splitter.setSizes([280, 700, 280])
+        self.main_splitter.setSizes([320, 700, 260])
 
         # Manually trigger initial comic selection since the signal was likely emitted during ComicSelector init
         initial_comic = self.comic_selector.get_selected_comic()
@@ -142,7 +145,7 @@ class MainWindow(QMainWindow):
         # Set consistent font family with other labels
         status_font = QFont()
         status_font.setPointSize(11)
-        status_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        status_font.setFamilies(get_font_families())
         self.status_bar.setFont(status_font)
 
         # Set status bar with explicit styling
@@ -157,67 +160,19 @@ class MainWindow(QMainWindow):
 
         # Delete Cache button — delete cache folder
         self.delete_cache_btn = QPushButton("Delete Cache")
-        self.delete_cache_btn.setFixedWidth(80)
         self.delete_cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.delete_cache_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                border: 1px solid #000000;
-                border-radius: 4px;
-                color: #555555;
-                font-size: 11px;
-                padding: 2px 6px;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 1px solid #9e9e9e;
-                color: #dc3545;
-            }
-        """)
         self.delete_cache_btn.clicked.connect(self._delete_cache_folder)
         self.status_bar.addPermanentWidget(self.delete_cache_btn)
 
         # Cache button — open cache folder
         self.cache_btn = QPushButton("Open Cache")
-        self.cache_btn.setFixedWidth(80)
         self.cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.cache_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                border: 1px solid #000000;
-                border-radius: 4px;
-                color: #555555;
-                font-size: 11px;
-                padding: 2px 6px;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 1px solid #9e9e9e;
-                color: #198754;
-            }
-        """)
         self.cache_btn.clicked.connect(self._open_cache_folder)
         self.status_bar.addPermanentWidget(self.cache_btn)
 
         # Info button — right side, before size grip
         self.about_btn = QPushButton("About")
-        self.about_btn.setFixedWidth(56)
         self.about_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.about_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #e0e0e0;
-                border: 1px solid #000000;
-                border-radius: 4px;
-                color: #555555;
-                font-size: 11px;
-                padding: 2px 6px;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-                border: 1px solid #9e9e9e;
-                color: #0d6efd;
-            }
-        """)
         self.about_btn.clicked.connect(self._show_about)
         self.status_bar.addPermanentWidget(self.about_btn)
 
@@ -234,9 +189,11 @@ class MainWindow(QMainWindow):
             QMainWindow {
                 background-color: #e8e8e8;
             }
-            QFrame {
-                background-color: transparent;
-                border: 1px solid #cccccc;
+            QSplitter {
+                border: none;
+            }
+            QSplitter::handle {
+                background-color: #d0d0d0;
             }
             QToolBar {
                 border: none;
@@ -248,6 +205,72 @@ class MainWindow(QMainWindow):
                 color: #333333;
                 min-height: 25px;
                 padding: 2px;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background-color: #e8e8e8;
+                width: 16px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #c2c2c2;
+                min-height: 30px;
+                border-radius: 6px;
+                margin: 2px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #a0a0a0;
+            }
+            QScrollBar::handle:vertical:pressed {
+                background-color: #707070;
+            }
+            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
+                border: none;
+                background: none;
+                height: 0px;
+                width: 0px;
+            }
+            QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+                border: none;
+                background: none;
+                width: 0px;
+                height: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+            QScrollBar:horizontal {
+                border: none;
+                background-color: #e8e8e8;
+                height: 16px;
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background-color: #c2c2c2;
+                min-width: 30px;
+                border-radius: 6px;
+                margin: 2px;
+            }
+            QScrollBar::handle:horizontal:hover {
+                background-color: #a0a0a0;
+            }
+            QScrollBar::handle:horizontal:pressed {
+                background-color: #707070;
+            }
+            QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal {
+                border: none;
+                background: none;
+                height: 0px;
+                width: 0px;
+            }
+            QScrollBar::left-arrow:horizontal, QScrollBar::right-arrow:horizontal {
+                border: none;
+                background: none;
+                width: 0px;
+                height: 0px;
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: none;
             }
         """)
         
@@ -458,6 +481,14 @@ class MainWindow(QMainWindow):
         # End = Today
         self.shortcut_today = QShortcut(QKeySequence(Qt.Key.Key_End), self)
         self.shortcut_today.activated.connect(self.go_to_today)
+
+        # Page Up = Previous Comic Title
+        self.shortcut_prev_comic = QShortcut(QKeySequence(Qt.Key.Key_PageUp), self)
+        self.shortcut_prev_comic.activated.connect(self.comic_selector.select_previous_comic)
+
+        # Page Down = Next Comic Title
+        self.shortcut_next_comic = QShortcut(QKeySequence(Qt.Key.Key_PageDown), self)
+        self.shortcut_next_comic.activated.connect(self.comic_selector.select_next_comic)
     
     def on_comic_loading_started(self, comic_name: str, comic_date):
         """

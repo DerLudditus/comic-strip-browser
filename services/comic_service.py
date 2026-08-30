@@ -58,7 +58,7 @@ class ComicService:
         )
         self.logger = logging.getLogger(__name__)
     
-    def get_comic(self, comic_name: str, comic_date: Optional[date] = None) -> ComicData:
+    def get_comic(self, comic_name: str, comic_date: Optional[date] = None, _depth: int = 0) -> ComicData:
         """
         Retrieve a comic for a specific date with fallback logic.
         
@@ -116,13 +116,13 @@ class ComicService:
             return comic_data
             
         except ComicUnavailableError:
-            # Comic not available for this date, try fallback if it's today
-            if comic_date >= date.today():
+            # Comic not available for this date, try fallback
+            if _depth < 7:
                 yesterday = comic_date - timedelta(days=1)
-                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
+                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback (depth {_depth + 1}/7)")
                 
                 try:
-                    return self.get_comic(comic_name, yesterday)
+                    return self.get_comic(comic_name, yesterday, _depth + 1)
                 except (ComicServiceError, ComicUnavailableError):
                     pass  # Fall through to main error
             
@@ -136,13 +136,13 @@ class ComicService:
                 self.logger.info(f"Using cached comic as fallback for {comic_name} on {comic_date}")
                 return cached_comic
             
-            # If requesting today's comic and it failed, try yesterday
-            if comic_date >= date.today():
+            # For network/parsing errors, also try fallback
+            if _depth < 7:
                 yesterday = comic_date - timedelta(days=1)
-                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback")
+                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback (depth {_depth + 1}/7)")
                 
                 try:
-                    return self.get_comic(comic_name, yesterday)
+                    return self.get_comic(comic_name, yesterday, _depth + 1)
                 except ComicServiceError:
                     pass  # Fall through to main error
             
@@ -158,11 +158,11 @@ class ComicService:
                 except AttributeError:
                     pass  # Method may not exist, skip
 
-            # Try previous day as fallback for date mismatch or today
-            if comic_date >= date.today() or 'wrong date' in error_str:
+            # Fallback for scraping errors
+            if _depth < 7:
                 yesterday = comic_date - timedelta(days=1)
                 try:
-                    return self.get_comic(comic_name, yesterday)
+                    return self.get_comic(comic_name, yesterday, _depth + 1)
                 except ComicServiceError:
                     pass  # Fall through to main error
 

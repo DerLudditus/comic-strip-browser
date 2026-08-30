@@ -7,7 +7,7 @@ import logging
 from typing import Optional, Tuple
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from models.data_models import ComicData
+from models.data_models import ComicData, get_comic_definition
 import datetime
 import requests
 from requests.exceptions import HTTPError, RequestException
@@ -306,6 +306,43 @@ class WebScraper:
         """
         Retrieve and parse comic data for a specific date.
         """
+        comic_def = get_comic_definition(comic_name)
+        if comic_def and getattr(comic_def, 'is_custom', False) and getattr(comic_def, 'custom_url_pattern', ''):
+            url_pattern = comic_def.custom_url_pattern
+            url_pattern = url_pattern.replace("%YYYY%", f"{date.year:04d}")
+            url_pattern = url_pattern.replace("%YY%", f"{date.year % 100:02d}")
+            url_pattern = url_pattern.replace("%MM%", f"{date.month:02d}")
+            url_pattern = url_pattern.replace("%DD%", f"{date.day:02d}")
+            
+            image_url = base_url.rstrip("/") + "/" + url_pattern.lstrip("/")
+            
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+                response = requests.head(image_url, headers=headers, timeout=self.timeout)
+                if response.status_code == 405: # Method Not Allowed
+                    response = requests.get(image_url, headers=headers, stream=True, timeout=self.timeout)
+                    response.close()
+                response.raise_for_status()
+            except HTTPError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    raise WebScrapingError(f"Comic not available for this date (404 Not Found)")
+                raise WebScrapingError(f"Failed to fetch {image_url}: {e}")
+            except Exception as e:
+                raise WebScrapingError(f"Failed to fetch {image_url}: {e}")
+                
+            return ComicData(
+                comic_name=comic_name,
+                date=date,
+                title=f"{comic_def.display_name} for {date.strftime('%B %d, %Y')}",
+                image_url=image_url,
+                image_width=900,
+                image_height=300,
+                image_format="",
+                author=comic_def.author
+            )
+
         # Handle different URL formats for GoComics vs Comics Kingdom
         if 'comicskingdom.com' in base_url:
             url = f"{base_url}/{date.year:04d}-{date.month:02d}-{date.day:02d}"

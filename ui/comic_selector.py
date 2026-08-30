@@ -14,6 +14,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QFont, QPalette
 
 from models.data_models import COMIC_DEFINITIONS, ComicDefinition
+from ui import get_font_families, get_bold_weight
 
 
 class ComicSelectorItem(QWidget):
@@ -33,6 +34,7 @@ class ComicSelectorItem(QWidget):
             number: Display number for the comic item (1-based)
         """
         super().__init__()
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.comic_definition = comic_definition
         self.number = number
         self.is_selected = False
@@ -48,12 +50,12 @@ class ComicSelectorItem(QWidget):
         name_text = f"{self.number} • {self.comic_definition.display_name}" if self.number > 0 else self.comic_definition.display_name
         self.name_label = QLabel(name_text)
         name_font = QFont()
-        name_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        name_font.setFamilies(get_font_families())
         name_font.setPointSize(12)
-        name_font.setBold(True)
+        name_font.setWeight(get_bold_weight())
         self.name_label.setContentsMargins(0, 0, 0, 0)
         self.name_label.setFont(name_font)
-        self.name_label.setStyleSheet("color: #000000;")  # Ensure black text and bold
+        self.name_label.setStyleSheet("color: #000000; background: transparent; border: none;")
         self.name_label.setWordWrap(True)
         layout.addWidget(self.name_label)
 
@@ -77,24 +79,31 @@ class ComicSelectorItem(QWidget):
                 ComicSelectorItem {
                     background-color: #e3f2fd;
                     border: none;
-                    border-radius: 0;
+                }
+                QLabel {
+                    background: transparent;
+                    border: none;
+                    color: #000000;
                 }
             """)
-            # Ensure name label styling is preserved
-            self.name_label.setStyleSheet("color: #000000;")
+            self.name_label.setStyleSheet("color: #000000; background: transparent; border: none;")
         else:
             self.setStyleSheet("""
                 ComicSelectorItem {
-                    background-color: white;
+                    background-color: transparent;
                     border: none;
                 }
                 ComicSelectorItem:hover {
-                    background-color: #f5f5f5;
+                    background-color: #d0d0d0;
                     border: none;
                 }
+                QLabel {
+                    background: transparent;
+                    border: none;
+                    color: #000000;
+                }
             """)
-            # Ensure name label styling is preserved
-            self.name_label.setStyleSheet("color: #000000;")
+            self.name_label.setStyleSheet("color: #000000; background: transparent; border: none;")
     
     def mousePressEvent(self, event):
         """Handle mouse press events for selection."""
@@ -139,7 +148,7 @@ class ComicSelector(QWidget):
         # Set gray background for the entire widget to work with dark themes
         self.setStyleSheet("""
             ComicSelector {
-                background-color: #e0e0e0;
+                background-color: #e8e8e8;
             }
         """)
         
@@ -148,44 +157,36 @@ class ComicSelector(QWidget):
         header_frame.setFrameStyle(QFrame.Shape.NoFrame)
         header_frame.setStyleSheet("""
             QFrame {
-                background-color: #e0e0e0;
+                background-color: #e8e8e8;
                 border: none;
+                border-bottom: 1px solid #d0d0d0;
             }
         """)
         header_layout = QVBoxLayout(header_frame)
-        header_layout.setContentsMargins(4, 2, 4, 2)
+        header_layout.setContentsMargins(8, 6, 8, 6)
         
         # Title
         title_label = QLabel("Comic Strips")
         title_font = QFont()
         title_font.setPointSize(14)
-        title_font.setBold(True)
-        title_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        title_font.setWeight(get_bold_weight())
+        title_font.setFamilies(get_font_families())
         title_label.setFont(title_font)
-        title_label.setStyleSheet("color: #000000;")  # Ensure black text and bold
-        header_layout.addWidget(title_label)
-        
-        # Subtitle
-        subtitle_label = QLabel("Select a strip to browse")
-        subtitle_font = QFont()
-        subtitle_font.setPointSize(12)
-        subtitle_font.setBold(True)
-        subtitle_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
-        subtitle_label.setFont(subtitle_font)
-        subtitle_label.setStyleSheet("color: #000000;")  # Make it bold and dark
-        header_layout.addWidget(subtitle_label)
-        
+        title_label.setStyleSheet("color: #000000; background: transparent; border: none;")
+        header_layout.addWidget(title_label)        
+    
         layout.addWidget(header_frame)
         
         # Scrollable comic list area
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
-        scroll_area.setStyleSheet("""
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
+        self.scroll_area.setStyleSheet("""
             QScrollArea {
-                background-color: #e0e0e0;
+                background-color: #e8e8e8;
+                border: none;
             }
         """)
         
@@ -193,15 +194,15 @@ class ComicSelector(QWidget):
         self.comics_container = QWidget()
         self.comics_container.setStyleSheet("""
             QWidget {
-                background-color: #e0e0e0;
+                background-color: #e8e8e8;
             }
         """)
         self.comics_layout = QVBoxLayout(self.comics_container)
-        self.comics_layout.setContentsMargins(4, 0, 4, 0)
+        self.comics_layout.setContentsMargins(0, 0, 0, 0)
         self.comics_layout.setSpacing(0)
         
-        scroll_area.setWidget(self.comics_container)
-        layout.addWidget(scroll_area)
+        self.scroll_area.setWidget(self.comics_container)
+        layout.addWidget(self.scroll_area)
         
         # Set size policy
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
@@ -246,8 +247,36 @@ class ComicSelector(QWidget):
         self.selected_comic = comic_name
         self.comic_items[comic_name].set_selected(True)
         
+        # Ensure the selected item is visible in the scroll area
+        if hasattr(self, 'scroll_area') and self.scroll_area:
+            self.scroll_area.ensureWidgetVisible(self.comic_items[comic_name], 0, 20)
+        
         # Emit selection signal
         self.comic_selected.emit(comic_name)
+    
+    def select_previous_comic(self):
+        """Select the previous comic in the list, cycling to the end if at the top."""
+        if not COMIC_DEFINITIONS:
+            return
+        names = [d.name for d in COMIC_DEFINITIONS]
+        try:
+            current_idx = names.index(self.selected_comic)
+            prev_idx = (current_idx - 1) % len(names)
+        except (ValueError, TypeError):
+            prev_idx = 0
+        self.select_comic(names[prev_idx])
+
+    def select_next_comic(self):
+        """Select the next comic in the list, cycling to the start if at the bottom."""
+        if not COMIC_DEFINITIONS:
+            return
+        names = [d.name for d in COMIC_DEFINITIONS]
+        try:
+            current_idx = names.index(self.selected_comic)
+            next_idx = (current_idx + 1) % len(names)
+        except (ValueError, TypeError):
+            next_idx = 0
+        self.select_comic(names[next_idx])
     
     def select_comic_item(self, comic_item: ComicSelectorItem):
         """

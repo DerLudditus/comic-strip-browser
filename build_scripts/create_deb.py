@@ -44,7 +44,7 @@ Maintainer: {DEB_MAINTAINER}
 Homepage: {DEB_HOMEPAGE}
 Description: Comic Strip Browser - Browse a selection of comic strips
  A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom.
- Features include calendar navigation, caching, and support for 40 popular titles,
+ Features include calendar navigation, caching, and support for more than 90 popular titles,
  including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 """
 
@@ -59,8 +59,7 @@ Description: Comic Strip Browser - Browse a selection of comic strips
     <name>Comic Strip Browser</name>
     <summary>Browse a selection of GoComics.com strips</summary>
     <description>
-        <p>A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for 40 popular titles,
- including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.</p>
+        <p>A standalone PyQt6 application for browsing comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for more than 90 popular titles, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.</p>
     </description>
     <screenshots>
         <screenshot type="default">
@@ -72,7 +71,7 @@ Description: Comic Strip Browser - Browse a selection of comic strips
     <metadata_license>CC0-1.0</metadata_license>
     <url type="homepage">https://github.com/DerLudditus/comic-strip-browser</url>
     <developer_name>Homo Ludditus</developer_name>
-    <update_contact>ludditus@etik.com</update_contact>
+    <update_contact>DerLudditus@gmail.com</update_contact>
     <icon type="stock">comic-strip-browser</icon>
     <categories>
         <category>Graphics</category>
@@ -127,9 +126,7 @@ fi
                      deb_dir / "usr" / "share" / "applications")
     
     # Copy icon to both pixmaps and hicolor theme (GNOME prefers hicolor)
-    icon_src = project_root / "initial_transparent_alpha.png"
-    if not icon_src.exists():
-        icon_src = project_root / "assets" / "comic-strip-browser.png"
+    icon_src = project_root / "assets" / "comic-strip-browser.png"
     if icon_src.exists():
         shutil.copy2(icon_src, deb_dir / "usr" / "share" / "pixmaps" / "comic-strip-browser.png")
         shutil.copy2(icon_src, deb_dir / "usr" / "share" / "icons" / "hicolor" / "256x256" / "apps" / "comic-strip-browser.png")
@@ -141,7 +138,7 @@ Upstream-Contact: Homo Ludditus <DerLudditus@gmail.com>
 Source: https://github.com/DerLudditus/comic-strip-browser
 
 Files: *
-Copyright: 2025 Homo Ludditus <ludditus@etik.com>
+Copyright: 2026 Homo Ludditus <DerLudditus@gmail.com>
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal

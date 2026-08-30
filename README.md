@@ -1,125 +1,155 @@
 # Comic Strip Browser
 
-A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for **80 popular titles**, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
+A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for **more than 90 popular titles**, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 
-This app has been vibe-coded with Amazon's Kiro and adjusted afterwards. Read **[the full story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. That branch ended with version 1.0.4. Three months later, fixing a few bugs and adding a few features led to version 1.1.3.
+This app started as vibe-coded with Amazon's Kiro, but over time it underwent countless changes and improvements, both manually and through the contributions of Claude, Qwen, and Gemini. Read **[the birth story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. 
 
-**April 2026 saw a major overhauling of the app, culminating with the release of version 2.0.0.**
+Version 1.1.3 was the last to have been touched by Claude via Kiro.
 
-**On July 31, Version 2.6.0 brought the number of titles from 62 to 80.**
+Version 2.0.0 added the automatic build of Windows binaries and support for Comics Kingdom.
 
-### Major changes
+Version 2.6.0 increased the number of titles to 80.
+
+Version 3.0.0 reached 96 titles and improved the usability: the UI has been slightly modernized, and the navigation through the comic strips for the day can be found using **PgDn/PgUp** instead of requiring a mouse.
+
+### 1. Major features
 	
-- **Comics Kingdom** is now supported in addition to **GoComics**.
-- The number of comic titles increased from **20** to **80** (4 of which are retrieved from both sites).
-- Builds are now made by GitHub.
-- For the first time, **Windows** binaries are available!
-- **Fractional desktop scaling** is better supported! (I still prefer 100%.)
+- Most comics are retrieved from **GoComics** or **Comics Kingdom**, with a couple being retrieved from other sites.
+- Binaries are provided for **Windows** and **Linux**, and `.deb` and `.rpm` packages are also available.
+- In addition to the **calendar navigation**, **keyboard navigation** is also possible: **PgUp**/**PgDn**: Previous/Next title; **Left**/**Right**: Previous/Next date; **Home**: Earliest date; **End**: Today.
+- For the currently selected comic title, the **Random** button helps you discover gems in the past.
+- **Disk caching** stores the last 200 comics per strip for fast loading or later consultation from the cache folder. The app can display the cached comics even without an internet connection.
 
-<img src="./ComicStripBrowser.png" alt="" width="100%"/>
+### 2. Screenshots
 
-### Tested on: 
+#### Debian 13 XFCE:
 
-- MX 25 XFCE (Debian 13); 
-- Ubuntu 26.04 LTS (only versions 2.0.0 to 2.4.0); 
-- Kubuntu 26.04 LTS; 
-- Ultramarine Linux 43 KDE Plasma Edition (only versions 2.0.0 to 2.4.0);
-- Windows 11 IoT Enterprise LTSC 24H2 (26100.8037).
+![](ComicStripBrowser_Debian13_a.png)
 
-### Good to know
+![](ComicStripBrowser_Debian13_b.png)
 
-- In addition to the **calendar navigation**, **keyboard navigation** is also possible for the currently selected comic title. Left/Right arrows: Previous/Next, Home/End: First/Today.
-- **Disk caching** stores the last 200 comics per strip for fast loading or later consulting from the cache folder. The cached comics can be displayed by the app even without an internet connection.
-- **GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
-- Building from source is possible, but the automated builds by GitHub are better. For instance, my local builds made under Debian 13 resulted in OpenGL dependencies. GitHub's builds made under Ubuntu 24.04 don't have such dependencies.
-- Post-1.1.3 versions benefited from the help of Qwen Code. A few tidbits have been inspired by suggestions made by Grok and Gemini. Since Qwen Code won't visibly search the internet for ideas, I occasionally asked Grok and Gemini in a browser for possible fixes (Qt6 is a mess, and Python doesn't help). They were all very keen to repeatedly break Qt6 layouts with their code, but I only took the good part from their vomit. Qwen Code's OAuth free tier (1,000 free requests/day) is extremely generous and can be fun to work with, as long as you keep the context below 20% full to avoid getting it confused and dumber (use `/compress` and, when it doesn't help, generate a `/summary` and start `/new`). It was Kimi who suggested I should use Qwen Code! Too bad that `/export` only saves the prompts and the answers *per se*, because Qwen Code's thinking can be fascinating, and the output of its attempts and explorations can also be quite instructive, yet they cannot be exported. Either way, paying to use Claude Code or Amazon Kiro is absurd when Qwen Code offers so much for free! (Of course, it will collect all your code and send it to Xi Jinping.)
+#### LMDE7:
 
-### The list of supported comic strips
+![](ComicStripBrowser_LMDE7.png)
 
-1. **Adam@Home** @ GoComics
-2. **Andy Capp** @ GoComics
-3. **Animal Crackers** @ GoComics
-4. **Animal Crackers** @ CK
-5. **The Argyle Sweater** @ GoComics
-6. **Aunty Acid** @ GoComics
-7. **Baby Blues** @ GoComics
-8. **Baldo** @ GoComics
-9. **B.C.** @ GoComics
-10. **Back to B.C.** @ GoComics
-11. **Beetle Bailey** @ CK
-12. **Bizarro** @ CK
-13. **Bliss** @ GoComics
-14. **Blondie** @ CK
-15. **Brewster Rockit** @ GoComics
-16. **The Brilliant Mind Of Edison Lee** @ CK
-17. **Broom Hilda** @ GoComics
-18. **Calvin and Hobbes** @ GoComics
-19. **Carpe Diem** @ CK
-20. **Crankshaft** @ GoComics
-21. **Crock** @ CK
-22. **Close to Home** @ GoComics
-23. **Day by Dave** @ GoComics
-24. **Dennis The Menace** @ CK
-25. **Diamond Lil** @ GoComics
-26. **Dick Tracy** @ GoComics
-27. **Dick Tracy** @ CK
-28. **Doonesbury** @ GoComics
-29. **The Duplex** @ GoComics
-30. **Dustin** @ CK
-31. **The Family Circus** @ CK
-32. **Flo and Friends** @ GoComics
-33. **The Flying McCoys** @ GoComics
-34. **Foxtrot** @ GoComics
-35. **Foxtrot Classics** @ GoComics
-36. **Frazz** @ GoComics
-37. **Free Range** @ GoComics
-38. **The Fusco Brothers** @ GoComics
-39. **Garfield** @ GoComics
-40. **Gasoline Alley** @ GoComics
-41. **Ginger Meggs** @ GoComics
-42. **Glasbergen Cartoons** @ GoComics
-43. **Hagar The Horrible** @ CK
-44. **Heart of the City** @ GoComics
-45. **Hi and Lois** @ CK
-46. **Judge Parker** @ CK
-47. **The Lockhorns** @ GoComics
-48. **Lola** @ GoComics
-49. **Luann** @ GoComics
-50. **Luann Againn** @ GoComics
-51. **Mark Trail** @ CK
-52. **Marmaduke** @ GoComics
-53. **Marvin** @ CK
-54. **Mary Worth** @ CK
-55. **Moderately Confused** @ GoComics
-56. **Mother Goose and Grimm** @ GoComics
-57. **Mutts** @ CK
-58. **Non Sequitur** @ GoComics
-59. **Off the Mark** @ GoComics
-60. **The Other Coast** @ GoComics
-61. **Palurdeando** @ CK
-62. **Pardon My Planet** @ CK
-63. **Peanuts** @ GoComics
-64. **Peanuts Begins** @ GoComics
-65. **Pearls Before Swine** @ GoComics
-66. **Pickles** @ GoComics
-67. **Pluggers** @ GoComics
-68. **Pluggers** @ CK
-69. **Reality Check** @ GoComics
-70. **Rex Morgan M.D.** @ CK
-71. **Rhymes with Orange** @ CK
-72. **Rip Haywire** @ GoComics
-73. **Shoe** @ GoComics
-74. **Shoe** @ CK
-75. **Speed Bump** @ GoComics
-76. **Tina’s Groove** @ GoComics
-77. **Wizard of Id** @ GoComics
-78. **WuMo** @ GoComics
-79. **Ziggy** @ GoComics
-80. **Zits** @ CK
+#### Kubuntu 26.04:
+
+![](ComicStripBrowser_Kubuntu2604.png)
+
+#### Ultramarine Plasma 44:
+
+![](ComicStripBrowser_Ultramarine44.png)
+
+#### Windows (125% scaling):
+ 
+![](ComicStripBrowser_Windows_a.png)
+
+![](ComicStripBrowser_Windows_b.png)
+
+### 3. Currently supported comic strips
+
+1. **Adam@Home** | GoComics
+2. **Andy Capp** | GoComics
+3. **Animal Crackers** | GoComics
+4. **Arctic Circle** | CK
+5. **The Argyle Sweater** | GoComics
+6. **Aunty Acid** | GoComics
+7. **Baby Blues** | GoComics
+8. **Baldo** | GoComics
+9. **B.C.** | GoComics
+10. **Back to B.C.** | GoComics
+11. **The Barn** | GoComics
+12. **Beetle Bailey** | CK
+13. **Bizarro** | CK
+14. **Bliss** | GoComics
+15. **Blondie** | CK
+16. **Break of Day** | CK
+17. **Brewster Rockit** | GoComics
+18. **The Brilliant Mind of Edison Lee** | CK
+19. **Broom Hilda** | GoComics
+20. **Calvin and Hobbes** | GoComics
+21. **Carpe Diem** | CK
+22. **Crankshaft** | GoComics
+23. **Crock** | CK
+24. **Close to Home** | GoComics
+25. **Day by Dave** | GoComics
+26. **Dennis the Menace** | CK
+27. **Diamond Lil** | GoComics
+28. **Dick Tracy** | GoComics
+29. **Dick Tracy** | CK
+30. **Doonesbury** | GoComics
+31. **The Duplex** | GoComics
+32. **Dustin** | CK
+33. **Edge City** | CK
+34. **The Family Circus** | CK
+35. **Flo and Friends** | GoComics
+36. **The Flying McCoys** | GoComics
+37. **Foxtrot** | GoComics
+38. **Foxtrot Classics** | GoComics
+39. **Frazz** | GoComics
+40. **Free Range** | GoComics
+41. **The Fusco Brothers** | GoComics
+42. **Garfield** | GoComics
+43. **Gasoline Alley** | GoComics
+44. **Ginger Meggs** | GoComics
+45. **Glasbergen Cartoons** | GoComics
+46. **Hagar the Horrible** | CK
+47. **Heart of the City** | GoComics
+48. **Hi and Lois** | CK
+49. **Judge Parker** | CK
+50. **The Lockhorns** | GoComics
+51. **Lola** | GoComics
+52. **Loose Parts** | GoComics
+53. **Luann** | GoComics
+54. **Luann Againn** | GoComics
+55. **Mark Trail** | CK
+56. **Marmaduke** | GoComics
+57. **Marvin** | CK
+58. **Mary Worth** | CK
+59. **Moderately Confused** | GoComics
+60. **Mother Goose and Grimm** | GoComics
+61. **Mother Goose and Grimm** | Grimmy
+62. **Mutt & Jeff** | GoComics
+63. **Mutts** | CK
+64. **Never Been Deader** | CK
+65. **Non Sequitur** | GoComics
+66. **Off the Mark** | GoComics
+67. **The Other Coast** | GoComics
+68. **Palurdeando** | CK
+69. **Pardon My Planet** | CK
+70. **Peanuts** | GoComics
+71. **Peanuts Begins** | GoComics
+72. **Pearls Before Swine** | GoComics
+73. **Pickles** | GoComics
+74. **Pluggers** | GoComics
+75. **Pluggers** | CK
+76. **Pooch Café** | GoComics
+77. **Reality Check** | GoComics
+78. **Rex Morgan M.D.** | CK
+79. **Rhymes with Orange** | CK
+80. **Rip Haywire** | GoComics
+81. **Safe Havens** | CK
+82. **Sam and Silo** | CK
+83. **Savage Chickens** | GoComics
+84. **Scary Gary** | GoComics
+85. **Shoe** | GoComics
+86. **Shoe** | CK
+87. **Shoe** | ShoeComics
+88. **Speed Bump** | GoComics
+89. **Take it from the Tinkersons** | CK
+90. **Tiger** | CK
+91. **Tina’s Groove** | CK
+92. **Wizard of Id** | GoComics
+93. **WuMo** | GoComics
+94. **Zack Hill** | GoComics
+95. **Ziggy** | GoComics
+96. **Zits** | CK
+
+See also **[COMIC_TITLES.md](./COMIC_TITLES.md)**.
 
 Note that some comic titles, especially in their early days, can have large gaps in availability.
 
-### Releases
+### 4. Releases
 
 📦 **Pre-built binaries** are available on **[Releases](https://github.com/DerLudditus/comic-strip-browser/releases)**:
 
@@ -131,8 +161,14 @@ Note that some comic titles, especially in their early days, can have large gaps
 | Linux AppImage | `ComicStripBrowser-*.AppImage` |
 | Windows | `ComicStripBrowser.exe` |
 
-### Cached images
-The last-accessed 200 images for each comic title are stored in a folder called `cache`, which is too generic a name. Each comic title has its own subfolder, though.
+**Read the release notes for each version!**
+
+### 5. VPN users, beware!
+
+**GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
+
+### 6. Cached images
+The last-accessed 200 images for each comic title are stored in a folder called `cache` (too generic a name, I know). Each comic title has its own subfolder.
 
 The folder `cache` is saved as follows:
 
@@ -140,16 +176,44 @@ The folder `cache` is saved as follows:
 * In **$HOME** when this is not possible, especially when installed globally from `.deb` or `.rpm` and launched from the menu.
 * Beware that if you launch the app via a launcher triggered by Alt+F2, the current directory is `~/Desktop` in MATE and $HOME in other desktop environments.
 
-### Hint
+### 7. CLI operation
 
-To run the application directly from the Python source code (`python3 main.py`), a couple of libraries are needed: `beautifulsoup4` and PIL. 
+#### Dependencies in Linux
 
-Under Debian or Ubuntu: 
-`sudo apt install python3-bs4 python3-pil`
+To run the application directly from the Python source code (`python3 main.py`), `beautifulsoup4` and PIL are needed. The corresponding package names are not consistent across distros and compared to PIP names.
 
+Under Debian/Ubuntu/MX/Mint/Xebian: 
+`sudo apt install python3-bs4 python3-pil python3-pyqt6`
 
+Under Fedora/Nobara/Ultramarine:
+`sudo dnf install python3-beautifulsoup4 python3-pillow python3-pyqt6`
 
-### License
+#### Dependencies in Windows
+
+To run it via `python3 main.py` under Windows, the following dependencies are needed: 
+
+`pip install PyQt6 bs4 requests pillow`
+
+### 8. CLI-only features
+
+Commands supported in CLI-only operation mode (the app then exists; no GUI ever shows up):
+
+`--names`: Prints the internal names (slugs) of all comics (one per line).
+`--info`: Same as above, but formatted as `number=X | name=Y | display_name=Z`.
+`--all`: **Downloads and caches all comics in headless mode.**
+`--today` / `--yesterday`: Optional and mutually exclusive date selector for `--all` (defaults to today if omitted).
+`--name=`*`name`* with `--today` or --`yesterday`: Downloads and caches a single comic by its internal name (e.g. `garfield`).
+`--number=`*`id`* with `--today` or `--yesterday`: Downloads/caches a single comic by its 1-based GUI index (1–96, e.g. `42`).
+
+More details in **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+
+### 9. Minimal debugging
+
+`--debug`: Launches the app in normal GUI mode but logs in the terminal and in `comic_browser.log` info that could help in cases the displaying of a specific comic fails. Some comics have gaps or changes in frequency that might not be all accounted for.
+
+### 10. License
 This project is licensed under the MIT License. See LICENSE file for details.
 
-**Note**: This application is for personal use only. Please respect the terms of service of GoComics.com, ComicsKingdom.com, and the copyright of comic strip creators.
+### Note 
+
+The cached images are for personal use only. Please respect the copyright of comic strip creators.

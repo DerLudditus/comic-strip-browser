@@ -11,7 +11,6 @@ project_root = Path('.')
 
 datas = [
     ('assets', 'assets') if (project_root / 'assets').exists() else None,
-    ('initial_transparent_alpha.png', '.') if (project_root / 'initial_transparent_alpha.png').exists() else None,
 ]
 datas = [item for item in datas if item is not None]
 

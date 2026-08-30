@@ -16,6 +16,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize, QDate
 from PyQt6.QtGui import QFont, QPalette, QColor
 
 from models.data_models import ComicDefinition, get_comic_definition
+from ui import get_font_families, get_bold_weight
 
 INFO_ICON = "\U0001F4A1"
 
@@ -191,6 +192,9 @@ class CalendarWidget(QWidget):
         # Info text section
         self.create_info_section(layout)
 
+        # Keyboard shortcuts helper section
+        self.create_shortcuts_helper(layout)
+
         # Push everything to the top
         layout.addStretch(1)
 
@@ -210,24 +214,26 @@ class CalendarWidget(QWidget):
         month_nav_layout.setContentsMargins(4, 2, 4, 2)
 
         # Previous month button — larger, prominent
-        self.prev_month_btn = QPushButton("‹")
-        self.prev_month_btn.setFixedSize(QSize(36, 32))
+        self.prev_month_btn = QPushButton("‹📅")
+        # self.prev_month_btn.setFixedSize(QSize(36, 32))
+        prev_month_font = QFont()
+        prev_month_font.setPointSize(16)
+        prev_month_font.setWeight(get_bold_weight())
+        prev_month_font.setFamilies(get_font_families())
+        self.prev_month_btn.setFont(prev_month_font)
         self.prev_month_btn.setStyleSheet("""
             QPushButton {
-                background-color: #e0e0e0;
+                background:none;
                 color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 14px;
-                font-size: 20px;
-                font-weight: bold;
+                margin: 4px;
+                padding: 4px;
+                border: 0;
             }
             QPushButton:hover {
                 background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
             }
             QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
+                background-color: #bfbfbf;
             }
         """)
         self.prev_month_btn.clicked.connect(self.go_to_previous_month)
@@ -237,31 +243,34 @@ class CalendarWidget(QWidget):
         self.month_year_label = QLabel()
         month_year_font = QFont()
         month_year_font.setPointSize(13)
-        month_year_font.setBold(True)
+        month_year_font.setWeight(get_bold_weight())
+        month_year_font.setFamilies(get_font_families())
         self.month_year_label.setFont(month_year_font)
-        self.month_year_label.setStyleSheet("color: #000000;")
+        self.month_year_label.setStyleSheet("color: #000000; background: transparent; border: none;")
         self.month_year_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         month_nav_layout.addWidget(self.month_year_label, 1)
 
         # Next month button — larger, prominent
-        self.next_month_btn = QPushButton("›")
-        self.next_month_btn.setFixedSize(QSize(36, 32))
+        self.next_month_btn = QPushButton("📅›")
+        # self.next_month_btn.setFixedSize(QSize(36, 32))
+        next_month_font = QFont()
+        next_month_font.setPointSize(16)
+        next_month_font.setWeight(get_bold_weight())
+        next_month_font.setFamilies(get_font_families())
+        self.next_month_btn.setFont(next_month_font)
         self.next_month_btn.setStyleSheet("""
             QPushButton {
-                background-color: #e0e0e0;
+                background:none;
                 color: #000000;
-                border: 2px solid #bdbdbd;
-                border-radius: 14px;
-                font-size: 20px;
-                font-weight: bold;
+                margin: 4px;
+                padding: 4px;
+                border: 0;
             }
             QPushButton:hover {
                 background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
             }
             QPushButton:pressed {
-                background-color: #bdbdbd;
-                border: 2px solid #757575;
+                background-color: #bfbfbf;
             }
         """)
         self.next_month_btn.clicked.connect(self.go_to_next_month)
@@ -277,13 +286,17 @@ class CalendarWidget(QWidget):
         # Previous year button — shows the year it would navigate to
         self.prev_year_btn = QPushButton()
         self.prev_year_btn.setFixedHeight(32)
+        prev_year_font = QFont()
+        prev_year_font.setPointSize(12)
+        prev_year_font.setWeight(get_bold_weight())
+        prev_year_font.setFamilies(get_font_families())
+        self.prev_year_btn.setFont(prev_year_font)
         self.prev_year_btn.setStyleSheet("""
             QPushButton {
-                background-color: #e0e0e0;
+                background-color: #dcdcdc;
                 color: #000000;
-                border: 1px solid #bdbdbd;
+                border: 1px solid #bfbfbf;
                 border-radius: 4px;
-                font-size: 16px;
                 padding: 0px 8px;
             }
             QPushButton:hover {
@@ -307,13 +320,17 @@ class CalendarWidget(QWidget):
         # Next year button — shows the year it would navigate to
         self.next_year_btn = QPushButton()
         self.next_year_btn.setFixedHeight(32)
+        next_year_font = QFont()
+        next_year_font.setPointSize(12)
+        next_year_font.setWeight(get_bold_weight())
+        next_year_font.setFamilies(get_font_families())
+        self.next_year_btn.setFont(next_year_font)
         self.next_year_btn.setStyleSheet("""
             QPushButton {
-                background-color: #e0e0e0;
+                background-color: #dcdcdc;
                 color: #000000;
-                border: 1px solid #bdbdbd;
+                border: 1px solid #bfbfbf;
                 border-radius: 4px;
-                font-size: 16px;
                 padding: 0px 8px;
             }
             QPushButton:hover {
@@ -341,8 +358,8 @@ class CalendarWidget(QWidget):
         calendar_frame.setFrameStyle(QFrame.Shape.NoFrame)
         calendar_frame.setStyleSheet("""
             QFrame {
-                background-color: #e0e0e0;
-                border: 1px solid #c0c0c0;
+                background-color: transparent;
+                border: none;
             }
         """)
 
@@ -370,7 +387,7 @@ class CalendarWidget(QWidget):
             header_label.setFixedSize(QSize(35, 25))
             header_font = QFont()
             header_font.setPointSize(10)
-            header_font.setBold(True)
+            header_font.setWeight(get_bold_weight())
             header_label.setFont(header_font)
             header_label.setStyleSheet("""
                 QLabel {
@@ -387,13 +404,14 @@ class CalendarWidget(QWidget):
         """Create info text area below the calendar."""
         self.info_label = QLabel("")
         info_font = QFont()
-        info_font.setPointSize(13)
-        info_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        info_font.setPointSize(11)
+        info_font.setFamilies(get_font_families())
         self.info_label.setFont(info_font)
         self.info_label.setStyleSheet("""
             QLabel {
                 color: #000000;
-                background-color: #f0f0f0;
+                background-color: transparent;
+                border: none;
                 padding: 6px 12px;
             }
         """)
@@ -401,6 +419,78 @@ class CalendarWidget(QWidget):
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.info_label.setMinimumHeight(30)
         parent_layout.addWidget(self.info_label)
+
+    def create_shortcuts_helper(self, parent_layout):
+        """Create keyboard navigation helper section below the info section."""
+        shortcuts_layout = QVBoxLayout()
+        shortcuts_layout.setContentsMargins(0, 8, 0, 4)
+        shortcuts_layout.setSpacing(0)
+
+        # Center wrapper to keep table compact and centered
+        wrapper_layout = QHBoxLayout()
+        wrapper_layout.addStretch(1)
+
+        grid = QGridLayout()
+        grid.setSpacing(4)
+        grid.setHorizontalSpacing(12)
+
+        shortcuts = [
+            ("PgUp", "Previous title"),
+            ("PgDn", "Next title"),
+            (None, None),
+            ("Left", "Previous date"),
+            ("Right", "Next date"),
+            (None, None),
+            ("Home", "Earliest date"),
+            ("End", "Today"),
+        ]
+
+        row = 0
+        for key, desc in shortcuts:
+            if key is None:
+                grid.setRowMinimumHeight(row, 6)
+                row += 1
+                continue
+
+            key_lbl = QLabel(key)
+            key_lbl.setFixedWidth(46)
+            key_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            key_font = QFont()
+            key_font.setPointSize(9)
+            key_font.setWeight(get_bold_weight())
+            key_font.setFamilies(get_font_families())
+            key_lbl.setFont(key_font)
+            key_lbl.setStyleSheet("""
+                QLabel {
+                    background-color: #dcdcdc;
+                    border: 1px solid #bfbfbf;
+                    border-radius: 4px;
+                    padding: 2px 4px;
+                    color: #000000;
+                }
+            """)
+
+            desc_lbl = QLabel(desc)
+            desc_font = QFont()
+            desc_font.setPointSize(10)
+            desc_font.setFamilies(get_font_families())
+            desc_lbl.setFont(desc_font)
+            desc_lbl.setStyleSheet("""
+                QLabel {
+                    background-color: transparent;
+                    border: none;
+                    color: #000000;
+                }
+            """)
+
+            grid.addWidget(key_lbl, row, 0, Qt.AlignmentFlag.AlignRight)
+            grid.addWidget(desc_lbl, row, 1, Qt.AlignmentFlag.AlignLeft)
+            row += 1
+
+        wrapper_layout.addLayout(grid)
+        wrapper_layout.addStretch(1)
+        shortcuts_layout.addLayout(wrapper_layout)
+        parent_layout.addLayout(shortcuts_layout)
 
     def set_comic_info(self, comic_name: str):
         """Update the info text and date constraints for the currently selected comic."""

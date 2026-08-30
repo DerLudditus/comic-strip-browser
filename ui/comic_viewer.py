@@ -16,6 +16,7 @@ from PyQt6.QtGui import QPixmap, QFont, QPainter, QMovie, QImage
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 from models.data_models import ComicData, get_comic_definition
+from ui import get_font_families, get_bold_weight
 
 
 class ImageLoader(QThread):
@@ -110,13 +111,13 @@ class ComicViewer(QWidget):
         self.image_loader = None
         self.setup_ui()
         self.setStyleSheet("""
-                QWidget {
-                 background-color: #e8e8e8;
-                }
-                QLabel {
-                 color: #000000;
-                 background-color: transparent;
-                }
+            ComicViewer {
+                background-color: #e8e8e8;
+            }
+            QLabel {
+                color: #000000;
+                background-color: transparent;
+            }
         """)        
     
     def setup_ui(self):
@@ -140,8 +141,8 @@ class ComicViewer(QWidget):
         self.header_frame.setFrameStyle(QFrame.Shape.NoFrame)
         self.header_frame.setStyleSheet("""
             QFrame {
-                background-color: #e0e0e0;
-                border-bottom: 1px solid #dee2e6;
+                background-color: transparent;
+                border: none;
             }
         """)
         
@@ -150,11 +151,11 @@ class ComicViewer(QWidget):
         header_layout.setSpacing(2)
 
         # Comic title
-        self.title_label = QLabel("No comic selected")
+        self.title_label = QLabel("")
         title_font = QFont()
         title_font.setPointSize(14)
-        title_font.setBold(True)
-        title_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        title_font.setWeight(get_bold_weight())
+        title_font.setFamilies(get_font_families())
         self.title_label.setFont(title_font)
         self.title_label.setStyleSheet("color: #000000; border:none")  # Ensure dark text and bold
         self.title_label.setWordWrap(True)
@@ -165,8 +166,8 @@ class ComicViewer(QWidget):
         self.author_label = QLabel("")
         author_font = QFont()
         author_font.setPointSize(12)
-        author_font.setBold(True)
-        author_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        author_font.setWeight(get_bold_weight())
+        author_font.setFamilies(get_font_families())
         self.author_label.setFont(author_font)
         self.author_label.setStyleSheet("color: #000000; border:none")
         self.author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -178,8 +179,8 @@ class ComicViewer(QWidget):
         self.metadata_label = QLabel("")
         metadata_font = QFont()
         metadata_font.setPointSize(11)
-        metadata_font.setBold(True)
-        metadata_font.setFamilies(["Noto Sans", "Segoe UI", "Arial", "sans-serif"])
+        metadata_font.setWeight(get_bold_weight())
+        metadata_font.setFamilies(get_font_families())
         self.metadata_label.setFont(metadata_font)
         self.metadata_label.setStyleSheet("color: #000000; border:none")
         self.metadata_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -198,17 +199,26 @@ class ComicViewer(QWidget):
         self.scroll_area.setWidgetResizable(False)
         self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self.scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
+        self.scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: #e8e8e8;
+            }
+        """)
         # Vertical scrolling when image is taller than viewport
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         # No horizontal scrolling — image always fits viewport width
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        # No background color set - use system theme
 
         # Content widget that will contain the comic image or state displays
         self.content_widget = QWidget()
-        # No background color set - use system theme
+        self.content_widget.setStyleSheet("""
+            QWidget {
+                background-color: #e8e8e8;
+            }
+        """)
         self.content_layout = QVBoxLayout(self.content_widget)
-        self.content_layout.setContentsMargins(20, 20, 20, 20)
+        self.content_layout.setContentsMargins(20, 10, 20, 20)
         self.content_layout.setSpacing(10)
         # Center all items horizontally
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -222,45 +232,54 @@ class ComicViewer(QWidget):
         # --- Button style ---
         btn_style = """
             QPushButton {
-                background-color: #e0e0e0;
+                background-color: #dcdcdc;
                 color: #000000;
-                border: 2px solid #bdbdbd;
+                border: 1px solid #bfbfbf;
                 border-radius: 4px;
                 padding: 6px 12px;
             }
             QPushButton:hover {
                 background-color: #d0d0d0;
-                border: 2px solid #9e9e9e;
+                border: 1px solid #9e9e9e;
             }
             QPushButton:pressed {
                 background-color: #bdbdbd;
-                border: 2px solid #757575;
+                border: 1px solid #757575;
             }
         """
-
+        key_font = QFont()
+        key_font.setPointSize(11)
+        key_font.setWeight(get_bold_weight())
+        key_font.setFamilies(get_font_families())        
+            
         # First button
-        self.first_button = QPushButton("First")
+        self.first_button = QPushButton("▲ First")
         self.first_button.setStyleSheet(btn_style)
+        self.first_button.setFont(key_font)
         nav_layout.addWidget(self.first_button)
 
         # Previous button
-        self.prev_button = QPushButton("Previous")
+        self.prev_button = QPushButton("◄ Previous")
         self.prev_button.setStyleSheet(btn_style)
+        self.prev_button.setFont(key_font)
         nav_layout.addWidget(self.prev_button)
 
         # Today button
-        self.today_button = QPushButton("Today")
+        self.today_button = QPushButton("● Today")
         self.today_button.setStyleSheet(btn_style)
+        self.today_button.setFont(key_font)
         nav_layout.addWidget(self.today_button)
 
         # Next button
-        self.next_button = QPushButton("Next")
+        self.next_button = QPushButton("Next ►")
         self.next_button.setStyleSheet(btn_style)
+        self.next_button.setFont(key_font)
         nav_layout.addWidget(self.next_button)
 
         # Random button
-        self.random_button = QPushButton("Random")
+        self.random_button = QPushButton("🎲 Random")
         self.random_button.setStyleSheet(btn_style)
+        self.random_button.setFont(key_font)
         nav_layout.addWidget(self.random_button)
 
         self.content_layout.addLayout(nav_layout)
@@ -268,12 +287,11 @@ class ComicViewer(QWidget):
         # Comic image label
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setMinimumSize(QSize(400, 300))
         self.image_label.setStyleSheet("""
             QLabel {
-                border: 1px solid #e0e0e0;
+                border: none;
                 border-radius: 8px;
-                background-color: #fafafa;
+                background-color: transparent;
             }
         """)
         # Point 3: Explicitly set the centered flag
@@ -295,13 +313,10 @@ class ComicViewer(QWidget):
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setWordWrap(True)
 
-        self.status_label.setStyleSheet("""
-            QLabel {
-                color: #000000;
-                font-size: 16px;
-                font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
-                }
-        """)
+        status_font = QFont()
+        status_font.setPointSize(12)
+        status_font.setFamilies(get_font_families())
+        self.status_label.setFont(status_font)
         self.status_label.setVisible(False)  # Hide when empty
         self.content_layout.addWidget(self.status_label)
 
@@ -503,6 +518,20 @@ class ComicViewer(QWidget):
         if w <= 0 or h <= 0:
             return QSize(400, 300)
 
+        # 0. Single-Panel / Square Heuristic Detection
+        # Single-panel comics usually have W and H differing by <= 16%.
+        # Scale down large ones to a max width of 600px so they don't require vertical scrolling.
+        aspect_diff = abs(w - h) / max(w, h)
+        if aspect_diff <= 0.16:
+            if w > 600.0:
+                target_w = 600.0
+                h *= (target_w / w)
+                w = target_w
+            if w > max_w:
+                h *= (max_w / w)
+                w = max_w
+            return QSize(int(w), int(h))
+
         # 1. Custom Scale Factor (Huge images only)
         if w > 1535 and w > h: # Landscape
             h *= (1200/w)
@@ -510,12 +539,21 @@ class ComicViewer(QWidget):
         elif w > 1535 and w < h and h > 2000:
             h *= 0.35
             w *= 0.35
+            if w < 600.0:
+                h *= (600.0 / w)
+                w = 600.0
         elif w > 1535 and w < h and h > 1700:
             h *= 0.45
             w *= 0.45
+            if w < 600.0:
+                h *= (600.0 / w)
+                w = 600.0
         elif w > 1535 and w < h:
             h *= 0.5
             w *= 0.5
+            if w < 600.0:
+                h *= (600.0 / w)
+                w = 600.0
         elif w > 1200 and w < h:
             h *= 0.65
             w *= 0.65
@@ -586,20 +624,37 @@ class ComicViewer(QWidget):
         """Display loading state with progress indicator."""
         self.image_label.clear()
         self.image_label.setText("Loading comic...")
+        loading_font = QFont()
+        loading_font.setPointSize(12)
+        loading_font.setFamilies(get_font_families())
+        self.image_label.setFont(loading_font)
         self.image_label.setStyleSheet("""
             QLabel {
                 border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 background-color: #f8f9fa;
                 color: #000000;
-                font-size: 16px;
-                font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
             }
         """)
 
         self.progress_bar.setVisible(True)
         self.progress_bar.show()  # Explicitly show the progress bar
         self.progress_bar.setRange(0, 0)  # Indeterminate progress
+        
+        status_loading_font = QFont()
+        status_loading_font.setPointSize(12)
+        status_loading_font.setFamilies(get_font_families())
+        self.status_label.setFont(status_loading_font)
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #000000;
+                background-color: transparent;
+                border: none;
+                padding: 0px;
+                margin: 0px;
+            }
+        """)
+        
         self.status_label.setText("Downloading comic image...")
         self.status_label.setVisible(True)  # Show status when we have content
         self.retry_button.setVisible(False)
@@ -646,29 +701,33 @@ class ComicViewer(QWidget):
             text_color = "#000000"        
 
         self.image_label.setText(f"{icon}\n{title}")
+        error_icon_font = QFont()
+        error_icon_font.setPointSize(16)
+        error_icon_font.setFamilies(get_font_families())
+        self.image_label.setFont(error_icon_font)
         self.image_label.setStyleSheet(f"""
             QLabel {{
                 border: 1px solid {border_color};
                 border-radius: 8px;
                 background-color: {bg_color};
                 color: {text_color};
-                font-size: 22px;
-                font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
             }}
         """)
 
         self.progress_bar.setVisible(False)
         self.status_label.setText(error_message)
         self.status_label.setVisible(True)  # Show status when we have error content
+        error_status_font = QFont()
+        error_status_font.setPointSize(13)
+        error_status_font.setFamilies(get_font_families())
+        self.status_label.setFont(error_status_font)
         self.status_label.setStyleSheet(f"""
             QLabel {{
                 color: {text_color};
-                font-size: 18px;
                 padding: 10px;
                 background-color: {bg_color};
                 border-radius: 4px;
                 margin: 5px;
-                font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
             }}
         """)
         
@@ -718,36 +777,34 @@ class ComicViewer(QWidget):
     
     def show_empty_state(self):
         """Display empty state when no comic is selected."""
+        self.title_label.setText("")
+        self.author_label.setText("")
+        self.author_label.setVisible(False)
+        self.metadata_label.setText("")
+        self.metadata_label.setVisible(False)
+
         self.image_label.clear()
-
-        # Build data URI for the 400x400 welcome image
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "initial_transparent_alpha.png")
-        data_uri = ""
-        if os.path.exists(icon_path):
-            with open(icon_path, "rb") as f:
-                data_uri = "data:image/png;base64," + __import__("base64").b64encode(f.read()).decode()
-
-        self.image_label.setText(f"""
-        <html>
-            <body style="text-align: center;">
-                <img src="{data_uri}" width="240" height="240">
-                <div style="font-size: 18px; color: #000000; margin-top: 15px;">⟵ Select a comic from the left 🙂</div>
-            </body>
-        </html>
-        """)
-
+        self.image_label.setText("")
+        self.image_label.setFixedSize(QSize(0, 0))
         self.image_label.setStyleSheet("""
             QLabel {
-                border: 1px solid #595959;
-                border-radius: 8px;
-                background-color: #faeeae;
-                padding: 20px;
+                border: none;
+                background-color: transparent;
             }
         """)
 
         self.progress_bar.setVisible(False)
         self.status_label.setText("")
         self.status_label.setVisible(False)
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #000000;
+                background-color: transparent;
+                border: none;
+                padding: 0px;
+                margin: 0px;
+            }
+        """)
         self.retry_button.setVisible(False)
 
         # Delay content resize to let Qt finish layout
@@ -759,6 +816,15 @@ class ComicViewer(QWidget):
         self.progress_bar.setVisible(False)
         self.status_label.setText("")
         self.status_label.setVisible(False)  # Hide status when empty
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #000000;
+                background-color: transparent;
+                border: none;
+                padding: 0px;
+                margin: 0px;
+            }
+        """)
         self.retry_button.setVisible(False)
         
         # Reset image label styling for normal display
@@ -794,9 +860,6 @@ class ComicViewer(QWidget):
             self.image_loader.wait()
             self.image_loader = None
         
-        self.title_label.setText("No comic selected")
-        self.metadata_label.setText("")
-        self.metadata_label.setVisible(False)  # Hide metadata when empty
         self.show_empty_state()
     
     def resizeEvent(self, event):

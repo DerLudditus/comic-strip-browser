@@ -5,20 +5,37 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "2.6.0"
-__version_info__ = (2, 6, 0)
+__version__ = "3.0.0"
+__version_info__ = (3, 0, 0)
 
 # Release information
-RELEASE_DATE = "2026-07-30"
+RELEASE_DATE = "2026-08-30"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "2.6.0-1"
+DEB_VERSION = "3.0.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (2.6.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (3.0.0-1) stable; urgency=medium
+* Major release with substantial changes. Despite being a 0.0 version, I hope the new bugs aren't a deal-breaker.
+* 96 comic titles in total, or 91 if we only count the unique ones (a few are retrieved from 2 or 3 sources).
+* Comics Kingdom removed Animal Crackers. GoComics still has it.
+* Mother Goose and Grimm is now also retrieved from grimmy.com. This extends its first day of availability from 2002-11-25 back to 1994-01-01.
+* Shoe now has 3 sources: GoComics, Comics Kingdom, and ShoeComics. The latter extends availability slightly back to 2001-01-01.
+* 16 new comic titles: Arctic Circle, The Barn, Break of Day, Edge City, Goomer, Loose Parts, Mutt & Jeff, Never Been Deader, Pooch Café, Safe Havens, Sam and Silo, Savage Chickens, Scary Gary, Take it from the Tinkersons, Tiger, Zack Hill.
+* The GUI has been slightly modernized.
+* Keyboard navigation has been extended, and the shortcuts are printed on the screen (PgUp/PgDn: Previous/Next title; Left/Right: Previous/Next date; Home: Earliest date; End: Today). This should make its mouse-free navigation possible. 
+* Upon public request, CLI-only operation support has been added. See README.md for details. The main request was to be able to download to the cache folder all the comics for today (or for yesterday). Now that PgUp/PgDn navigates in the list of comics, this makes even more sense than when it was requested.
+* Image auto-scaling logic has been slightly adjusted to accommodate comics of various sizes better.
+* `python3 comic_titles.py` generates COMIC_TITLES.md with more detail than the list in README.md.
+* Basic information for developers and agents can now be found in ARCHITECTURE.md.
+* Added helpers for AI-assisted development: an AGENTS.md suggestion, a PLAN.md template, and LLM_HOWTO.md.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Mon, 31 Aug 2026 02:00 +0300
+ 
+comic-strip-browser (2.6.0-1) stable; urgency=medium
 * Added extra comic titles up to a total of 80, including serialized ones, with stories running several weeks at a time.
 * - from GoComics: Brewster Rockit, Crankshaft, Diamond Lil, Dick Tracy, Flo and Friends, Gasoline Alley, Heart of the City, The Lockhorns, Luann, Luann Againn, Rip Haywire.
 * - from Comics Kingdom: Dick Tracy, Judge Parker, Mark Trail, Mary Worth, Palurdeando, Rex Morgan M.D., Tina’s Groove.
