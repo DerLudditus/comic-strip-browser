@@ -198,14 +198,14 @@ To run it via `python3 main.py` under Windows, the following dependencies are ne
 
 Commands supported in CLI-only operation mode (the app then exists; no GUI ever shows up):
 
-`--names`: Prints the internal names (slugs) of all comics (one per line).
-`--info`: Same as above, but formatted as `number=X | name=Y | display_name=Z`.
-`--all`: **Downloads and caches all comics in headless mode.**
-`--today` / `--yesterday`: Optional and mutually exclusive date selector for `--all` (defaults to today if omitted).
-`--name=`*`name`* with `--today` or --`yesterday`: Downloads and caches a single comic by its internal name (e.g. `garfield`).
-`--number=`*`id`* with `--today` or `--yesterday`: Downloads/caches a single comic by its 1-based GUI index (1–96, e.g. `42`).
+* `--names`: Prints the internal names (slugs) of all comics (one per line).
+* `--info`: Same as above, but formatted as `number=X | name=Y | display_name=Z`.
+* `--all`: **Downloads and caches all comics in headless mode.**
+* `--today` / `--yesterday`: Optional and mutually exclusive date selector for `--all` (defaults to today if omitted).
+* `--name=`*`name`* with `--today` or --`yesterday`: Downloads and caches a single comic by its internal name (e.g. `garfield`).
+* `--number=`*`id`* with `--today` or `--yesterday`: Downloads/caches a single comic by its 1-based GUI index (1–96, e.g. `42`).
 
-More details in **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-cli--headless-batch-operations)**.
 
 ### 9. Minimal debugging
 
