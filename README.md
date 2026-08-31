@@ -182,10 +182,12 @@ The folder `cache` is saved as follows:
 
 To run the application directly from the Python source code (`python3 main.py`), `beautifulsoup4` and PIL are needed. The corresponding package names are not consistent across distros and compared to PIP names.
 
-Under Debian/Ubuntu/MX/Mint/Xebian: 
+Under Debian/Ubuntu/MX/Mint/Xebian:
+
 `sudo apt install python3-bs4 python3-pil python3-pyqt6`
 
 Under Fedora/Nobara/Ultramarine:
+
 `sudo dnf install python3-beautifulsoup4 python3-pillow python3-pyqt6`
 
 #### Dependencies in Windows
