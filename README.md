@@ -213,9 +213,15 @@ More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-
 
 `--debug`: Launches the app in normal GUI mode but logs in the terminal and in `comic_browser.log` info that could help in cases the displaying of a specific comic fails. Some comics have gaps or changes in frequency that might not be all accounted for.
 
-### 10. License
+### 10. Keyboard controls
+
+<div align="center">
+  <img src="navigation_controls.png" width="60%">
+</div>
+
+### 11. License
 This project is licensed under the MIT License. See LICENSE file for details.
 
-### Note 
+### 12. Note 
 
 The cached images are for personal use only. Please respect the copyright of comic strip creators.
