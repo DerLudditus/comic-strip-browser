@@ -5,15 +5,15 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "3.1.0"
-__version_info__ = (3, 1, 0)
+__version__ = "3.1.1"
+__version_info__ = (3, 1, 1)
 
 # Release information
-RELEASE_DATE = "2026-10-02"
+RELEASE_DATE = "2026-10-04"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "3.1.0-1"
+DEB_VERSION = "3.1.1-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
