@@ -12,11 +12,13 @@ Version 2.6.0 increased the number of titles to 80.
 
 Version 3.0.0 reached 96 titles and improved the usability: the UI has been slightly modernized, and the navigation through the comic strips for the day can be found using **PgDn/PgUp** instead of requiring a mouse.
 
+Version 3.1.0 added proper **feedback** for situations where **GoComics blocks your IP** because “you’ve asked for too many comics in a short period of time,” and when GoComics returns a Bunny Shield challenge that can only be bypassed in a web browser. It also adds a “Hide GoComics” toggle for such situations. The **Up/Down** arrow keys now navigate comic titles, mirroring PgUp/PgDn. The AppImage can run on distros as old as Ubuntu 22.04 and Debian 12.
+
 ### 1. Major features
 	
 - Most comics are retrieved from **GoComics** or **Comics Kingdom**, with a couple being retrieved from other sites.
 - Binaries are provided for **Windows** and **Linux**, and `.deb` and `.rpm` packages are also available.
-- In addition to the **calendar navigation**, **keyboard navigation** is also possible: **PgUp**/**PgDn**: Previous/Next title; **Left**/**Right**: Previous/Next date; **Home**: Earliest date; **End**: Today.
+- In addition to the **calendar navigation**, **keyboard navigation** is also possible: **Up/Down** or **PgUp**/**PgDn**: Previous/Next title; **Left**/**Right**: Previous/Next date; **Home**: Earliest date; **End**: Today.
 - For the currently selected comic title, the **Random** button helps you discover gems in the past.
 - **Disk caching** stores the last 200 comics per strip for fast loading or later consultation from the cache folder. The app can display the cached comics even without an internet connection.
 
@@ -24,27 +26,15 @@ Version 3.0.0 reached 96 titles and improved the usability: the UI has been slig
 
 #### Debian 13 XFCE:
 
-![](ComicStripBrowser_Debian13_a.png)
+![](ComicStripBrowser_Debian13_c.png)
 
-![](ComicStripBrowser_Debian13_b.png)
+With GoComics hidden:
 
-#### LMDE7:
-
-![](ComicStripBrowser_LMDE7.png)
-
-#### Kubuntu 26.04:
-
-![](ComicStripBrowser_Kubuntu2604.png)
-
-#### Ultramarine Plasma 44:
-
-![](ComicStripBrowser_Ultramarine44.png)
+![](ComicStripBrowser_Debian13_d.png)
 
 #### Windows (125% scaling):
  
-![](ComicStripBrowser_Windows_a.png)
-
-![](ComicStripBrowser_Windows_b.png)
+![](ComicStripBrowser_Windows_c.png)
 
 ### 3. Currently supported comic strips
 
@@ -91,59 +81,61 @@ Version 3.0.0 reached 96 titles and improved the usability: the UI has been slig
 41. **The Fusco Brothers** | GoComics
 42. **Garfield** | GoComics
 43. **Gasoline Alley** | GoComics
-44. **Ginger Meggs** | GoComics
-45. **Glasbergen Cartoons** | GoComics
-46. **Hagar the Horrible** | CK
-47. **Heart of the City** | GoComics
-48. **Hi and Lois** | CK
-49. **Judge Parker** | CK
-50. **The Lockhorns** | GoComics
-51. **Lola** | GoComics
-52. **Loose Parts** | GoComics
-53. **Luann** | GoComics
-54. **Luann Againn** | GoComics
-55. **Mark Trail** | CK
-56. **Marmaduke** | GoComics
-57. **Marvin** | CK
-58. **Mary Worth** | CK
-59. **Moderately Confused** | GoComics
-60. **Mother Goose and Grimm** | GoComics
-61. **Mother Goose and Grimm** | Grimmy
-62. **Mutt & Jeff** | GoComics
-63. **Mutts** | CK
-64. **Never Been Deader** | CK
-65. **Non Sequitur** | GoComics
-66. **Off the Mark** | GoComics
-67. **The Other Coast** | GoComics
-68. **Palurdeando** | CK
-69. **Pardon My Planet** | CK
-70. **Peanuts** | GoComics
-71. **Peanuts Begins** | GoComics
-72. **Pearls Before Swine** | GoComics
-73. **Pickles** | GoComics
-74. **Pluggers** | GoComics
-75. **Pluggers** | CK
-76. **Pooch Café** | GoComics
-77. **Reality Check** | GoComics
-78. **Rex Morgan M.D.** | CK
-79. **Rhymes with Orange** | CK
-80. **Rip Haywire** | GoComics
-81. **Safe Havens** | CK
-82. **Sam and Silo** | CK
-83. **Savage Chickens** | GoComics
-84. **Scary Gary** | GoComics
-85. **Shoe** | GoComics
-86. **Shoe** | CK
-87. **Shoe** | ShoeComics
-88. **Speed Bump** | GoComics
-89. **Take it from the Tinkersons** | CK
-90. **Tiger** | CK
-91. **Tina’s Groove** | CK
-92. **Wizard of Id** | GoComics
-93. **WuMo** | GoComics
-94. **Zack Hill** | GoComics
-95. **Ziggy** | GoComics
-96. **Zits** | CK
+44. **Get Fuzzy** | GoComics
+45. **Ginger Meggs** | GoComics
+46. **Glasbergen Cartoons** | GoComics
+47. **Hagar the Horrible** | CK
+48. **Heart of the City** | GoComics
+49. **Herman** | GoComics
+50. **Hi and Lois** | CK
+51. **Judge Parker** | CK
+52. **The Lockhorns** | GoComics
+53. **Lola** | GoComics
+54. **Loose Parts** | GoComics
+55. **Luann** | GoComics
+56. **Luann Againn** | GoComics
+57. **Mark Trail** | CK
+58. **Marmaduke** | GoComics
+59. **Marvin** | CK
+60. **Mary Worth** | CK
+61. **Moderately Confused** | GoComics
+62. **Mother Goose and Grimm** | GoComics
+63. **Mother Goose and Grimm** | Grimmy
+64. **Mutt & Jeff** | GoComics
+65. **Mutts** | CK
+66. **Never Been Deader** | CK
+67. **Non Sequitur** | GoComics
+68. **Off the Mark** | GoComics
+69. **The Other Coast** | GoComics
+70. **Palurdeando** | CK
+71. **Pardon My Planet** | CK
+72. **Peanuts** | GoComics
+73. **Peanuts Begins** | GoComics
+74. **Pearls Before Swine** | GoComics
+75. **Pickles** | GoComics
+76. **Pluggers** | GoComics
+77. **Pluggers** | CK
+78. **Pooch Café** | GoComics
+79. **Reality Check** | GoComics
+80. **Rex Morgan M.D.** | CK
+81. **Rhymes with Orange** | CK
+82. **Rip Haywire** | GoComics
+83. **Safe Havens** | CK
+84. **Sam and Silo** | CK
+85. **Savage Chickens** | GoComics
+86. **Scary Gary** | GoComics
+87. **Shoe** | GoComics
+88. **Shoe** | CK
+89. **Shoe** | ShoeComics
+90. **Speed Bump** | GoComics
+91. **Take it from the Tinkersons** | CK
+92. **Tiger** | CK
+93. **Tina’s Groove** | CK
+94. **Wizard of Id** | GoComics
+95. **WuMo** | GoComics
+96. **Zack Hill** | GoComics
+97. **Ziggy** | GoComics
+98. **Zits** | CK
 
 See also **[COMIC_TITLES.md](./COMIC_TITLES.md)**.
 
@@ -163,9 +155,23 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 **Read the release notes for each version!**
 
-### 5. VPN users, beware!
+### 5. VPN users and heavy comic consumers, beware!
 
 **GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
+
+Since release 3.1.0, the app will show this feedback to the user:
+
+![](errorVPN.png)
+
+**GoComics** also limited **the number of comic strips users could request within a given time frame.** When they decide you need to “cool down” for a while, they will show you this “429 Too Many Requests” page in a web browser:
+
+<div align="center">
+  <img src="this_can_happen_in_browser.png" width="67%">
+</div>
+
+Since release 3.1.0, the app will show this feedback to the user:
+
+![](error429.png)
 
 ### 6. Cached images
 The last-accessed 200 images for each comic title are stored in a folder called `cache` (too generic a name, I know). Each comic title has its own subfolder.
@@ -209,6 +215,8 @@ Commands supported in CLI-only operation mode (the app then exists; no GUI ever 
 
 More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-cli--headless-batch-operations)**.
 
+⚠️ **Any download using `--all` risks triggering a “429 Too Many Requests” page from GoComics!**
+
 ### 9. Minimal debugging
 
 `--debug`: Launches the app in normal GUI mode but logs in the terminal and in `comic_browser.log` info that could help in cases the displaying of a specific comic fails. Some comics have gaps or changes in frequency that might not be all accounted for.
@@ -216,7 +224,7 @@ More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-
 ### 10. Keyboard controls
 
 <div align="center">
-  <img src="navigation_controls.png" width="60%">
+  <img src="navigation_controls_updated.png" width="67%">
 </div>
 
 ### 11. License
