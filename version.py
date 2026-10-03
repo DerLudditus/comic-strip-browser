@@ -18,7 +18,12 @@ DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (3.1.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (3.1.1-1) stable; urgency=medium
+* The Up/Down shortcuts are now mentioned in the UI alongside the others.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 4 Oct 2026 02:30 +0300
+ 
+ comic-strip-browser (3.1.0-1) stable; urgency=medium
 * Fixed Dick Tracy from ComicsKingdom which displayed comics from GoComics.
 * New titles added from GoComics: Get Fuzzy, Herman.
 * GoComics: handling of the “429 Too Many Requests” response.

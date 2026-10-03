@@ -435,7 +435,9 @@ class CalendarWidget(QWidget):
         grid.setHorizontalSpacing(12)
 
         shortcuts = [
+            ("Up", "Previous title"),        
             ("PgUp", "Previous title"),
+            ("Down", "Next title"),
             ("PgDn", "Next title"),
             (None, None),
             ("Left", "Previous date"),
