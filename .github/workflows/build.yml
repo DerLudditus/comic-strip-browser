@@ -48,7 +48,7 @@ jobs:
 
   # ─── Linux ─────────────────────────────────────────────────
   build-linux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.4 (Node 24)
@@ -115,6 +115,7 @@ jobs:
           cp "$BINARY" "$SRCDIR/comic-strip-browser"
           chmod +x "$SRCDIR/comic-strip-browser"
           [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$SRCDIR/"
+          [ -f assets/comic-strip-browser.appdata.xml ] && cp assets/comic-strip-browser.appdata.xml "$SRCDIR/"
           ICON_SRC="initial_transparent_alpha.png"
           [ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
           [ -f "$ICON_SRC" ] && cp "$ICON_SRC" "$SRCDIR/comic-strip-browser.png"
@@ -142,11 +143,13 @@ jobs:
           %install
           install -D -m 0755 %{name} %{buildroot}%{_bindir}/%{name}
           [ -f %{name}.desktop ] && install -D -m 0644 %{name}.desktop %{buildroot}%{_datadir}/applications/%{name}.desktop
+          [ -f %{name}.appdata.xml ] && install -D -m 0644 %{name}.appdata.xml %{buildroot}%{_datadir}/metainfo/%{name}.appdata.xml
           [ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/pixmaps/%{name}.png
           [ -f %{name}.png ] && install -D -m 0644 %{name}.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/%{name}.png
           %files
           %{_bindir}/%{name}
           %{_datadir}/applications/%{name}.desktop
+          %{_datadir}/metainfo/%{name}.appdata.xml
           %{_datadir}/pixmaps/%{name}.png
           %{_datadir}/icons/hicolor/256x256/apps/%{name}.png
           %post
@@ -187,11 +190,15 @@ jobs:
         run: |
           VERSION=$(python3 -c "from version import __version__; print(__version__)")
           APPDIR="$PWD/build/ComicStripBrowser.AppDir"
-          mkdir -p "$APPDIR"/{usr/bin,usr/share/applications,usr/share/pixmaps}
+          mkdir -p "$APPDIR"/{usr/bin,usr/share/applications,usr/share/pixmaps,usr/share/metainfo}
           cp dist/comic-strip-browser "$APPDIR/usr/bin/comic-strip-browser"
           chmod +x "$APPDIR/usr/bin/comic-strip-browser"
           ln -sf usr/bin/comic-strip-browser "$APPDIR/AppRun"
           [ -f assets/comic-strip-browser.desktop ] && cp assets/comic-strip-browser.desktop "$APPDIR/"
+          [ -f assets/comic-strip-browser.appdata.xml ] && {
+            cp assets/comic-strip-browser.appdata.xml "$APPDIR/usr/share/metainfo/"
+            cp assets/comic-strip-browser.appdata.xml "$APPDIR/"
+          }
           ICON_SRC="initial_transparent_alpha.png"
           [ ! -f "$ICON_SRC" ] && ICON_SRC="assets/comic-strip-browser.png"
           [ -f "$ICON_SRC" ] && {

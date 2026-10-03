@@ -70,7 +70,8 @@ class ImageLoader(QThread):
         """Load image from URL using requests."""
         try:
             import requests
-            response = requests.get(self.image_source, timeout=30)
+            from services.web_scraper import DEFAULT_IMAGE_HEADERS
+            response = requests.get(self.image_source, headers=DEFAULT_IMAGE_HEADERS, timeout=30)
             response.raise_for_status()
             
             pixmap = QPixmap()
@@ -427,8 +428,8 @@ class ComicViewer(QWidget):
             # Refresh header metadata with correct dimensions
             self.update_header(self.current_comic_data)
 
-        self.display_image(pixmap)
         self.show_image_state()
+        self.display_image(pixmap)
         self.loading_finished.emit()
 
         self.comic_displayed.emit(self.current_comic_data.comic_name)
@@ -623,6 +624,8 @@ class ComicViewer(QWidget):
     def show_loading_state(self):
         """Display loading state with progress indicator."""
         self.image_label.clear()
+        self.image_label.setMinimumSize(0, 0)
+        self.image_label.setMaximumSize(16777215, 16777215)
         self.image_label.setText("Loading comic...")
         loading_font = QFont()
         loading_font.setPointSize(12)
@@ -634,6 +637,7 @@ class ComicViewer(QWidget):
                 border-radius: 8px;
                 background-color: #f8f9fa;
                 color: #000000;
+                padding: 10px;
             }
         """)
 
@@ -669,53 +673,102 @@ class ComicViewer(QWidget):
         
         Args:
             error_message: Error message to display
-            error_type: Type of error (network, parsing, unavailable, etc.)
+            error_type: Type of error (network, parsing, unavailable, bunny_shield, rate_limit, etc.)
             recovery_options: List of recovery action labels
         """
         self.image_label.clear()
-        
-        # Choose appropriate icon and styling based on error type
-        if error_type == "network":
-            icon = "⛔"
-            title = "Connection Error"
-            bg_color = "#fff3cd"
-            border_color = "#ffeaa7"
-            text_color = "#000000"
-        elif error_type == "unavailable":
-            icon = "😵"
-            title = "Comic Not Available"
-            bg_color = "#d1ecf1"
-            border_color = "#bee5eb"
-            text_color = "#000000"
-        elif error_type == "parsing":
-            icon = "⧗"
-            title = "Loading Issue"
-            bg_color = "#f8d7da"
-            border_color = "#f5c6cb"
-            text_color = "#000000"
-        else:
-            icon = "⚠️"
-            title = "Error"
+        self.image_label.setMinimumSize(0, 0)
+        self.image_label.setMaximumSize(16777215, 16777215)
+
+        if error_type == "bunny_shield":
             bg_color = "#f8d7da"
             border_color = "#dc3545"
-            text_color = "#000000"        
+            text_color = "#000000"
+            central_html = (
+                "<div style='text-align: center; line-height: 1.4;'>"
+                "<p style='font-size: 15pt; margin-top: 0px; margin-bottom: 14px;'><b>You need a browser, and this app is not one</b></p>"
+                "<p style='margin-bottom: 12px;'>GoComics.com inserted a Bunny Shield challenge that can only be bypassed in a web browser that has JS enabled.</p>"
+                "<p style='margin-bottom: 12px;'>This is meant to block VPNs, bots, and automated scraping of GoComics.com.</p>"
+                "<p style='margin-bottom: 12px;'><b>If you are using a VPN, please disconnect.</b></p>"
+                "<p style='margin-bottom: 0px;'>If you are not using a VPN and you were not hit with the <b>429 Too Many Requests</b> error, then your IP has been deemed suspicious for some other reason.</p>"
+                "</div>"
+            )
+            status_text = "<b>If you are using a VPN, please disconnect.</b>"
+            self.image_label.setText(central_html)
+            self.image_label.setWordWrap(True)
+            self.image_label.setMaximumWidth(700)
+            error_font = QFont()
+            error_font.setPointSize(12)
+            error_font.setFamilies(get_font_families())
+            self.image_label.setFont(error_font)
+            padding_style = "padding: 24px 32px;"
+        elif error_type == "rate_limit":
+            bg_color = "#f8d7da"
+            border_color = "#dc3545"
+            text_color = "#000000"
+            central_html = (
+                "<div style='text-align: center; line-height: 1.4;'>"
+                "<p style='font-size: 15pt; margin-top: 0px; margin-bottom: 14px;'><b>429 Too Many Requests</b></p>"
+                "<p style='margin-bottom: 12px;'>GoComics.com has temporarily blocked your IP because you requested too many comics in a short period.</p>"
+                "<p style='margin-bottom: 12px;'>This block can last for up to a couple of hours. During this time, you won’t be able to browse GoComics.com.</p>"
+                "<p style='margin-bottom: 0px;'><b>You can check in a browser to see whether your IP has been unblocked.</b></p>"
+                "</div>"
+            )
+            status_text = "<b>GoComics.com has temporarily blocked your IP!</b>"
+            self.image_label.setText(central_html)
+            self.image_label.setWordWrap(True)
+            self.image_label.setMaximumWidth(700)
+            error_font = QFont()
+            error_font.setPointSize(12)
+            error_font.setFamilies(get_font_families())
+            self.image_label.setFont(error_font)
+            padding_style = "padding: 24px 32px;"
+        else:
+            if error_type == "network":
+                icon = "⛔"
+                title = "Connection Error"
+                bg_color = "#fff3cd"
+                border_color = "#ffeaa7"
+                text_color = "#000000"
+            elif error_type == "unavailable":
+                icon = "😵"
+                title = "Comic Not Available"
+                bg_color = "#d1ecf1"
+                border_color = "#bee5eb"
+                text_color = "#000000"
+            elif error_type == "parsing":
+                icon = "⧗"
+                title = "Loading Issue"
+                bg_color = "#f8d7da"
+                border_color = "#f5c6cb"
+                text_color = "#000000"
+            else:
+                icon = "⚠️"
+                title = "Error"
+                bg_color = "#f8d7da"
+                border_color = "#dc3545"
+                text_color = "#000000"
 
-        self.image_label.setText(f"{icon}\n{title}")
-        error_icon_font = QFont()
-        error_icon_font.setPointSize(16)
-        error_icon_font.setFamilies(get_font_families())
-        self.image_label.setFont(error_icon_font)
+            self.image_label.setText(f"{icon}\n{title}")
+            error_icon_font = QFont()
+            error_icon_font.setPointSize(16)
+            error_icon_font.setFamilies(get_font_families())
+            self.image_label.setFont(error_icon_font)
+            status_text = error_message
+            padding_style = "padding: 10px;"
+
         self.image_label.setStyleSheet(f"""
             QLabel {{
                 border: 1px solid {border_color};
                 border-radius: 8px;
                 background-color: {bg_color};
                 color: {text_color};
+                {padding_style}
             }}
         """)
 
         self.progress_bar.setVisible(False)
-        self.status_label.setText(error_message)
+        self.status_label.setText(status_text)
         self.status_label.setVisible(True)  # Show status when we have error content
         error_status_font = QFont()
         error_status_font.setPointSize(13)
@@ -828,6 +881,7 @@ class ComicViewer(QWidget):
         self.retry_button.setVisible(False)
         
         # Reset image label styling for normal display
+        self.image_label.setWordWrap(False)
         self.image_label.setStyleSheet("""
             QLabel {
                 border: none;

@@ -20,6 +20,7 @@ from io import BytesIO
 
 from models.data_models import ComicData, CacheEntry
 from services.error_handler import ErrorHandler, CacheError
+from services.web_scraper import DEFAULT_IMAGE_HEADERS
 
 
 class CacheManager:
@@ -123,7 +124,7 @@ class CacheManager:
             True if download successful, False otherwise
         """
         try:
-            response = requests.get(image_url, timeout=30, stream=True)
+            response = requests.get(image_url, headers=DEFAULT_IMAGE_HEADERS, timeout=30, stream=True)
             response.raise_for_status()
             
             with open(target_path, 'wb') as f:
@@ -271,7 +272,7 @@ class CacheManager:
         
         try:
             # Step 1: Download the image into memory (ONLY ONE DOWNLOAD)
-            response = requests.get(comic_data.image_url, timeout=30)
+            response = requests.get(comic_data.image_url, headers=DEFAULT_IMAGE_HEADERS, timeout=30)
             response.raise_for_status()
             image_bytes = response.content
             

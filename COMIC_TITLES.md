@@ -2,8 +2,8 @@
 
 ---
 
-> Auto-generated from `models/data_models.py` by `comic_titles.py` on 2026-08-31.
-> **Total Titles:** 96 | **Unique Titles:** 91 | **Multi-Site Titles:** 4 | **GoComics:** 61 | **Comics Kingdom:** 33 | **Other/Custom:** 2
+> Auto-generated from `models/data_models.py` by `comic_titles.py` on 2026-10-02.
+> **Total Titles:** 98 | **Unique Titles:** 93 | **Multi-Site Titles:** 4 | **GoComics:** 63 | **Comics Kingdom:** 33 | **Other/Custom:** 2
 
 ---
 
@@ -52,59 +52,61 @@
 41. **The Fusco Brothers** | GoComics
 42. **Garfield** | GoComics
 43. **Gasoline Alley** | GoComics
-44. **Ginger Meggs** | GoComics
-45. **Glasbergen Cartoons** | GoComics
-46. **Hagar the Horrible** | CK
-47. **Heart of the City** | GoComics
-48. **Hi and Lois** | CK
-49. **Judge Parker** | CK
-50. **The Lockhorns** | GoComics
-51. **Lola** | GoComics
-52. **Loose Parts** | GoComics
-53. **Luann** | GoComics
-54. **Luann Againn** | GoComics
-55. **Mark Trail** | CK
-56. **Marmaduke** | GoComics
-57. **Marvin** | CK
-58. **Mary Worth** | CK
-59. **Moderately Confused** | GoComics
-60. **Mother Goose and Grimm** | GoComics
-61. **Mother Goose and Grimm** | Grimmy
-62. **Mutt & Jeff** | GoComics
-63. **Mutts** | CK
-64. **Never Been Deader** | CK
-65. **Non Sequitur** | GoComics
-66. **Off the Mark** | GoComics
-67. **The Other Coast** | GoComics
-68. **Palurdeando** | CK
-69. **Pardon My Planet** | CK
-70. **Peanuts** | GoComics
-71. **Peanuts Begins** | GoComics
-72. **Pearls Before Swine** | GoComics
-73. **Pickles** | GoComics
-74. **Pluggers** | GoComics
-75. **Pluggers** | CK
-76. **Pooch Café** | GoComics
-77. **Reality Check** | GoComics
-78. **Rex Morgan M.D.** | CK
-79. **Rhymes with Orange** | CK
-80. **Rip Haywire** | GoComics
-81. **Safe Havens** | CK
-82. **Sam and Silo** | CK
-83. **Savage Chickens** | GoComics
-84. **Scary Gary** | GoComics
-85. **Shoe** | GoComics
-86. **Shoe** | CK
-87. **Shoe** | ShoeComics
-88. **Speed Bump** | GoComics
-89. **Take it from the Tinkersons** | CK
-90. **Tiger** | CK
-91. **Tina’s Groove** | CK
-92. **Wizard of Id** | GoComics
-93. **WuMo** | GoComics
-94. **Zack Hill** | GoComics
-95. **Ziggy** | GoComics
-96. **Zits** | CK
+44. **Get Fuzzy** | GoComics
+45. **Ginger Meggs** | GoComics
+46. **Glasbergen Cartoons** | GoComics
+47. **Hagar the Horrible** | CK
+48. **Heart of the City** | GoComics
+49. **Herman** | GoComics
+50. **Hi and Lois** | CK
+51. **Judge Parker** | CK
+52. **The Lockhorns** | GoComics
+53. **Lola** | GoComics
+54. **Loose Parts** | GoComics
+55. **Luann** | GoComics
+56. **Luann Againn** | GoComics
+57. **Mark Trail** | CK
+58. **Marmaduke** | GoComics
+59. **Marvin** | CK
+60. **Mary Worth** | CK
+61. **Moderately Confused** | GoComics
+62. **Mother Goose and Grimm** | GoComics
+63. **Mother Goose and Grimm** | Grimmy
+64. **Mutt & Jeff** | GoComics
+65. **Mutts** | CK
+66. **Never Been Deader** | CK
+67. **Non Sequitur** | GoComics
+68. **Off the Mark** | GoComics
+69. **The Other Coast** | GoComics
+70. **Palurdeando** | CK
+71. **Pardon My Planet** | CK
+72. **Peanuts** | GoComics
+73. **Peanuts Begins** | GoComics
+74. **Pearls Before Swine** | GoComics
+75. **Pickles** | GoComics
+76. **Pluggers** | GoComics
+77. **Pluggers** | CK
+78. **Pooch Café** | GoComics
+79. **Reality Check** | GoComics
+80. **Rex Morgan M.D.** | CK
+81. **Rhymes with Orange** | CK
+82. **Rip Haywire** | GoComics
+83. **Safe Havens** | CK
+84. **Sam and Silo** | CK
+85. **Savage Chickens** | GoComics
+86. **Scary Gary** | GoComics
+87. **Shoe** | GoComics
+88. **Shoe** | CK
+89. **Shoe** | ShoeComics
+90. **Speed Bump** | GoComics
+91. **Take it from the Tinkersons** | CK
+92. **Tiger** | CK
+93. **Tina’s Groove** | CK
+94. **Wizard of Id** | GoComics
+95. **WuMo** | GoComics
+96. **Zack Hill** | GoComics
+97. **Ziggy** | GoComics
+98. **Zits** | CK
 
 ---
 
@@ -155,57 +157,59 @@
 | 41 | **The Fusco Brothers** | `thefuscobrothers` | GoComics | J.C. Duffy | 1998-01-01 |
 | 42 | **Garfield** | `garfield` | GoComics | Jim Davis | 1978-06-19 |
 | 43 | **Gasoline Alley** | `gasolinealley` | GoComics | Jim Scancarelli | 2001-04-08 |
-| 44 | **Ginger Meggs** | `gingermeggs` | GoComics | Jason Chatfield | 2004-04-01 |
-| 45 | **Glasbergen Cartoons** | `glasbergen-cartoons` | GoComics | Randy Glasbergen | 2014-07-28 |
-| 46 | **Hagar the Horrible** | `hagar-the-horrible` | CK | Chris Browne | 1975-01-01 |
-| 47 | **Heart of the City** | `heartofthecity` | GoComics | Steenz | 1999-07-01 |
-| 48 | **Hi and Lois** | `hi-and-lois` | CK | Brian Walker, Greg Walker & Chance Browne | 1996-01-07 |
-| 49 | **Judge Parker** | `judge-parker` | CK | Francesco Marciuliano & Mike Manley | 1996-01-07 |
-| 50 | **The Lockhorns** | `lockhorns` | GoComics | Bunny Hoest and John Reiner | 2002-11-25 |
-| 51 | **Lola** | `lola` | GoComics | Todd Clark | 2001-04-08 |
-| 52 | **Loose Parts** | `looseparts` | GoComics | Dave Blazek | 2001-05-01 |
-| 53 | **Luann** | `luann` | GoComics | Greg Evans and Karen Evans | 1985-03-17 |
-| 54 | **Luann Againn** | `luann-againn` | GoComics | Greg Evans | 2013-03-17 |
-| 55 | **Mark Trail** | `mark-trail` | CK | Jules Rivera | 1996-01-07 |
-| 56 | **Marmaduke** | `marmaduke` | GoComics | Brad Anderson | 1996-12-30 |
-| 57 | **Marvin** | `marvin` | CK | Tom Armstrong | 1996-01-07 |
-| 58 | **Mary Worth** | `mary-worth` | CK | Karen Moy & June Brigman | 1996-01-07 |
-| 59 | **Moderately Confused** | `moderately-confused` | GoComics | Mike Peters | 2003-03-03 |
-| 60 | **Mother Goose and Grimm** | `mother-goose-and-grimm` | GoComics | Mike Peters | 2002-11-25 |
-| 61 | **Mother Goose and Grimm** | `grimmy` | Grimmy | Mike Peters | 1994-01-01 |
-| 62 | **Mutt & Jeff** | `muttandjeff` | GoComics | Bud Fisher | 2003-01-06 |
-| 63 | **Mutts** | `mutts` | CK | Patrick McDonnell | 1994-09-11 |
-| 64 | **Never Been Deader** | `never-been-deader` | CK | Tommy Devoid | 2023-01-14 |
-| 65 | **Non Sequitur** | `nonsequitur` | GoComics | Wiley Miller | 1992-02-16 |
-| 66 | **Off the Mark** | `offthemark` | GoComics | Mark Parisi | 2002-09-02 |
-| 67 | **The Other Coast** | `theothercoast` | GoComics | Adrian Raeside | 2002-01-01 |
-| 68 | **Palurdeando** | `palurdeando` | CK | Guillermo Saldaña | 2024-04-01 |
-| 69 | **Pardon My Planet** | `pardon-my-planet` | CK | Vic Lee | 1999-12-01 |
-| 70 | **Peanuts** | `peanuts` | GoComics | Charles M. Schulz | 1950-10-16 |
-| 71 | **Peanuts Begins** | `peanuts-begins` | GoComics | Charles M. Schulz | 1950-10-16 |
-| 72 | **Pearls Before Swine** | `pearlsbeforeswine` | GoComics | Stephan Pastis | 2002-01-07 |
-| 73 | **Pickles** | `pickles` | GoComics | Brian Crane | 2003-01-01 |
-| 74 | **Pluggers** | `pluggers2` | GoComics | Jeff MacNelly, Gary Brookins, Rick McKee | 2001-04-08 |
-| 75 | **Pluggers** | `pluggers` | CK | Jeff MacNelly, Gary Brookins, Rick McKee | 2021-11-07 |
-| 76 | **Pooch Café** | `poochcafe` | GoComics | Paul Gilligan | 2003-04-27 |
-| 77 | **Reality Check** | `realitycheck` | GoComics | Dave Whamond | 1997-01-01 |
-| 78 | **Rex Morgan M.D.** | `rex-morgan-m-d` | CK | Terry Beatty | 1996-01-07 |
-| 79 | **Rhymes with Orange** | `rhymes-with-orange` | CK | Hilary Price & Rina Piccolo | 1995-06-19 |
-| 80 | **Rip Haywire** | `riphaywire` | GoComics | Dan Thompson | 2009-01-05 |
-| 81 | **Safe Havens** | `safe-havens` | CK | Bill Holbrook | 1999-06-28 |
-| 82 | **Sam and Silo** | `sam-and-silo` | CK | Jerry Dumas | 2010-01-01 |
-| 83 | **Savage Chickens** | `savage-chickens` | GoComics | Doug Savage | 2012-06-25 |
-| 84 | **Scary Gary** | `scarygary` | GoComics | Mark Buford | 2009-02-02 |
-| 85 | **Shoe** | `shoe` | GoComics | Gary Brookins, Ben Lansing & Susie MacNelly | 2001-04-08 |
-| 86 | **Shoe** | `shoe2` | CK | Gary Brookins, Ben Lansing & Susie MacNelly | 2006-06-19 |
-| 87 | **Shoe** | `shoe3` | ShoeComics | Gary Brookins, Ben Lansing & Susie MacNelly | 2001-01-01 |
-| 88 | **Speed Bump** | `speedbump` | GoComics | Dave Coverly | 2002-01-01 |
-| 89 | **Take it from the Tinkersons** | `take-it-from-the-tinkersons` | CK | Bill Bettwy | 2013-01-21 |
-| 90 | **Tiger** | `tiger` | CK | Bud Blake | 1996-01-07 |
-| 91 | **Tina’s Groove** | `tina-s-groove` | CK | Rina Piccolo | 2002-03-31 |
-| 92 | **Wizard of Id** | `wizardofid` | GoComics | Brant Parker and Johnny Hart | 2002-01-01 |
-| 93 | **WuMo** | `wumo` | GoComics | Mikael Wulff and Anders Morgenthaler | 2013-10-13 |
-| 94 | **Zack Hill** | `zackhill` | GoComics | John Deering and John Newcombe | 2003-01-01 |
-| 95 | **Ziggy** | `ziggy` | GoComics | Tom Wilson & Tom II | 1971-06-27 |
-| 96 | **Zits** | `zits` | CK | Jerry Scott & Jim Borgman | 1997-07-13 |
+| 44 | **Get Fuzzy** | `getfuzzy` | GoComics | Darby Conley | 1999-09-06 |
+| 45 | **Ginger Meggs** | `gingermeggs` | GoComics | Jason Chatfield | 2004-04-01 |
+| 46 | **Glasbergen Cartoons** | `glasbergen-cartoons` | GoComics | Randy Glasbergen | 2014-07-28 |
+| 47 | **Hagar the Horrible** | `hagar-the-horrible` | CK | Chris Browne | 1975-01-01 |
+| 48 | **Heart of the City** | `heartofthecity` | GoComics | Steenz | 1999-07-01 |
+| 49 | **Herman** | `herman` | GoComics | Jim Unger | 1997-06-02 |
+| 50 | **Hi and Lois** | `hi-and-lois` | CK | Brian Walker, Greg Walker & Chance Browne | 1996-01-07 |
+| 51 | **Judge Parker** | `judge-parker` | CK | Francesco Marciuliano & Mike Manley | 1996-01-07 |
+| 52 | **The Lockhorns** | `lockhorns` | GoComics | Bunny Hoest and John Reiner | 2002-11-25 |
+| 53 | **Lola** | `lola` | GoComics | Todd Clark | 2001-04-08 |
+| 54 | **Loose Parts** | `looseparts` | GoComics | Dave Blazek | 2001-05-01 |
+| 55 | **Luann** | `luann` | GoComics | Greg Evans and Karen Evans | 1985-03-17 |
+| 56 | **Luann Againn** | `luann-againn` | GoComics | Greg Evans | 2013-03-17 |
+| 57 | **Mark Trail** | `mark-trail` | CK | Jules Rivera | 1996-01-07 |
+| 58 | **Marmaduke** | `marmaduke` | GoComics | Brad Anderson | 1996-12-30 |
+| 59 | **Marvin** | `marvin` | CK | Tom Armstrong | 1996-01-07 |
+| 60 | **Mary Worth** | `mary-worth` | CK | Karen Moy & June Brigman | 1996-01-07 |
+| 61 | **Moderately Confused** | `moderately-confused` | GoComics | Mike Peters | 2003-03-03 |
+| 62 | **Mother Goose and Grimm** | `mother-goose-and-grimm` | GoComics | Mike Peters | 2002-11-25 |
+| 63 | **Mother Goose and Grimm** | `grimmy` | Grimmy | Mike Peters | 1994-01-01 |
+| 64 | **Mutt & Jeff** | `muttandjeff` | GoComics | Bud Fisher | 2003-01-06 |
+| 65 | **Mutts** | `mutts` | CK | Patrick McDonnell | 1994-09-11 |
+| 66 | **Never Been Deader** | `never-been-deader` | CK | Tommy Devoid | 2023-01-14 |
+| 67 | **Non Sequitur** | `nonsequitur` | GoComics | Wiley Miller | 1992-02-16 |
+| 68 | **Off the Mark** | `offthemark` | GoComics | Mark Parisi | 2002-09-02 |
+| 69 | **The Other Coast** | `theothercoast` | GoComics | Adrian Raeside | 2002-01-01 |
+| 70 | **Palurdeando** | `palurdeando` | CK | Guillermo Saldaña | 2024-04-01 |
+| 71 | **Pardon My Planet** | `pardon-my-planet` | CK | Vic Lee | 1999-12-01 |
+| 72 | **Peanuts** | `peanuts` | GoComics | Charles M. Schulz | 1950-10-16 |
+| 73 | **Peanuts Begins** | `peanuts-begins` | GoComics | Charles M. Schulz | 1950-10-16 |
+| 74 | **Pearls Before Swine** | `pearlsbeforeswine` | GoComics | Stephan Pastis | 2002-01-07 |
+| 75 | **Pickles** | `pickles` | GoComics | Brian Crane | 2003-01-01 |
+| 76 | **Pluggers** | `pluggers2` | GoComics | Jeff MacNelly, Gary Brookins, Rick McKee | 2001-04-08 |
+| 77 | **Pluggers** | `pluggers` | CK | Jeff MacNelly, Gary Brookins, Rick McKee | 2021-11-07 |
+| 78 | **Pooch Café** | `poochcafe` | GoComics | Paul Gilligan | 2003-04-27 |
+| 79 | **Reality Check** | `realitycheck` | GoComics | Dave Whamond | 1997-01-01 |
+| 80 | **Rex Morgan M.D.** | `rex-morgan-m-d` | CK | Terry Beatty | 1996-01-07 |
+| 81 | **Rhymes with Orange** | `rhymes-with-orange` | CK | Hilary Price & Rina Piccolo | 1995-06-19 |
+| 82 | **Rip Haywire** | `riphaywire` | GoComics | Dan Thompson | 2009-01-05 |
+| 83 | **Safe Havens** | `safe-havens` | CK | Bill Holbrook | 1999-06-28 |
+| 84 | **Sam and Silo** | `sam-and-silo` | CK | Jerry Dumas | 2010-01-01 |
+| 85 | **Savage Chickens** | `savage-chickens` | GoComics | Doug Savage | 2012-06-25 |
+| 86 | **Scary Gary** | `scarygary` | GoComics | Mark Buford | 2009-02-02 |
+| 87 | **Shoe** | `shoe` | GoComics | Gary Brookins, Ben Lansing & Susie MacNelly | 2001-04-08 |
+| 88 | **Shoe** | `shoe2` | CK | Gary Brookins, Ben Lansing & Susie MacNelly | 2006-06-19 |
+| 89 | **Shoe** | `shoe3` | ShoeComics | Gary Brookins, Ben Lansing & Susie MacNelly | 2001-01-01 |
+| 90 | **Speed Bump** | `speedbump` | GoComics | Dave Coverly | 2002-01-01 |
+| 91 | **Take it from the Tinkersons** | `take-it-from-the-tinkersons` | CK | Bill Bettwy | 2013-01-21 |
+| 92 | **Tiger** | `tiger` | CK | Bud Blake | 1996-01-07 |
+| 93 | **Tina’s Groove** | `tina-s-groove` | CK | Rina Piccolo | 2002-03-31 |
+| 94 | **Wizard of Id** | `wizardofid` | GoComics | Brant Parker and Johnny Hart | 2002-01-01 |
+| 95 | **WuMo** | `wumo` | GoComics | Mikael Wulff and Anders Morgenthaler | 2013-10-13 |
+| 96 | **Zack Hill** | `zackhill` | GoComics | John Deering and John Newcombe | 2003-01-01 |
+| 97 | **Ziggy** | `ziggy` | GoComics | Tom Wilson & Tom II | 1971-06-27 |
+| 98 | **Zits** | `zits` | CK | Jerry Scott & Jim Borgman | 1997-07-13 |
 

@@ -482,13 +482,17 @@ class MainWindow(QMainWindow):
         self.shortcut_today = QShortcut(QKeySequence(Qt.Key.Key_End), self)
         self.shortcut_today.activated.connect(self.go_to_today)
 
-        # Page Up = Previous Comic Title
+        # Page Up / Up Arrow = Previous Comic Title
         self.shortcut_prev_comic = QShortcut(QKeySequence(Qt.Key.Key_PageUp), self)
         self.shortcut_prev_comic.activated.connect(self.comic_selector.select_previous_comic)
+        self.shortcut_up_comic = QShortcut(QKeySequence(Qt.Key.Key_Up), self)
+        self.shortcut_up_comic.activated.connect(self.comic_selector.select_previous_comic)
 
-        # Page Down = Next Comic Title
+        # Page Down / Down Arrow = Next Comic Title
         self.shortcut_next_comic = QShortcut(QKeySequence(Qt.Key.Key_PageDown), self)
         self.shortcut_next_comic.activated.connect(self.comic_selector.select_next_comic)
+        self.shortcut_down_comic = QShortcut(QKeySequence(Qt.Key.Key_Down), self)
+        self.shortcut_down_comic.activated.connect(self.comic_selector.select_next_comic)
     
     def on_comic_loading_started(self, comic_name: str, comic_date):
         """
@@ -547,6 +551,10 @@ class MainWindow(QMainWindow):
         self._last_error_time = current_time
         self._last_error_message = error_message
         
+        # If in Bunny Shield or 429 rate limit, cancel auto-advance immediately to avoid hammering the site
+        if error_type in ("bunny_shield", "rate_limit"):
+            self._auto_advancing = False
+
         # If we're in auto-advance mode, keep trying the next day
         if hasattr(self, '_auto_advancing') and self._auto_advancing:
             from datetime import date, timedelta
@@ -613,7 +621,11 @@ class MainWindow(QMainWindow):
         """
         recovery_options = ["Retry"]  # Always include retry
         
-        if error_type == "network":
+        if error_type in ("bunny_shield", "rate_limit"):
+            # Do NOT suggest yesterday or different date for site-wide blocks
+            recovery_options.append("Select Different Comic")
+            return recovery_options
+        elif error_type == "network":
             recovery_options.extend(["Try Yesterday", "Try Different Date"])
         elif error_type == "unavailable":
             recovery_options.extend(["Try Yesterday", "Try Different Date", "Select Different Comic"])

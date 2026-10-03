@@ -498,7 +498,7 @@ COMIC_DEFINITIONS = [
     ComicDefinition(
         name="dick-tracy",
         display_name="Dick Tracy | CK",
-        base_url="https://www.gocomics.com/dicktracy",
+        base_url="https://comicskingdom.com/dick-tracy",
         author="Joe Staton and Mike Curtis",
         earliest_date=date(2021, 2, 15),
         info="On Comics Kingdom, Dick Tracy starts much later than on GoComics, on 2021-02-15, on weekdays. Since 2021-11-07, also on Sundays.",
@@ -629,7 +629,15 @@ COMIC_DEFINITIONS = [
         daily_since=date(2001, 4, 18),        
         dates_one_off=("2001-04-08", "2001-04-15"),        
         info="Gasoline Alley – on GoComics with one-offs on 2001-04-08 and 15, then daily since 18 (extremely limited availability)."
-    ), 
+    ),    
+    ComicDefinition(
+        name="getfuzzy",
+        display_name="Get Fuzzy",
+        base_url="https://www.gocomics.com/getfuzzy",
+        author="Darby Conley",
+        earliest_date=date(1999, 9, 6),  
+        info="Get Fuzzy – on GoComics since 1999-09-06. Original dailies ended on 2013-11-09, and Sundays on 2019-02-03. Since then, reruns."
+    ),     
     ComicDefinition(
         name="gingermeggs",
         display_name="Ginger Meggs",
@@ -669,6 +677,14 @@ COMIC_DEFINITIONS = [
         author="Steenz",
         earliest_date=date(1999, 7, 1),
         info="Heart of the City – on GoComics since 1999-07-01."
+    ),
+    ComicDefinition(
+        name="herman",
+        display_name="Herman",
+        base_url="https://www.gocomics.com/herman",
+        author="Jim Unger",
+        earliest_date=date(1997, 6, 2),
+        info="Herman – on GoComics since 1997-06-02. All reruns, as the original strips ended in 1992."
     ),     
     ComicDefinition(
         name="hi-and-lois",

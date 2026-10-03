@@ -8,7 +8,8 @@ and handling selection events.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-    QLabel, QPushButton, QFrame, QScrollArea, QSizePolicy
+    QLabel, QPushButton, QFrame, QScrollArea, QSizePolicy,
+    QRadioButton, QButtonGroup
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QFont, QPalette
@@ -174,11 +175,53 @@ class ComicSelector(QWidget):
         title_label.setFont(title_font)
         title_label.setStyleSheet("color: #000000; background: transparent; border: none;")
         header_layout.addWidget(title_label)        
+
+        # Filter radio buttons on a horizontal line: (*) show all  ( ) hide GoComics
+        filter_layout = QHBoxLayout()
+        filter_layout.setContentsMargins(0, 4, 0, 0)
+        filter_layout.setSpacing(12)
+
+        self.radio_show_all = QRadioButton("show all")
+        self.radio_hide_gocomics = QRadioButton("hide GoComics")
+        self.radio_show_all.setChecked(True)
+
+        radio_font = QFont()
+        radio_font.setPointSize(10)
+        radio_font.setFamilies(get_font_families())
+
+        radio_style = """
+            QRadioButton {
+                color: #000000;
+                background: transparent;
+            }
+            QRadioButton::indicator {
+                width: 14px;
+                height: 14px;
+            }
+        """
+        self.radio_show_all.setFont(radio_font)
+        self.radio_show_all.setStyleSheet(radio_style)
+        self.radio_show_all.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.radio_hide_gocomics.setFont(radio_font)
+        self.radio_hide_gocomics.setStyleSheet(radio_style)
+        self.radio_hide_gocomics.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        self.filter_group = QButtonGroup(self)
+        self.filter_group.addButton(self.radio_show_all)
+        self.filter_group.addButton(self.radio_hide_gocomics)
+        self.radio_hide_gocomics.toggled.connect(self._on_filter_changed)
+
+        filter_layout.addWidget(self.radio_show_all)
+        filter_layout.addWidget(self.radio_hide_gocomics)
+        filter_layout.addStretch()
+
+        header_layout.addLayout(filter_layout)
     
         layout.addWidget(header_frame)
         
         # Scrollable comic list area
         self.scroll_area = QScrollArea()
+        self.scroll_area.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -254,11 +297,39 @@ class ComicSelector(QWidget):
         # Emit selection signal
         self.comic_selected.emit(comic_name)
     
+    def get_visible_comic_names(self) -> list[str]:
+        """Get list of names of currently visible comic strips."""
+        return [
+            d.name for d in COMIC_DEFINITIONS
+            if d.name in self.comic_items and self.comic_items[d.name].isVisible()
+        ]
+
+    def _on_filter_changed(self):
+        """Handle toggling between showing all comics and hiding GoComics titles."""
+        hide_gocomics = self.radio_hide_gocomics.isChecked()
+
+        for comic_def in COMIC_DEFINITIONS:
+            is_gc = ('gocomics.com' in comic_def.base_url.lower())
+            item = self.comic_items.get(comic_def.name)
+            if item:
+                if hide_gocomics and is_gc:
+                    item.setVisible(False)
+                else:
+                    item.setVisible(True)
+
+        # If the currently selected comic is now hidden, select the first visible comic
+        if hide_gocomics and self.selected_comic:
+            selected_item = self.comic_items.get(self.selected_comic)
+            if selected_item and not selected_item.isVisible():
+                visible_names = self.get_visible_comic_names()
+                if visible_names:
+                    self.select_comic(visible_names[0])
+
     def select_previous_comic(self):
         """Select the previous comic in the list, cycling to the end if at the top."""
-        if not COMIC_DEFINITIONS:
+        names = self.get_visible_comic_names()
+        if not names:
             return
-        names = [d.name for d in COMIC_DEFINITIONS]
         try:
             current_idx = names.index(self.selected_comic)
             prev_idx = (current_idx - 1) % len(names)
@@ -268,9 +339,9 @@ class ComicSelector(QWidget):
 
     def select_next_comic(self):
         """Select the next comic in the list, cycling to the start if at the bottom."""
-        if not COMIC_DEFINITIONS:
+        names = self.get_visible_comic_names()
+        if not names:
             return
-        names = [d.name for d in COMIC_DEFINITIONS]
         try:
             current_idx = names.index(self.selected_comic)
             next_idx = (current_idx + 1) % len(names)

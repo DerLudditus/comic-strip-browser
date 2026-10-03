@@ -5,20 +5,32 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "3.0.0"
-__version_info__ = (3, 0, 0)
+__version__ = "3.1.0"
+__version_info__ = (3, 1, 0)
 
 # Release information
-RELEASE_DATE = "2026-08-30"
+RELEASE_DATE = "2026-10-02"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "3.0.0-1"
+DEB_VERSION = "3.1.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (3.0.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (3.1.0-1) stable; urgency=medium
+* Fixed Dick Tracy from ComicsKingdom which displayed comics from GoComics.
+* New titles added from GoComics: Get Fuzzy, Herman.
+* GoComics: handling of the “429 Too Many Requests” response.
+* GoComics: handling of VPN blocking.
+* “Hide GoComics” option addded (temporary, not saved).
+* Functional update: Up/Down arrow keys now directly navigate comic titles, mirroring the PgUp/PgDn keys.
+* AppImage changes: added comic-strip-browser.appdata.xml; rebased on Ubuntu 22.04 for a broader compatibility.
+* Minor code cleanup and consistency fixes.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sat, 3 Oct 2026 23:10 +0300
+
+comic-strip-browser (3.0.0-1) stable; urgency=medium
 * Major release with substantial changes. Despite being a 0.0 version, I hope the new bugs aren't a deal-breaker.
 * 96 comic titles in total, or 91 if we only count the unique ones (a few are retrieved from 2 or 3 sources).
 * Comics Kingdom removed Animal Crackers. GoComics still has it.

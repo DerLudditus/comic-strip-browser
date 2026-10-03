@@ -51,9 +51,13 @@ Description: Comic Strip Browser - Browse a selection of comic strips
     with open(deb_dir / "DEBIAN" / "control", "w") as f:
         f.write(control_content)
 
-    # Create AppStream metadata file
-    # Per AppStream spec, the file must be named after the desktop file ID.
-    metainfo_content = """<?xml version="1.0" encoding="UTF-8"?>
+    # Copy or create AppStream metadata file
+    appdata_src = project_root / "assets" / "comic-strip-browser.appdata.xml"
+    if appdata_src.exists():
+        shutil.copy2(appdata_src, deb_dir / "usr" / "share" / "metainfo" / "comic-strip-browser.appdata.xml")
+    else:
+        # Per AppStream spec, the file must be named after the desktop file ID.
+        metainfo_content = """<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
     <id>comic-strip-browser.desktop</id>
     <name>Comic Strip Browser</name>
@@ -80,9 +84,8 @@ Description: Comic Strip Browser - Browse a selection of comic strips
     <launchable type="desktop-id">comic-strip-browser.desktop</launchable>
 </component>
 """
-
-    with open(deb_dir / "usr" / "share" / "metainfo" / "comic-strip-browser.metainfo.xml", "w") as f:
-        f.write(metainfo_content)
+        with open(deb_dir / "usr" / "share" / "metainfo" / "comic-strip-browser.metainfo.xml", "w") as f:
+            f.write(metainfo_content)
     
     # Create postinst script
     postinst_content = """#!/bin/sh

@@ -220,7 +220,12 @@ class ComicController(QObject):
         """
         error_str = str(error).lower()
 
-        if isinstance(error, ComicUnavailableError):
+        from services.web_scraper import BunnyShieldChallengeError, RateLimitError
+        if isinstance(error, BunnyShieldChallengeError) or ("gocomics" in error_str and ("bunny shield" in error_str or "security challenge" in error_str)):
+            return "bunny_shield"
+        elif isinstance(error, RateLimitError) or ("gocomics" in error_str and ("429" in error_str or "too many requests" in error_str)):
+            return "rate_limit"
+        elif isinstance(error, ComicUnavailableError):
             return "unavailable"
         elif isinstance(error, NetworkError):
             return "network"
@@ -238,9 +243,6 @@ class ComicController(QObject):
         # "No og:image" = page loaded but no comic image = unavailable for this date
         elif "no og:image" in error_str:
             return "unavailable"
-        # Bunny Shield security challenge = network/block issue
-        elif "security challenge" in error_str or "ip may be blocked" in error_str:
-            return "network"
         else:
             return "general"
     

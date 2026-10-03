@@ -15,7 +15,7 @@ from enum import Enum
 import requests
 from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 
-from models.data_models import ComicData
+from models.data_models import ComicData, get_comic_definition
 
 
 class ErrorType(Enum):
@@ -329,11 +329,9 @@ class ErrorHandler:
                     elif src.lower().endswith('.gif'):
                         image_format = 'gif'
                     
-                    # Get author from default mapping
-                    author_mapping = {
-                    }
-                    
-                    author = author_mapping.get(comic_name, 'Unknown Author')
+                    # Get author from ComicDefinition
+                    comic_def = get_comic_definition(comic_name)
+                    author = comic_def.author if (comic_def and comic_def.author) else 'Unknown Author'
                     
                     return ComicData(
                         comic_name=comic_name,

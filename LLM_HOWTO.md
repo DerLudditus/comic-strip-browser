@@ -6,6 +6,16 @@
 
 * The first prompt could be something like this: "Read README.md, ARCHITECTURE.md, and PLAN.md, outline the options for the next step, and wait for my approval."
 
+Or:
+> Read AGENTS.md, README.md, ARCHITECTURE.md, and PLAN.md carefully.
+> 
+> Then:
+> 1. Confirm you understand the proposed features and the testing constraints.
+> 2. Outline the realistic options for the next step (or a small logical group of steps), including pros/cons or risk notes.
+> 3. Recommend one option and explain why.
+> 4. Wait for my explicit approval before writing or editing any code.
+> 
+> Do not implement anything yet. Do not update PLAN.md yet.
 * In my experience with this tiny project and Antigravity IDE:
 	- Gemini 3.7 Flash (High) was usually satisfactory and fast;
 	- Gemini 3.1 Pro (High) was very slow and it blundered once;
