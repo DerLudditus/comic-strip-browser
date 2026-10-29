@@ -220,11 +220,13 @@ class ComicController(QObject):
         """
         error_str = str(error).lower()
 
-        from services.web_scraper import BunnyShieldChallengeError, RateLimitError
+        from services.web_scraper import BunnyShieldChallengeError, RateLimitError, AccessForbiddenError
         if isinstance(error, BunnyShieldChallengeError) or ("gocomics" in error_str and ("bunny shield" in error_str or "security challenge" in error_str)):
             return "bunny_shield"
         elif isinstance(error, RateLimitError) or ("gocomics" in error_str and ("429" in error_str or "too many requests" in error_str)):
             return "rate_limit"
+        elif isinstance(error, AccessForbiddenError) or ("gocomics" in error_str and ("403" in error_str or "Access Forbidden" in error_str or "blocked from accessing this page" in error_str or "triggered the service and blocked your request" in error_str)):
+            return "403_block"            
         elif isinstance(error, ComicUnavailableError):
             return "unavailable"
         elif isinstance(error, NetworkError):

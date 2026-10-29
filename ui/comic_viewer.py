@@ -687,13 +687,15 @@ class ComicViewer(QWidget):
             central_html = (
                 "<div style='text-align: center; line-height: 1.4;'>"
                 "<p style='font-size: 15pt; margin-top: 0px; margin-bottom: 14px;'><b>You need a browser, and this app is not one</b></p>"
-                "<p style='margin-bottom: 12px;'>GoComics.com inserted a Bunny Shield challenge that can only be bypassed in a web browser that has JS enabled.</p>"
+                "<p style='margin-bottom: 12px;'><b>GoComics.com</b> inserted a <b>Bunny Shield challenge</b> that can only be bypassed in a web browser that has JS enabled.</p>"
                 "<p style='margin-bottom: 12px;'>This is meant to block VPNs, bots, and automated scraping of GoComics.com.</p>"
-                "<p style='margin-bottom: 12px;'><b>If you are using a VPN, please disconnect.</b></p>"
-                "<p style='margin-bottom: 0px;'>If you are not using a VPN and you were not hit with the <b>429 Too Many Requests</b> error, then your IP has been deemed suspicious for some other reason.</p>"
+                "<p style='margin-bottom: 12px;'>🌐 <b>If you are using a VPN, please disconnect.</b></p>"
+                "<p style='margin-bottom: 12px;'>🤔 If you are not using a VPN, then your IP has been deemed suspicious for some other reason.</p>"
+                "<p style='margin-bottom: 12px;'><b>Even residential IPs can be blocked by GoComics.com.</b></p>"
+                "<p style='margin-bottom: 0px;'>🤔 Sometimes, disconnecting/rebooting your router helps even if the IP doesn’t change!</p>"
                 "</div>"
             )
-            status_text = "<b>If you are using a VPN, please disconnect.</b>"
+            status_text = "<b>GoComics.com does not like your IP.</b>"
             self.image_label.setText(central_html)
             self.image_label.setWordWrap(True)
             self.image_label.setMaximumWidth(700)
@@ -709,8 +711,9 @@ class ComicViewer(QWidget):
             central_html = (
                 "<div style='text-align: center; line-height: 1.4;'>"
                 "<p style='font-size: 15pt; margin-top: 0px; margin-bottom: 14px;'><b>429 Too Many Requests</b></p>"
-                "<p style='margin-bottom: 12px;'>GoComics.com has temporarily blocked your IP because you requested too many comics in a short period.</p>"
-                "<p style='margin-bottom: 12px;'>This block can last for up to a couple of hours. During this time, you won’t be able to browse GoComics.com.</p>"
+                "<p style='margin-bottom: 12px;'><b>GoComics.com</b> has temporarily blocked your IP because you requested too many comics in a short period.</p>"
+                "<p style='margin-bottom: 12px;'>⏳ <b>This block can last for up to a couple of hours.</b> During this time, you won’t be able to browse GoComics.com.</p>"
+                "<p style='margin-bottom: 12px;'>🤔 Sometimes, disconnecting/rebooting your router helps even if the IP doesn’t change!</p>"                 
                 "<p style='margin-bottom: 0px;'><b>You can check in a browser to see whether your IP has been unblocked.</b></p>"
                 "</div>"
             )
@@ -723,6 +726,29 @@ class ComicViewer(QWidget):
             error_font.setFamilies(get_font_families())
             self.image_label.setFont(error_font)
             padding_style = "padding: 24px 32px;"
+        elif error_type == "403_block":
+            bg_color = "#f8d7da"
+            border_color = "#dc3545"
+            text_color = "#000000"
+            central_html = (
+                "<div style='text-align: center; line-height: 1.4;'>"
+                "<p style='font-size: 15pt; margin-top: 0px; margin-bottom: 14px;'><b>403 Access Forbidden</b></p>"
+                "<p style='margin-bottom: 12px;'><b>GoComics.com</b> has blocked your IP for an unspecified reason.</p>"
+                "<p style='margin-bottom: 12px;'>They claim “you performed an action that triggered a security service” and blocked your request.</p>"
+                "<p style='margin-bottom: 12px;'>⏳ <b>It cannot be predicted how long this block will last.</b></p>"
+                "<p style='margin-bottom: 12px;'>🤔 Sometimes, disconnecting/rebooting your router helps even if the IP doesn’t change!</p>"                
+                "<p style='margin-bottom: 0px;'><b>You can check in a browser to see whether your IP has been unblocked.</b></p>"
+                "</div>"
+            )
+            status_text = "<b>GoComics.com has blocked your IP!</b>"
+            self.image_label.setText(central_html)
+            self.image_label.setWordWrap(True)
+            self.image_label.setMaximumWidth(700)
+            error_font = QFont()
+            error_font.setPointSize(12)
+            error_font.setFamilies(get_font_families())
+            self.image_label.setFont(error_font)
+            padding_style = "padding: 24px 32px;"            
         else:
             if error_type == "network":
                 icon = "⛔"

@@ -363,6 +363,7 @@ def main():
         parser.add_argument("--debug", action="store_true", help="Enable debug logging")
         parser.add_argument("--future", action="store_true", help="Allow future dates")
         parser.add_argument("--fake429", action="store_true", help="Simulate GoComics 429 Too Many Requests response")
+        parser.add_argument("--fake403", action="store_true", help="Simulate GoComics 403 Forbidden response")
         parser.add_argument("-h", "--help", action="store_true", help="Show help message")
 
         args, _ = parser.parse_known_args()
@@ -399,6 +400,9 @@ def main():
         if args.fake429:
             os.environ["COMIC_BROWSER_FAKE_429"] = "1"
 
+        if args.fake403:
+            os.environ["COMIC_BROWSER_FAKE_403"] = "1"
+            
         if is_cli_action:
             return handle_cli(args)
 

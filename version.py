@@ -5,25 +5,31 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "3.1.1"
-__version_info__ = (3, 1, 1)
+__version__ = "3.1.2"
+__version_info__ = (3, 1, 2)
 
 # Release information
-RELEASE_DATE = "2026-10-04"
+RELEASE_DATE = "2026-10-28"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "3.1.1-1"
+DEB_VERSION = "3.1.2-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (3.1.1-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (3.1.2-1) stable; urgency=medium
+* GoComics: refined the message for the case of VPN blocking.
+* GoComics: added a message for the “403 Forbidden” response.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Wed, 28 Oct 2026 19:30 +0200
+ 
+comic-strip-browser (3.1.1-1) stable; urgency=medium
 * The Up/Down shortcuts are now mentioned in the UI alongside the others.
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 4 Oct 2026 02:30 +0300
  
- comic-strip-browser (3.1.0-1) stable; urgency=medium
+comic-strip-browser (3.1.0-1) stable; urgency=medium
 * Fixed Dick Tracy from ComicsKingdom which displayed comics from GoComics.
 * New titles added from GoComics: Get Fuzzy, Herman.
 * GoComics: handling of the “429 Too Many Requests” response.

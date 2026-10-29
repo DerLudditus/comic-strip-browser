@@ -551,8 +551,8 @@ class MainWindow(QMainWindow):
         self._last_error_time = current_time
         self._last_error_message = error_message
         
-        # If in Bunny Shield or 429 rate limit, cancel auto-advance immediately to avoid hammering the site
-        if error_type in ("bunny_shield", "rate_limit"):
+        # If in Bunny Shield or 429 rate limit or 403 forbidden, cancel auto-advance immediately to avoid hammering the site
+        if error_type in ("bunny_shield", "rate_limit", "403_block"):
             self._auto_advancing = False
 
         # If we're in auto-advance mode, keep trying the next day
@@ -621,7 +621,7 @@ class MainWindow(QMainWindow):
         """
         recovery_options = ["Retry"]  # Always include retry
         
-        if error_type in ("bunny_shield", "rate_limit"):
+        if error_type in ("bunny_shield", "rate_limit", "403_block"):
             # Do NOT suggest yesterday or different date for site-wide blocks
             recovery_options.append("Select Different Comic")
             return recovery_options

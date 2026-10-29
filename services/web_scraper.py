@@ -29,6 +29,9 @@ class RateLimitError(WebScrapingError):
     """Raised when GoComics returns a 429 Too Many Requests response."""
     pass
 
+class AccessForbiddenError(WebScrapingError):
+    """Raised when GoComics returns a 403 Forbidden response."""
+    pass
 
 # Common modern browser headers with Chromium Client Hints
 DEFAULT_BROWSER_HEADERS = {
@@ -151,13 +154,17 @@ class WebScraper:
             except Exception:
                 pass
 
-            # Detect GoComics security challenge or 429 Too Many Requests (GoComics only)
+            # Detect GoComics security challenge or 429 Too Many Requests or 403 Forbidden (GoComics only)
             if is_gocomics:
                 import os
                 if os.environ.get("COMIC_BROWSER_FAKE_429") == "1" or self._is_gocomics_429_page(html_content, title):
                     raise RateLimitError(
                         f"GoComics 429 Too Many Requests detected for {comic_name} on {date}"
                     )
+                if os.environ.get("COMIC_BROWSER_FAKE_403") == "1" or self._is_gocomics_403_page(html_content, title):
+                    raise AccessForbiddenError(
+                        f"GoComics 403 Forbidden detected for {comic_name} on {date}"
+                    )                    
                 if self._is_gocomics_bunny_shield_page(html_content, title):
                     raise BunnyShieldChallengeError(
                         f"GoComics Bunny Shield security challenge detected for {comic_name} on {date}"
@@ -363,6 +370,21 @@ class WebScraper:
             if "shield-templates-prod.b-cdn.net" in lower_html and "ratelimit.html" in lower_html:
                 return True
         return False
+        
+    def _is_gocomics_403_page(self, html_content: str, title: str) -> bool:
+        """
+        Check if a page represents a GoComics 403 Forbidden response.
+        Detected if EITHER:
+        1) The title includes '403 Forbidden'
+        2) The body includes a reference to 'blocked from accessing this page' or 'triggered the service and blocked your request'
+        """
+        if title and "403 forbidden" in title.lower():
+            return True
+        if html_content:
+            lower_html = html_content.lower()
+            if "blocked from accessing this page" in lower_html or "triggered the service and blocked your request" in lower_html:
+                return True
+        return False    
 
     def get_comic_data(self, comic_name: str, base_url: str, date: datetime.date) -> ComicData:
         """

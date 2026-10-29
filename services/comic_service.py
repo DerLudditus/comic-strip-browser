@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from typing import Optional, Dict, List
 
 from models.data_models import ComicData, get_comic_definition, COMIC_DEFINITIONS
-from services.web_scraper import WebScraper, WebScrapingError, BunnyShieldChallengeError, RateLimitError
+from services.web_scraper import WebScraper, WebScrapingError, BunnyShieldChallengeError, RateLimitError, AccessForbiddenError
 from services.cache_manager import CacheManager
 from services.config_manager import ConfigManager
 from services.date_manager import DateManager
@@ -94,10 +94,10 @@ class ComicService:
         
         self.logger.info(f"Retrieving comic {comic_name} for {comic_date}")
         
-        # Try to get from cache first (skip cache lookup if --fake429 is simulating GoComics block)
+        # Try to get from cache first (skip cache lookup if --fake429 or --fake403 is simulating GoComics block)
         import os
         is_gocomics = (comic_def is not None and 'gocomics.com' in comic_def.base_url.lower())
-        if not (is_gocomics and os.environ.get("COMIC_BROWSER_FAKE_429") == "1"):
+        if not (is_gocomics and (os.environ.get("COMIC_BROWSER_FAKE_429") == "1" or os.environ.get("COMIC_BROWSER_FAKE_403") == "1")):
             cached_comic = self.cache_manager.get_cached_comic(comic_name, comic_date)
             if cached_comic:
                 return cached_comic
@@ -118,8 +118,8 @@ class ComicService:
             
             return comic_data
             
-        except (BunnyShieldChallengeError, RateLimitError) as e:
-            # GoComics VPN protection or 429 rate limit encountered.
+        except (BunnyShieldChallengeError, RateLimitError, AccessForbiddenError) as e:
+            # GoComics VPN protection or 429 rate limit or 403 encountered.
             # Do NOT fall back back in time — retrying previous dates will repeat the block.
             self.logger.warning(f"Aborting date fallback due to GoComics block for {comic_name} on {comic_date}: {e}")
             raise
@@ -460,6 +460,8 @@ class ComicService:
                 return "If you are using a VPN, please disconnect."
             elif "gocomics" in error_msg and ("429" in error_msg or "too many requests" in error_msg):
                 return "GoComics.com has temporarily blocked your IP!"
+            elif "gocomics" in error_msg and ("403" in error_msg or "Access Forbidden" in error_msg or "blocked from accessing this page" in error_msg or "triggered the service and blocked your request" in error_msg):
+                return "GoComics.com has blocked your IP!"                
             elif "network" in error_msg or "connection" in error_msg:
                 from services.error_handler import NetworkError
                 network_error = NetworkError(str(error))
@@ -473,6 +475,8 @@ class ComicService:
             return "If you are using a VPN, please disconnect."
         if isinstance(error, RateLimitError) or ("gocomics" in str(error).lower() and ("429" in str(error).lower() or "too many requests" in str(error).lower())):
             return "GoComics.com has temporarily blocked your IP!"
+        if isinstance(error, AccessForbiddenError) or ("gocomics" in str(error).lower() and ("403" in str(error).lower() or "blocked from accessing this page" in str(error).lower() or "triggered the service and blocked your request" in str(error).lower())):
+            return "GoComics.com has blocked your IP!"            
 
         # Handle ErrorHandler exceptions directly
         if hasattr(error, 'error_type'):
@@ -495,6 +499,8 @@ class ComicService:
             return ["Disconnect from VPN", "Try again later"]
         if isinstance(error, RateLimitError) or ("gocomics" in str(error).lower() and ("429" in str(error).lower() or "too many requests" in str(error).lower())):
             return ["Wait before requesting again", "Check in browser if unblocked"]
+        if isinstance(error, AccessForbiddenError) or ("gocomics" in str(error).lower() and ("403" in str(error).lower() or "blocked from accessing this page" in str(error).lower() or "triggered the service and blocked your request" in str(error).lower())):
+            return ["Try changing your IP or wait", "Check in browser if unblocked"]
 
         # Convert ComicServiceError to appropriate error type for suggestions
         if isinstance(error, ComicServiceError):
@@ -507,6 +513,8 @@ class ComicService:
                 return ["Disconnect from VPN", "Try again later"]
             elif "gocomics" in error_msg and ("429" in error_msg or "too many requests" in error_msg):
                 return ["Wait before requesting again", "Check in browser if unblocked"]
+            elif "gocomics" in error_msg and ("403" in error_msg or "blocked from accessing this pages" in error_msg or "triggered the service and blocked your request" in error_msg):
+                return ["Try changing your IP or wait", "Check in browser if unblocked"]                
             elif "network" in error_msg or "connection" in error_msg:
                 from services.error_handler import NetworkError
                 network_error = NetworkError(str(error))
