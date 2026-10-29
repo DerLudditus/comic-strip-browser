@@ -14,6 +14,8 @@ Version 3.0.0 reached 96 titles and improved the usability: the UI has been slig
 
 Version 3.1.0 added proper **feedback** for situations where **GoComics blocks your IP** because “you’ve asked for too many comics in a short period of time,” and when GoComics returns a Bunny Shield challenge that can only be bypassed in a web browser. It also adds a “Hide GoComics” toggle for such situations. The **Up/Down** arrow keys now navigate comic titles, mirroring PgUp/PgDn. The AppImage can run on distros as old as Ubuntu 22.04 and Debian 12.
 
+Version 3.1.2 **refined the feedback** for GoComics-related errors: Bunny Shield challenge, 403, and 429.
+
 ### 1. Major features
 	
 - Most comics are retrieved from **GoComics** or **Comics Kingdom**, with a couple being retrieved from other sites.
@@ -26,6 +28,10 @@ Version 3.1.0 added proper **feedback** for situations where **GoComics blocks y
 
 #### Debian 13 XFCE:
 
+![](ComicStripBrowser_Debian13_a.png)
+
+![](ComicStripBrowser_Debian13_b.png)
+
 ![](ComicStripBrowser_Debian13_c.png)
 
 With GoComics hidden:
@@ -34,6 +40,10 @@ With GoComics hidden:
 
 #### Windows (125% scaling):
  
+![](ComicStripBrowser_Windows_a.png)
+
+![](ComicStripBrowser_Windows_b.png)
+
 ![](ComicStripBrowser_Windows_c.png)
 
 ### 3. Currently supported comic strips
@@ -159,7 +169,7 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 **GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
 
-Since release 3.1.0, the app will show this feedback to the user:
+Since release 3.1.0, the app will show this feedback to the user (the text changed in 3.1.2):
 
 ![](errorVPN.png)
 
@@ -169,9 +179,13 @@ Since release 3.1.0, the app will show this feedback to the user:
   <img src="this_can_happen_in_browser.png" width="67%">
 </div>
 
-Since release 3.1.0, the app will show this feedback to the user:
+Since release 3.1.0, the app will show this feedback to the user (the text changed in 3.1.2):
 
 ![](error429.png)
+
+Since release 3.1.2, the app will also show this feedback to the user when it is the case:
+
+![](error403.png)
 
 ### 6. Cached images
 The last-accessed 200 images for each comic title are stored in a folder called `cache` (too generic a name, I know). Each comic title has its own subfolder.
