@@ -168,6 +168,14 @@ class ErrorHandler:
             except Exception as e:
                 last_exception = e
                 
+                # Never retry fatal security blocks or challenges
+                if e.__class__.__name__ in (
+                    "BunnyShieldChallengeError",
+                    "RateLimitError",
+                    "AccessForbiddenError",
+                ):
+                    raise
+                
                 if attempt < self.max_retries:
                     delay = self._calculate_delay(attempt)
                     # self.logger.info(f"Attempt {attempt + 1} failed, retrying in {delay:.1f}s: {e}")

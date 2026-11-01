@@ -258,8 +258,16 @@ class WebScraper:
                         progress_callback("GoComics rate limit (429) encountered.")
                     return html_text, final_url
 
-                # 2. Solvable Bunny Shield JS PoW challenge check (BEFORE hard 403!)
+                # 2. Hard 403 IP block check (BEFORE challenge solver!): never spawn browser
                 resp_headers = getattr(response, "headers", None)
+                if self._is_gocomics_403_page(html_text, "", headers=resp_headers) or self.shield_resolver.is_blocked(
+                    response.status_code, html_text, url, headers=resp_headers
+                ):
+                    if progress_callback:
+                        progress_callback("GoComics access forbidden (403).")
+                    return html_text, final_url
+
+                # 3. Solvable Bunny Shield JS PoW challenge check
                 if self._is_gocomics_bunny_shield_page(
                     html_text, "", headers=resp_headers
                 ) or self.shield_resolver.is_bunny_shield_challenge(
@@ -304,8 +312,13 @@ class WebScraper:
                             raise WebScrapingError(f"Empty response from {url}")
                         return retry_resp.text, retry_url
 
-                # 3. Hard 403 block check (when confirmed not a solvable challenge)
-                if self._is_gocomics_403_page(html_text, ""):
+                    # If solver could not solve the challenge, raise BunnyShieldChallengeError directly
+                    raise BunnyShieldChallengeError(
+                        f"GoComics Bunny Shield security challenge could not be resolved for {url}"
+                    )
+
+                # 4. Hard 403 block check (when confirmed not a solvable challenge)
+                if self._is_gocomics_403_page(html_text, "", headers=resp_headers):
                     return html_text, final_url
 
             # If GoComics returns 403 or 429 and provides HTML content, let the parser inspect it
@@ -319,6 +332,8 @@ class WebScraper:
 
         try:
             return self.error_handler.retry_with_backoff(_fetch_with_requests)
+        except (BunnyShieldChallengeError, RateLimitError, AccessForbiddenError):
+            raise
         except HTTPError as e:
             if e.response is not None and e.response.status_code == 404:
                 mock_response = type("MockResponse", (), {"status_code": 404})()
@@ -597,22 +612,22 @@ class WebScraper:
         """
         Check if a page represents a GoComics Bunny Shield challenge.
         A page with an og:image meta tag is a rendered comic page, not a challenge.
-        Detected if:
-        1) Headers contain 'CDN-Challenge: true' or 'ErrorCode: 112'
-        2) Title or body includes 'Establishing a secure connection'
-        3) Body includes both 'shield-templates-prod.b-cdn.net' and 'challenge.html'
-        4) Body includes genuine challenge markers ('data-pow', 'shield-challenge.js', 'challenge-styles.css', '<title>bunny shield')
+        Pages representing 403 blocks or 429 rate limits are NOT challenges.
         """
         if not html_content and not headers:
             return False
         lower_html = (html_content or "").lower()
         if "og:image" in lower_html:
             return False
+        if self._is_gocomics_403_page(html_content, title, headers=headers):
+            return False
+        if self._is_gocomics_429_page(html_content, title):
+            return False
 
         if headers:
             try:
                 headers_lower = {str(k).lower(): str(v).lower() for k, v in headers.items()}
-                if headers_lower.get("cdn-challenge") == "true" or headers_lower.get("errorcode") == "112":
+                if headers_lower.get("cdn-challenge") == "true":
                     return True
             except Exception:
                 pass
@@ -650,21 +665,40 @@ class WebScraper:
             return True
         return False
 
-    def _is_gocomics_403_page(self, html_content: str, title: str) -> bool:
+    def _is_gocomics_403_page(
+        self, html_content: str, title: str, headers: Optional[Any] = None
+    ) -> bool:
         """
         Check if a page represents a GoComics 403 Forbidden response.
-        Detected if EITHER:
-        1) The title or body includes '403 Forbidden'
-        2) The body includes a reference to 'blocked from accessing this page' or 'triggered the service and blocked your request'
+        Detected if:
+        1) The body includes 'block.html'
+        2) The html includes '<title>403 Forbidden</title>' (and is not a challenge)
+        3) The body includes 'blocked from accessing this page' or 'triggered the service and blocked your request'
         """
-        if not html_content:
+        if not html_content and not headers and not title:
             return False
-        lower_html = html_content.lower()
+        lower_html = (html_content or "").lower()
         if "og:image" in lower_html:
             return False
-        if title and "403 forbidden" in title.lower():
+
+        # Explicit solvable challenge indicators -> NEVER a hard 403 block!
+        if headers:
+            try:
+                headers_lower = {str(k).lower(): str(v).lower() for k, v in headers.items()}
+                if headers_lower.get("cdn-challenge") == "true":
+                    return False
+            except Exception:
+                pass
+
+        if "establishing a secure connection" in lower_html or "shield-challenge.js" in lower_html:
+            return False
+
+        # Hard 403 block indicators
+        if "shield-templates-prod.b-cdn.net" in lower_html and "block.html" in lower_html:
             return True
-        if "403 forbidden" in lower_html:
+        if "<title>403 forbidden</title>" in lower_html:
+            return True
+        if title and "403 forbidden" in title.lower():
             return True
         if (
             "blocked from accessing this page" in lower_html

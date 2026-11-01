@@ -168,7 +168,7 @@ class BunnyShieldResolver:
     def __init__(self, cache_dir: Optional[os.PathLike | str] = None, debug: bool = False) -> None:
         self.debug = debug or ("--debug" in sys.argv)
         self._lock = threading.Lock()
-        self._circuit_broken = False  # Prevents repeated headless browser spawns if IP is hard-banned
+        self._circuit_broken_until: float = 0.0  # Cooldown timestamp for circuit breaker
 
         if cache_dir:
             self.cache_dir = Path(cache_dir)
@@ -222,6 +222,48 @@ class BunnyShieldResolver:
         return False
 
     @classmethod
+    def is_blocked(
+        cls,
+        status_code: int,
+        html: str,
+        url: str,
+        headers: Optional[Dict[str, str] | Any] = None,
+    ) -> bool:
+        """
+        Returns True if GoComics returned a hard HTTP 403 Forbidden IP block response that
+        is NOT a solvable Bunny Shield PoW challenge.
+        """
+        if "gocomics.com" not in (url or "").lower():
+            return False
+        html_lower = (html or "").lower()
+        if "og:image" in html_lower:
+            return False
+
+        # If it has explicit challenge indicators, it is a challenge, NOT a block!
+        if headers:
+            try:
+                headers_lower = {str(k).lower(): str(v).lower() for k, v in headers.items()}
+                if headers_lower.get("cdn-challenge") == "true":
+                    return False
+            except Exception:
+                pass
+
+        if "establishing a secure connection" in html_lower or "shield-challenge.js" in html_lower:
+            return False
+
+        # Hard block indicators
+        if "shield-templates-prod.b-cdn.net" in html_lower and "block.html" in html_lower:
+            return True
+        if "<title>403 forbidden</title>" in html_lower:
+            return True
+        if (
+            "blocked from accessing this page" in html_lower
+            or "triggered the service and blocked your request" in html_lower
+        ):
+            return True
+        return False
+
+    @classmethod
     def is_bunny_shield_challenge(
         cls,
         status_code: int,
@@ -237,6 +279,8 @@ class BunnyShieldResolver:
             return False
         if cls.is_rate_limited(status_code, html, url):
             return False
+        if cls.is_blocked(status_code, html, url, headers=headers):
+            return False
         html_lower = (html or "").lower()
         if "og:image" in html_lower:
             return False
@@ -245,7 +289,7 @@ class BunnyShieldResolver:
         if headers:
             try:
                 headers_lower = {str(k).lower(): str(v).lower() for k, v in headers.items()}
-                if headers_lower.get("cdn-challenge") == "true" or headers_lower.get("errorcode") == "112":
+                if headers_lower.get("cdn-challenge") == "true":
                     return True
             except Exception:
                 pass
@@ -290,7 +334,8 @@ class BunnyShieldResolver:
             self._log(f"Failed to write cached shield state: {exc}")
 
     def clear_cached_state(self) -> None:
-        """Removes expired or invalidated shield cookies from disk."""
+        """Removes expired or invalidated shield cookies from disk and resets circuit breaker."""
+        self._circuit_broken_until = 0.0
         try:
             if self.state_file.exists():
                 self.state_file.unlink()
@@ -430,7 +475,8 @@ class BunnyShieldResolver:
             }
         """
         with self._lock:
-            if self._circuit_broken:
+            now = time.monotonic()
+            if now < self._circuit_broken_until:
                 self._log("Circuit breaker is active; skipping headless browser invocation.")
                 if progress_callback:
                     progress_callback("Security circuit breaker active. Please wait a moment.")
@@ -446,7 +492,7 @@ class BunnyShieldResolver:
             browsers = self.detect_system_browsers()
             if not browsers:
                 self._log("No supported system browser (Chromium/Edge/Chrome/Firefox) found.")
-                self._circuit_broken = True
+                self._circuit_broken_until = time.monotonic() + 15.0
                 if progress_callback:
                     progress_callback("No system browser found to solve challenge.")
                 return {
@@ -478,7 +524,7 @@ class BunnyShieldResolver:
 
                     if result.get("rate_limited"):
                         self._log("Detected HTTP 429 rate-limit inside browser; tripping circuit breaker.")
-                        self._circuit_broken = True
+                        self._circuit_broken_until = time.monotonic() + 30.0
                         if progress_callback:
                             progress_callback("GoComics rate limit (429) detected. Please wait.")
                         return result
@@ -498,9 +544,9 @@ class BunnyShieldResolver:
                 except Exception as exc:
                     self._log(f"Browser resolver ({' '.join(base_cmd)}) failed: {exc}")
 
-            # All detected browsers failed to solve the challenge; trip circuit breaker for this process
-            self._log("All browser resolvers failed; tripping circuit breaker for remaining requests.")
-            self._circuit_broken = True
+            # All detected browsers failed to solve the challenge; trip circuit breaker with 15s cooldown
+            self._log("All browser resolvers failed; tripping circuit breaker for 15s.")
+            self._circuit_broken_until = time.monotonic() + 15.0
             if progress_callback:
                 progress_callback("Unable to solve security challenge in browser.")
             return {
@@ -808,48 +854,76 @@ class BunnyShieldResolver:
             ]
             proc = subprocess.Popen(cmd, **self._popen_kwargs())
 
-            wait_time = min(max(timeout_sec * 0.5, 6.0), 9.0)
-            time.sleep(wait_time)
+            db_path = Path(profile_dir) / "cookies.sqlite"
+            deadline = time.monotonic() + timeout_sec
+            cookies: Dict[str, str] = {}
+            default_ff_ua = (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0"
+                if sys.platform == "win32"
+                else "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+            )
 
-            # Terminate cleanly so Firefox flushes cookies.sqlite-wal into cookies.sqlite
+            # Poll for clearance cookies while Firefox is actively running (typically completes in 2-4s)
+            while time.monotonic() < deadline:
+                time.sleep(0.5)
+                if not db_path.is_file():
+                    continue
+
+                try:
+                    conn = sqlite3.connect(str(db_path), timeout=0.5)
+                    try:
+                        cur = conn.cursor()
+                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%'")
+                        for name, value in cur.fetchall():
+                            cookies[name] = value
+                    finally:
+                        conn.close()
+
+                    if any(k.startswith("bunny_shield") for k in cookies):
+                        self._terminate_process(proc)
+                        proc = None
+                        return {
+                            "ok": True,
+                            "rate_limited": False,
+                            "impersonate": "firefox",
+                            "cookies": cookies,
+                            "user_agent": default_ff_ua,
+                            "html": "",
+                        }
+                except Exception:
+                    pass
+
+                # If process died prematurely, break to final check
+                if proc.poll() is not None:
+                    break
+
+            # Terminate process if still running
             self._terminate_process(proc)
             proc = None
 
-            db_path = Path(profile_dir) / "cookies.sqlite"
-            if not db_path.is_file():
-                return {
-                    "ok": False,
-                    "rate_limited": False,
-                    "impersonate": "firefox",
-                    "cookies": {},
-                    "user_agent": "",
-                    "html": "",
-                }
+            # Final check in case cookies flushed on shutdown
+            if db_path.is_file():
+                try:
+                    conn = sqlite3.connect(str(db_path), timeout=1.0)
+                    try:
+                        cur = conn.cursor()
+                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%'")
+                        for name, value in cur.fetchall():
+                            cookies[name] = value
+                    finally:
+                        conn.close()
 
-            cookies: Dict[str, str] = {}
-            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            try:
-                cur = conn.cursor()
-                cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%'")
-                for name, value in cur.fetchall():
-                    cookies[name] = value
-            finally:
-                conn.close()
-
-            if any(k.startswith("bunny_shield") for k in cookies):
-                default_ff_ua = (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0"
-                    if sys.platform == "win32"
-                    else "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
-                )
-                return {
-                    "ok": True,
-                    "rate_limited": False,
-                    "impersonate": "firefox",
-                    "cookies": cookies,
-                    "user_agent": default_ff_ua,
-                    "html": "",
-                }
+                    if any(k.startswith("bunny_shield") for k in cookies):
+                        return {
+                            "ok": True,
+                            "rate_limited": False,
+                            "impersonate": "firefox",
+                            "cookies": cookies,
+                            "user_agent": default_ff_ua,
+                            "html": "",
+                        }
+                except Exception:
+                    pass
 
             return {
                 "ok": False,
@@ -868,15 +942,17 @@ class BunnyShieldResolver:
     def _write_firefox_prefs(profile_path: Path) -> None:
         """
         Configures an isolated Firefox profile with automation and telemetry disabled,
-        image loading suppressed, and extensions completely disabled across all scopes.
+        remote debugging/BiDi enabled, and extensions completely disabled across all scopes.
         """
         user_js = (
             'user_pref("dom.webdriver.enabled", false);\n'
+            'user_pref("remote.active-protocols", 3);\n'
+            'user_pref("remote.allow-origins", "*");\n'
+            'user_pref("remote.allow-hosts", "*");\n'
             'user_pref("toolkit.startup.max_resumed_crashes", -1);\n'
             'user_pref("browser.shell.checkDefaultBrowser", false);\n'
             'user_pref("datareporting.policy.dataSubmissionEnabled", false);\n'
             'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);\n'
-            'user_pref("permissions.default.image", 2);\n'
             'user_pref("media.volume_scale", "0.0");\n'
             'user_pref("extensions.autoDisableScopes", 15);\n'
             'user_pref("extensions.enabledScopes", 0);\n'

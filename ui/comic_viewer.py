@@ -432,7 +432,8 @@ class ComicViewer(QWidget):
         self.display_image(pixmap)
         self.loading_finished.emit()
 
-        self.comic_displayed.emit(self.current_comic_data.comic_name)
+        if self.current_comic_data:
+            self.comic_displayed.emit(self.current_comic_data.comic_name)
     
     @pyqtSlot(str)
     def on_loading_failed(self, error_message: str):
@@ -623,6 +624,7 @@ class ComicViewer(QWidget):
 
     def show_loading_state(self):
         """Display loading state with progress indicator."""
+        self.current_pixmap = None
         self.image_label.clear()
         self.image_label.setMinimumSize(0, 0)
         self.image_label.setMaximumSize(16777215, 16777215)
@@ -676,6 +678,8 @@ class ComicViewer(QWidget):
             error_type: Type of error (network, parsing, unavailable, bunny_shield, rate_limit, etc.)
             recovery_options: List of recovery action labels
         """
+        self.current_pixmap = None
+        self.current_comic_data = None
         self.image_label.clear()
         self.image_label.setMinimumSize(0, 0)
         self.image_label.setMaximumSize(16777215, 16777215)

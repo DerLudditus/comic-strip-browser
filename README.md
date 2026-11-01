@@ -208,7 +208,7 @@ To run the application directly from the Python source code (`python3 main.py`),
 
 Under Debian/Ubuntu/MX/Mint/Xebian:
 
-`sudo apt install python3-bs4 python3-pil python3-pyqt6 python3-requests`
+`sudo apt install python3-bs4 python3-pil python3-pyqt6 python3-requests python3-venv`
 
 Under Fedora/Nobara/Ultramarine:
 

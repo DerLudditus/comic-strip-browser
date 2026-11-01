@@ -25,6 +25,7 @@ from ui.comic_controller import ComicController
 from ui.about_dialog import AboutDialog
 from ui import get_font_families
 from models.data_models import get_comic_definition
+from services.web_scraper import BunnyShieldChallengeError, RateLimitError, AccessForbiddenError
 from version import __version__
 
 
@@ -802,9 +803,8 @@ class MainWindow(QMainWindow):
         self.comic_controller.load_comic(current_comic, target_date)
     
     def go_to_previous_day(self):
-        """Navigate to the previous day's comic - synchronous search."""
+        """Navigate to the previous day's available comic asynchronously."""
         from datetime import date, timedelta
-        from PyQt6.QtWidgets import QApplication
         
         current_date = self.calendar_widget.get_selected_date()
         if not current_date:
@@ -817,81 +817,48 @@ class MainWindow(QMainWindow):
             return
         
         comic_def = get_comic_definition(current_comic)
-        comic_display_name = comic_def.display_name if comic_def else current_comic
         earliest_date = comic_def.earliest_date if comic_def else date(1900, 1, 1)
         
-        # Search for the previous available comic
+        # Search backward for the next available date according to definition
         search_date = current_date
-        days_attempted = 0
+        found_date = None
         
-        while days_attempted < 7:
+        for _ in range(60):  # Check up to 60 days back
             search_date -= timedelta(days=1)
-            
-            # Don't go before comic start
             if search_date < earliest_date:
                 self.update_status("Reached comic's start date", 3000)
                 return
             
-            # Check for skip range jump
+            # Check skip ranges
             if comic_def and comic_def.skip_ranges:
-                jumped = False
                 for start_str, end_str in comic_def.skip_ranges:
                     range_start = date.fromisoformat(start_str)
                     range_end = date.fromisoformat(end_str)
                     if range_start <= search_date <= range_end:
-                        # Jump to the day before the start of the gap
                         search_date = range_start - timedelta(days=1)
-                        jumped = True
-                        if search_date < earliest_date:
-                            self.update_status("Reached comic's start date", 3000)
-                            return
                         break
-                if jumped:
-                    # After a jump, re-check availability for the new date
-                    if not comic_def.is_available(search_date):
-                        # If still not available (e.g. another gap or frequency), keep searching
-                        continue
-
-            # Skip known unavailable dates
-            if comic_def and not comic_def.is_available(search_date):
-                continue
-            
-            # We found a date that SHOULD have a comic. Try to fetch it.
-            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
-            self.comic_viewer.show_loading_state()
-            QApplication.processEvents()
-            
-            try:
-                comic_service = self.comic_controller.comic_service
-                
-                # Check cache first
-                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
-                if cached:
-                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                    self.comic_viewer.display_comic(cached)
-                    self.update_status("Ready", 2000)
+                if search_date < earliest_date:
+                    self.update_status("Reached comic's start date", 3000)
                     return
-                
-                # Try fetch
-                comic_data = comic_service.get_comic(current_comic, search_date)
-                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                self.comic_viewer.display_comic(comic_data)
-                self.update_status("Ready", 2000)
-                return
-                
-            except Exception as e:
-                # Undefined gap or error, increment attempts and keep searching
-                days_attempted += 1
-                continue
             
-        self.update_status(f"No {comic_display_name} found in previous 14 days", 3000)
-
-
+            if not comic_def or comic_def.is_available(search_date):
+                found_date = search_date
+                break
+        
+        if not found_date:
+            self.update_status("No previous available date found", 3000)
+            return
+        
+        # Update calendar to the target date (don't emit signal to avoid double-load)
+        self.calendar_widget.navigate_to_date(found_date, emit_signal=False)
+        
+        # Delegate loading to background worker
+        self.comic_controller.load_comic(current_comic, found_date)
     
     def go_to_next_day(self):
-        """Navigate to the next day's comic - synchronous search."""
+        """Navigate to the next day's available comic asynchronously."""
         from datetime import date, timedelta
-        from PyQt6.QtWidgets import QApplication
+        import os
         
         current_date = self.calendar_widget.get_selected_date()
         if not current_date:
@@ -904,86 +871,55 @@ class MainWindow(QMainWindow):
             return
         
         comic_def = get_comic_definition(current_comic)
-        comic_display_name = comic_def.display_name if comic_def else current_comic
         today = date.today()
-        import os
         max_date = today
         if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE"):
             max_date += timedelta(days=1)
         
-        # Search for the next available comic
         search_date = current_date
-        days_attempted = 0
+        found_date = None
         
-        while days_attempted < 7:
+        for _ in range(60):  # Check up to 60 days forward
             search_date += timedelta(days=1)
-            
-            # Don't go beyond today
             if search_date > max_date:
-                self.update_status("Reached tomorrow's date" if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE") else "Reached today's date", 3000)
+                self.update_status(
+                    "Reached tomorrow's date"
+                    if os.environ.get("COMIC_BROWSER_ALLOW_FUTURE")
+                    else "Reached today's date",
+                    3000,
+                )
                 return
             
-            # Check for skip range jump
+            # Check skip ranges
             if comic_def and comic_def.skip_ranges:
-                jumped = False
                 for start_str, end_str in comic_def.skip_ranges:
                     range_start = date.fromisoformat(start_str)
                     range_end = date.fromisoformat(end_str)
                     if range_start <= search_date <= range_end:
-                        # Jump to the day after the end of the gap
                         search_date = range_end + timedelta(days=1)
-                        jumped = True
-                        if search_date > today:
-                            self.update_status("Reached today's date", 3000)
-                            return
                         break
-                if jumped:
-                    # After a jump, re-check availability for the new date
-                    if not comic_def.is_available(search_date):
-                        # If still not available, keep searching
-                        continue
-
-            # Skip known unavailable dates
-            if comic_def and not comic_def.is_available(search_date):
-                continue
-            
-            # We found a date that SHOULD have a comic. Try to fetch it.
-            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d')}...")
-            self.comic_viewer.show_loading_state()
-            QApplication.processEvents()
-            
-            try:
-                comic_service = self.comic_controller.comic_service
-                
-                # Check cache first
-                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
-                if cached:
-                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                    self.comic_viewer.display_comic(cached)
-                    self.update_status("Ready", 2000)
+                if search_date > max_date:
+                    self.update_status("Reached today's date", 3000)
                     return
-                
-                # Try fetch
-                comic_data = comic_service.get_comic(current_comic, search_date)
-                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                self.comic_viewer.display_comic(comic_data)
-                self.update_status("Ready", 2000)
-                return
-                
-            except Exception as e:
-                # Undefined gap or error, increment attempts and keep searching
-                days_attempted += 1
-                continue
             
-        self.update_status(f"No {comic_display_name} found in next 14 days", 3000)
-
-
+            if not comic_def or comic_def.is_available(search_date):
+                found_date = search_date
+                break
+        
+        if not found_date:
+            self.update_status("No next available date found", 3000)
+            return
+        
+        # Update calendar to the target date (don't emit signal to avoid double-load)
+        self.calendar_widget.navigate_to_date(found_date, emit_signal=False)
+        
+        # Delegate loading to background worker
+        self.comic_controller.load_comic(current_comic, found_date)
     
     def go_to_random(self):
-        """Navigate to a random date's comic for the currently selected comic."""
+        """Navigate to a random available date's comic asynchronously."""
         import random
         from datetime import date, timedelta
-        from PyQt6.QtWidgets import QApplication
         
         current_comic = self.comic_selector.get_selected_comic()
         if not current_comic:
@@ -991,7 +927,6 @@ class MainWindow(QMainWindow):
             return
         
         comic_def = get_comic_definition(current_comic)
-        comic_display_name = comic_def.display_name if comic_def else current_comic
         earliest_date = comic_def.earliest_date if comic_def else date(2000, 1, 1)
         today = date.today()
         
@@ -1001,86 +936,32 @@ class MainWindow(QMainWindow):
             self.update_status("No comics available yet for this title", 3000)
             return
         
-        # Pick ONE random date that is known to be available
+        # Pick ONE random date that is known to be available and not in skip ranges
         random_date = None
-        for _ in range(100):  # Try 100 times to find an available date
+        for _ in range(100):
             random_offset = random.randint(0, days_available)
             candidate_date = earliest_date + timedelta(days=random_offset)
-            if comic_def and comic_def.is_available(candidate_date):
+            if comic_def and comic_def.skip_ranges:
+                in_skip = False
+                for start_str, end_str in comic_def.skip_ranges:
+                    if date.fromisoformat(start_str) <= candidate_date <= date.fromisoformat(end_str):
+                        in_skip = True
+                        break
+                if in_skip:
+                    continue
+            if not comic_def or comic_def.is_available(candidate_date):
                 random_date = candidate_date
                 break
         
         if not random_date:
-            # Fallback to pure random if no available date found in 100 tries
             random_offset = random.randint(0, days_available)
             random_date = earliest_date + timedelta(days=random_offset)
         
-        # Now iterate forward from that date until we find a comic (max 14 days)
-        search_date = random_date
-        days_attempted = 0
+        # Update calendar to the target date (don't emit signal to avoid double-load)
+        self.calendar_widget.navigate_to_date(random_date, emit_signal=False)
         
-        while days_attempted < 7:
-            # Don't go beyond today
-            if search_date > today:
-                self.update_status("Reached today's date", 3000)
-                return
-            
-            # Check for skip range jump
-            if comic_def and comic_def.skip_ranges:
-                jumped = False
-                for start_str, end_str in comic_def.skip_ranges:
-                    range_start = date.fromisoformat(start_str)
-                    range_end = date.fromisoformat(end_str)
-                    if range_start <= search_date <= range_end:
-                        # Jump to the day after the end of the gap
-                        search_date = range_end + timedelta(days=1)
-                        jumped = True
-                        if search_date > today:
-                            self.update_status("Reached today's date", 3000)
-                            return
-                        break
-                if jumped:
-                    # After a jump, re-check availability
-                    if not comic_def.is_available(search_date):
-                        # If still not available, increment and keep searching
-                        search_date += timedelta(days=1)
-                        continue
-
-            # Skip known unavailable dates
-            if comic_def and not comic_def.is_available(search_date):
-                search_date += timedelta(days=1)
-                continue
-            
-            # We found a date that SHOULD have a comic. Try to fetch it.
-            self.update_status(f"Trying {comic_display_name} for {search_date.strftime('%b %d, %Y')}...")
-            self.comic_viewer.show_loading_state()
-            QApplication.processEvents()
-            
-            try:
-                comic_service = self.comic_controller.comic_service
-                
-                # Check cache first
-                cached = comic_service.cache_manager.get_cached_comic(current_comic, search_date)
-                if cached:
-                    self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                    self.comic_viewer.display_comic(cached)
-                    self.update_status("Ready", 2000)
-                    return
-                
-                # Try fetch
-                comic_data = comic_service.get_comic(current_comic, search_date)
-                self.calendar_widget.navigate_to_date(search_date, emit_signal=False)
-                self.comic_viewer.display_comic(comic_data)
-                self.update_status("Ready", 2000)
-                return
-                
-            except Exception as e:
-                # Undefined gap or error, increment attempts and keep searching
-                days_attempted += 1
-                search_date += timedelta(days=1)
-                continue
-            
-        self.update_status(f"No {comic_display_name} found in 14 days from random date", 3000)
+        # Delegate loading to background worker
+        self.comic_controller.load_comic(current_comic, random_date)
 
 
 

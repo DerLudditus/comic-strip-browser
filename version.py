@@ -19,11 +19,18 @@ DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
 CHANGELOG = """comic-strip-browser (4.0.0-1) stable; urgency=medium
-* GoComics: implemented mechanisms to defeat the Bunny Shield challenge.
-* GoComics: the aforementioned mechanisms should reduce the frequency of denials and blocks (403, 429).
-* GoComics: in some cases, accessing GoComics via a VPN should be possible!
+* GoComics: implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!
+* Windows: browsers are queried in this order: Edge, Chrome, Brave, Firefox.
+* Linux: browsers are queried in this order: `firefox-esr`, `firefox`, `chromium`, `google-chrome` (plus Flatpak).
+* GoComics: in some cases, accessing GoComics via a VPN should now be possible!
+* GoComics: the removal of the 403 block is impossible; change the server/IP.
+* GoComics: the removal of the 429 limitation is impossible; just wait.
+* CK: Fixed bugs related to Python and browsers receiving different contents.
+* Overhauled the web-related error detection.
+* Improved the feedback about what the app is trying to do.
+* New, unknown bugs added by Gemini :)
 
- -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 1 Nov 2026 04:00 +0200
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 1 Nov 2026 20:00 +0200
  
 comic-strip-browser (3.1.2-1) stable; urgency=medium
 * GoComics: refined the message for the case of VPN blocking.
