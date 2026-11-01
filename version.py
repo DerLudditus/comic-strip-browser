@@ -5,20 +5,27 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "3.1.2"
-__version_info__ = (3, 1, 2)
+__version__ = "4.0.0"
+__version_info__ = (4, 0, 0)
 
 # Release information
-RELEASE_DATE = "2026-10-28"
+RELEASE_DATE = "2026-11-01"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "3.1.2-1"
+DEB_VERSION = "4.0.0-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (3.1.2-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (4.0.0-1) stable; urgency=medium
+* GoComics: implemented mechanisms to defeat the Bunny Shield challenge.
+* GoComics: the aforementioned mechanisms should reduce the frequency of denials and blocks (403, 429).
+* GoComics: in some cases, accessing GoComics via a VPN should be possible!
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Sun, 1 Nov 2026 04:00 +0200
+ 
+comic-strip-browser (3.1.2-1) stable; urgency=medium
 * GoComics: refined the message for the case of VPN blocking.
 * GoComics: added a message for the “403 Forbidden” response.
 

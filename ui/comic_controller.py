@@ -57,7 +57,9 @@ class ComicLoadingWorker(QThread):
                 self.loading_progress.emit("Downloading comic...")
             
             # Load the comic
-            comic_data = self.comic_service.get_comic(self.comic_name, self.comic_date)
+            comic_data = self.comic_service.get_comic(
+                self.comic_name, self.comic_date, progress_callback=self.loading_progress.emit
+            )
             
             self.loading_progress.emit("Comic loaded successfully")
             self.comic_loaded.emit(comic_data)
@@ -161,7 +163,13 @@ class ComicController(QObject):
         # Update current state
         self.current_comic_name = comic_name
         self.current_date = comic_date
-        
+
+        # Clear stale image resolution text so previous comic dimensions don't linger during load
+        from PyQt6.QtWidgets import QApplication
+        for widget in QApplication.topLevelWidgets():
+            if hasattr(widget, "comic_viewer") and hasattr(widget.comic_viewer, "image_info_label"):
+                widget.comic_viewer.image_info_label.setText("")
+
         # Emit loading started signal
         self.comic_loading_started.emit(comic_name, comic_date)
         
@@ -239,8 +247,8 @@ class ComicController(QObject):
             return "network"
         elif hasattr(error, '__class__') and 'timeout' in error.__class__.__name__.lower():
             return "network"
-        # ComicServiceError wrapping a "not available" message
-        elif str(error).lower().startswith("comic ") and " not available for " in error_str:
+        # ComicServiceError wrapping a "not available" or "wrong date" message
+        elif "not available" in error_str or "wrong date" in error_str:
             return "unavailable"
         # "No og:image" = page loaded but no comic image = unavailable for this date
         elif "no og:image" in error_str:
@@ -256,8 +264,15 @@ class ComicController(QObject):
         Args:
             progress_message: Progress message to display
         """
-        # self.logger.debug(f"Loading progress: {progress_message}")
-        # Progress messages are handled by the UI components directly
+        from PyQt6.QtWidgets import QApplication
+
+        for widget in QApplication.topLevelWidgets():
+            if hasattr(widget, "update_status"):
+                widget.update_status(progress_message, 5000)
+            if hasattr(widget, "comic_viewer") and hasattr(
+                widget.comic_viewer, "status_label"
+            ):
+                widget.comic_viewer.status_label.setText(progress_message)
     
     def get_available_dates(self, comic_name: str) -> set:
         """Get available dates for a specific comic (always empty — availability is date-based)."""

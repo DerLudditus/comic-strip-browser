@@ -21,9 +21,22 @@ hiddenimports = [
     'models', 'models.data_models',
     'services.cache_manager', 'services.comic_service', 'services.config_manager',
     'services.date_manager', 'services.error_handler', 'services.web_scraper',
+    'services.bunny_shield_resolver',
     'ui.calendar_widget', 'ui.comic_controller', 'ui.comic_selector',
     'ui.comic_viewer', 'ui.main_window', 'ui.embedded_images',
 ]
+
+binaries = []
+
+# Collect curl_cffi and its native C extensions / libcurl-impersonate shared libraries
+try:
+    from PyInstaller.utils.hooks import collect_all
+    curl_datas, curl_binaries, curl_hidden = collect_all('curl_cffi')
+    datas += curl_datas
+    binaries += curl_binaries
+    hiddenimports += curl_hidden
+except Exception:
+    pass
 
 excludes = ['tkinter', 'matplotlib', 'numpy', 'scipy', 'pandas', 'test', 'unittest']
 
@@ -32,6 +45,7 @@ is_windows = sys.platform.startswith('win')
 a = Analysis(
     [str(project_root / 'main.py')],
     pathex=[str(project_root)],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     excludes=excludes,

@@ -165,6 +165,8 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 **Read the release notes for each version!**
 
+*(To compile standalone binaries or package `.deb`, `.rpm`, or `.AppImage` files locally on your own machine, see **[Building Packages Locally in ARCHITECTURE.md](./ARCHITECTURE.md#71-building-packages-locally)**).*
+
 ### 5. VPN users and heavy comic consumers, beware!
 
 **GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
@@ -198,23 +200,42 @@ The folder `cache` is saved as follows:
 
 ### 7. CLI operation
 
-#### Dependencies in Linux
+#### Running from Source in Linux
 
-To run the application directly from the Python source code (`python3 main.py`), `beautifulsoup4` and PIL are needed. The corresponding package names are not consistent across distros and compared to PIP names.
+*(Note: Pre-built `.deb`, `.rpm`, `.AppImage`, and binary releases are self-contained fat packages and do not require installing any dependencies separately).*
+
+To run the application directly from the Python source code (`python3 main.py`), install the core system packages:
 
 Under Debian/Ubuntu/MX/Mint/Xebian:
 
-`sudo apt install python3-bs4 python3-pil python3-pyqt6`
+`sudo apt install python3-bs4 python3-pil python3-pyqt6 python3-requests`
 
 Under Fedora/Nobara/Ultramarine:
 
-`sudo dnf install python3-beautifulsoup4 python3-pillow python3-pyqt6`
+`sudo dnf install python3-beautifulsoup4 python3-pillow python3-pyqt6 python3-requests`
 
-#### Dependencies in Windows
+In addition, **`curl_cffi`** is required for browser TLS impersonation to defeat GoComics anti-bot blocks. Because `curl_cffi` is not packaged in official distro repositories, install it using a Python virtual environment (recommended):
 
-To run it via `python3 main.py` under Windows, the following dependencies are needed: 
+```bash
+python3 -m venv venv --system-site-packages
+source venv/bin/activate
+pip install curl_cffi
+```
 
-`pip install PyQt6 bs4 requests pillow`
+*(Alternatively, on Debian 12+ / Ubuntu 23+ where PEP 668 is active, you can install it into your user directory via `pip install --user --break-system-packages curl_cffi`).*
+
+#### Running from Source in Windows
+
+To run via `python3 main.py` under Windows, install the dependencies using `pip`:
+
+`pip install PyQt6 bs4 requests pillow curl_cffi`
+
+*(or `pip install -r requirements.txt`).*
+
+---
+
+> [!TIP]
+> To build standalone executable binaries or package `.deb`, `.rpm`, or `.AppImage` distributions locally, see the detailed instructions in **[ARCHITECTURE.md: Building Packages Locally](./ARCHITECTURE.md#71-building-packages-locally)**.
 
 ### 8. CLI-only features
 
@@ -229,7 +250,8 @@ Commands supported in CLI-only operation mode (the app then exists; no GUI ever 
 
 More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-cli--headless-batch-operations)**.
 
-⚠️ **Any download using `--all` risks triggering a “429 Too Many Requests” page from GoComics!**
+> [!WARNING]
+>  Any download using `--all` risks triggering a “429 Too Many Requests” page from GoComics!
 
 ### 9. Minimal debugging
 

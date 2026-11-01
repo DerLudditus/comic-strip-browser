@@ -7,8 +7,9 @@ for comic retrieval with caching, fallback logic, and availability validation.
 """
 
 import logging
+import time
 from datetime import date, timedelta
-from typing import Optional, Dict, List
+from typing import Callable, Optional, Dict, List
 
 from models.data_models import ComicData, get_comic_definition, COMIC_DEFINITIONS
 from services.web_scraper import WebScraper, WebScrapingError, BunnyShieldChallengeError, RateLimitError, AccessForbiddenError
@@ -58,7 +59,13 @@ class ComicService:
         )
         self.logger = logging.getLogger(__name__)
     
-    def get_comic(self, comic_name: str, comic_date: Optional[date] = None, _depth: int = 0) -> ComicData:
+    def get_comic(
+        self,
+        comic_name: str,
+        comic_date: Optional[date] = None,
+        _depth: int = 0,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> ComicData:
         """
         Retrieve a comic for a specific date with fallback logic.
         
@@ -72,6 +79,8 @@ class ComicService:
         Args:
             comic_name: Name of the comic strip
             comic_date: Date to retrieve (defaults to today)
+            _depth: Recursion depth for date fallback
+            progress_callback: Optional callback for live progress status
             
         Returns:
             ComicData object with comic information
@@ -104,7 +113,9 @@ class ComicService:
         
         # Not in cache, try to fetch from web
         try:
-            comic_data = self._fetch_comic_from_web(comic_name, comic_date)
+            comic_data = self._fetch_comic_from_web(
+                comic_name, comic_date, progress_callback=progress_callback
+            )
             
             # Cache the successful result
             try:
@@ -127,11 +138,21 @@ class ComicService:
         except ComicUnavailableError:
             # Comic not available for this date, try fallback
             if _depth < 7:
-                yesterday = comic_date - timedelta(days=1)
-                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback (depth {_depth + 1}/7)")
+                prev_date = self._find_previous_available_date(comic_name, comic_date)
+                if not prev_date:
+                    raise ComicServiceError(f"Comic {comic_name} not available for {comic_date}")
+                self.logger.info(
+                    f"Trying previous available comic ({prev_date}) as fallback (depth {_depth + 1}/7)"
+                )
+                if progress_callback:
+                    progress_callback(f"Checking {prev_date.strftime('%b %d')} (depth {_depth + 1}/7)...")
+                if is_gocomics:
+                    time.sleep(0.4)
                 
                 try:
-                    return self.get_comic(comic_name, yesterday, _depth + 1)
+                    return self.get_comic(
+                        comic_name, prev_date, _depth + 1, progress_callback=progress_callback
+                    )
                 except (ComicServiceError, ComicUnavailableError):
                     pass  # Fall through to main error
             
@@ -147,11 +168,21 @@ class ComicService:
             
             # For network/parsing errors, also try fallback
             if _depth < 7:
-                yesterday = comic_date - timedelta(days=1)
-                self.logger.info(f"Trying yesterday's comic ({yesterday}) as fallback (depth {_depth + 1}/7)")
+                prev_date = self._find_previous_available_date(comic_name, comic_date)
+                if not prev_date:
+                    raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
+                self.logger.info(
+                    f"Trying previous available comic ({prev_date}) as fallback (depth {_depth + 1}/7)"
+                )
+                if progress_callback:
+                    progress_callback(f"Checking {prev_date.strftime('%b %d')} (depth {_depth + 1}/7)...")
+                if is_gocomics:
+                    time.sleep(0.4)
                 
                 try:
-                    return self.get_comic(comic_name, yesterday, _depth + 1)
+                    return self.get_comic(
+                        comic_name, prev_date, _depth + 1, progress_callback=progress_callback
+                    )
                 except ComicServiceError:
                     pass  # Fall through to main error
             
@@ -159,6 +190,19 @@ class ComicService:
             
         except WebScrapingError as e:
             error_str = str(e).lower()
+
+            # If the error is an unbypassable GoComics access block or rate limit, abort date fallback immediately
+            if is_gocomics and (
+                "403" in error_str
+                or "forbidden" in error_str
+                or "bunny" in error_str
+                or "blocked" in error_str
+                or "challenge" in error_str
+            ):
+                self.logger.warning(
+                    f"Aborting date fallback due to GoComics block for {comic_name} on {comic_date}: {e}"
+                )
+                raise
 
             # If the server returned content for a wrong date, invalidate the cache for that date
             if 'wrong date' in error_str:
@@ -169,21 +213,37 @@ class ComicService:
 
             # Fallback for scraping errors
             if _depth < 7:
-                yesterday = comic_date - timedelta(days=1)
+                prev_date = self._find_previous_available_date(comic_name, comic_date)
+                if not prev_date:
+                    raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
+                if progress_callback:
+                    progress_callback(f"Checking {prev_date.strftime('%b %d')} (depth {_depth + 1}/7)...")
+                if is_gocomics:
+                    time.sleep(0.4)
                 try:
-                    return self.get_comic(comic_name, yesterday, _depth + 1)
-                except ComicServiceError:
+                    return self.get_comic(
+                        comic_name, prev_date, _depth + 1, progress_callback=progress_callback
+                    )
+                except (ComicServiceError, ComicUnavailableError):
                     pass  # Fall through to main error
 
+            if "wrong date" in error_str or "not available" in error_str:
+                raise ComicServiceError(f"Comic {comic_name} not available for {comic_date}")
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
     
-    def _fetch_comic_from_web(self, comic_name: str, comic_date: date) -> ComicData:
+    def _fetch_comic_from_web(
+        self,
+        comic_name: str,
+        comic_date: date,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> ComicData:
         """
         Fetch comic data from the web.
 
         Args:
             comic_name: Name of the comic strip
             comic_date: Date to retrieve
+            progress_callback: Optional callback for live progress status
 
         Returns:
             ComicData object with comic information
@@ -195,9 +255,22 @@ class ComicService:
         if not comic_def:
             raise WebScrapingError(f"Unknown comic: {comic_name}")
 
-        comic_data = self.web_scraper.get_comic_data(comic_name, comic_def.base_url, comic_date)
+        comic_data = self.web_scraper.get_comic_data(
+            comic_name, comic_def.base_url, comic_date, progress_callback=progress_callback
+        )
         return comic_data
     
+    def _find_previous_available_date(self, comic_name: str, comic_date: date) -> Optional[date]:
+        """Find the previous valid date for this comic, respecting its availability schedule."""
+        comic_def = get_comic_definition(comic_name)
+        earliest = (comic_def.earliest_date if comic_def else None) or date(1900, 1, 1)
+        search_date = comic_date - timedelta(days=1)
+        while search_date >= earliest:
+            if self.validate_comic_availability(comic_name, search_date):
+                return search_date
+            search_date -= timedelta(days=1)
+        return None
+
     def validate_comic_availability(self, comic_name: str, comic_date: date) -> bool:
         """
         Validate if a comic is available for a specific date.
@@ -410,11 +483,11 @@ class ComicService:
         # Convert ComicServiceError to appropriate error type for user message
         if isinstance(error, ComicServiceError):
             error_msg = str(error).lower()
-            if "not available" in error_msg:
+            if "not available" in error_msg or "wrong date" in error_msg:
                 # Try to extract comic name and date from the original error message
                 original_msg = str(error)
 
-                # Parse the original message: "Comic wumo not available for 2013-10-14"
+                # Parse the original message: "Comic wumo not available for 2013-10-14" or "Could not retrieve wumo for 2013-10-14"
                 import re
                 from datetime import datetime
 
@@ -422,8 +495,8 @@ class ComicService:
                 comic_name = "unknown"
                 error_date = date.today()
 
-                # Try to parse: "Comic COMIC_NAME not available for YYYY-MM-DD"
-                match = re.search(r'Comic ([\w-]+) not available for (\d{4}-\d{2}-\d{2})', original_msg)
+                # Try to parse: "Comic COMIC_NAME not available for YYYY-MM-DD" or "Could not retrieve COMIC_NAME for YYYY-MM-DD"
+                match = re.search(r'(?:Comic|retrieve) ([\w-]+) (?:not available for|for) (\d{4}-\d{2}-\d{2})', original_msg)
                 if match:
                     comic_name = match.group(1)
                     try:
@@ -505,7 +578,7 @@ class ComicService:
         # Convert ComicServiceError to appropriate error type for suggestions
         if isinstance(error, ComicServiceError):
             error_msg = str(error).lower()
-            if "not available" in error_msg:
+            if "not available" in error_msg or "wrong date" in error_msg:
                 from services.error_handler import ComicUnavailableError
                 comic_error = ComicUnavailableError(str(error), "unknown", date.today())
                 return self.error_handler.get_recovery_suggestions(comic_error)

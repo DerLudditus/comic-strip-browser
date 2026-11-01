@@ -52,7 +52,8 @@ The application is structured as a **Layered Model-View-Controller (MVC) / Servi
 | **`version.py`** | Single source of truth for version number (`__version__`), release metadata, and Debian package changelog. |
 | **`models/data_models.py`** | Dataclasses for comic definitions (`ComicDefinition`), fetched comics (`ComicData`), disk cache records (`CacheEntry`), and the registry array `COMIC_DEFINITIONS`. |
 | **`services/comic_service.py`** | Central service orchestrating cache lookup, web scraping, and recursive 7-day date fallback with true-date binding. |
-| **`services/web_scraper.py`** | HTTP requests engine, HTML parser for GoComics / Comics Kingdom `og:image` tags, security challenge detection, and direct custom URL generators. |
+| **`services/web_scraper.py`** | HTTP requests engine, HTML parser for GoComics / Comics Kingdom `og:image` tags, dynamic TLS impersonation (`curl_cffi`), security challenge detection, and direct custom URL generators. |
+| **`services/bunny_shield_resolver.py`** | Zero-dependency headless OS browser resolver for GoComics Bunny Shield JS Proof-of-Work challenges (Chromium CDP & Firefox BiDi/SQLite). |
 | **`services/cache_manager.py`** | Manages `cache/{comic_name}/` disk storage, LRU eviction (50 images per strip), image downloading, format sniffing, and `cache_index.json`. |
 | **`services/date_manager.py`** | Probing engine that discovers the earliest available publication date for each strip via binary/step search. |
 | **`services/config_manager.py`** | Reads/writes user configurations, window geometry, and cached earliest dates to JSON (`~/.comic_browser_config.json`). |
@@ -178,23 +179,48 @@ UI (Viewer)        ComicController      ComicService         CacheManager       
 
 ---
 
-### 4.2 Web Scraping Engine (`services/web_scraper.py`)
+### 4.2 Web Scraping Engine (`services/web_scraper.py` & `services/bunny_shield_resolver.py`)
 
-Handles network communication across different provider protocols:
+Handles network communication across different provider protocols with a robust two-tier anti-bot bypass for GoComics and date-validation parsing for Comics Kingdom:
 
 1. **Custom Providers (`is_custom=True`):**
    * Assembles the image URL by replacing `%YYYY%`, `%YY%`, `%MM%`, `%DD%`.
    * Sends an HTTP `HEAD` request (falling back to a streamed `GET` on `405 Method Not Allowed`) to confirm HTTP 200 OK without downloading the full image into RAM.
-   * On HTTP 404, raises `WebScrapingError("Comic not available for this date")` to trigger the fallback engine.
-2. **GoComics (`gocomics.com`):**
+   * On HTTP 404, raises `ComicUnavailableError` to trigger the fallback engine.
+
+2. **GoComics (`gocomics.com`) — Two-Tier Zero-Bloat Hybrid Bunny Shield Bypass:**
    * URL format: `{base_url}/{YYYY}/{MM}/{DD}`.
    * Disables HTTP redirects for past dates to catch missing-strip redirects.
    * Parses HTML with BeautifulSoup to find `<meta property="og:image" content="...">`.
-   * Detects Bunny.net / Cloudflare IP security challenges:
-     `"security service" in page_text and ("secure connection" in page_text or "Please enable JavaScript" in page_text)`.
+
+   #### Principles of the Bunny Shield Challenge Defeat
+   GoComics deploys Bunny CDN's **Bunny Shield** WAF to protect against automated scraping and traffic bursts. Bunny Shield uses a two-pronged detection model:
+   * **Passive TLS & HTTP/2 Fingerprinting:** Incoming connections are analyzed at the transport layer. Standard Python scraping libraries (like `requests` on standard OpenSSL/urllib3) emit distinct JA3/JA4 TLS Client Hello signatures (specific cipher suites, extension sequences, elliptic curves, and ALPN order) alongside default HTTP/2 settings frames. Bunny CDN flags these signatures as automated tools, resulting in immediate HTTP 403 Forbidden gates, HTTP 429 Too Many Requests responses, or mandatory JavaScript challenges.
+   * **Active Proof-of-Work (PoW) JavaScript Challenges:** When triggered (or when IP reputation is degraded, such as from VPNs or data centers), Bunny Shield serves an interstitial HTML gate (`data-pow`, `/.bunny-shield/bd/bunnyprint.js`, or `challenge.html`). The script fingerprints browser capabilities (Canvas, WebGL, navigator properties) and computes a cryptographic Proof-of-Work hash before issuing signed session clearance cookies (`bunny_shield`, `bunny_shield_id_*`, `INGRESSCOOKIE`).
+
+   To defeat this reliably without adding hundreds of megabytes of external browser driver dependencies (e.g. Selenium, Playwright), the application implements a **two-tier architecture**:
+
+   * **Tier 1 — Proactive TLS Impersonation (`curl_cffi` Session):**
+     * Driven by `curl-impersonate`, this tier matches authentic desktop browser TLS handshakes (JA3/JA4) and HTTP/2 connection framing (`impersonate="chrome"` or `"firefox"`).
+     * Synchronizes User-Agent strings and Client Hints (`sec-ch-ua`, omitting them automatically when impersonating Firefox).
+     * Reuses previously solved clearance cookies from `gocomics_shield_state.json`.
+     * **Operational Impact:** By presenting an authentic browser fingerprint at the TLS and protocol levels, Tier 1 prevents Bunny CDN from triggering the PoW challenge during normal sequential comic requests, enabling fast, headless-free downloads.
+
+   * **Tier 2 — Reactive Zero-Bloat Headless OS Browser Solver (`BunnyShieldResolver`):**
+     * When GoComics serves a challenge page (`data-pow`, `/.bunny-shield/`, `challenge.html`, or an interstitial 403 challenge gate), the scraper invokes the host OS's native web browser in headless mode:
+       - **Windows Discovery Hierarchy:** Microsoft Edge (`msedge.exe`), Google Chrome, Brave, Firefox.
+       - **Linux Discovery Hierarchy:** Prioritizes native and Flatpak instances of `firefox-esr`, `firefox`, `chromium`, and `google-chrome`.
+     * **Control Channels:**
+       - *Chromium-based (Edge / Chrome / Brave):* Communicates over a lightweight RFC 6455 localhost WebSocket speaking the Chrome DevTools Protocol (CDP) (`Network.getCookies`, `Page.navigate`). Disables automation detection (`--disable-blink-features=AutomationControlled`, `--disable-extensions`) with an ephemeral temporary profile.
+       - *Firefox / Firefox-ESR:* Driven via WebDriver BiDi (`ws://127.0.0.1:<port>/session`), falling back to zero-automation-flag headless execution with direct SQLite harvesting from `cookies.sqlite` when BiDi is unavailable.
+     * **State Persistence & Circuit Breaker:**
+       - Solved `bunny_shield*` cookies and user-agent profiles are persisted to `gocomics_shield_state.json` and immediately imported into the active `curl_cffi` / `requests` session for subsequent requests.
+       - Includes a process-wide circuit breaker: if a hard HTTP 429 cooldown or permanent network block is detected, further browser launches are suppressed to avoid spawning loops and conserve system resources.
+
 3. **Comics Kingdom (`comicskingdom.com`):**
    * URL format: `{base_url}/{YYYY}-{MM}-{DD}`.
-   * Checks `og:url`, canonical `<link>`, and `<meta id="__next-page-redirect">` against the requested date to prevent displaying cached/redirected content from wrong dates.
+   * Checks `og:url`, canonical `<link>`, and title dates against the requested date. When an unreleased date is requested (e.g., today's date in European time zones before US syndication release), detects date mismatches and raises `ComicUnavailableError`.
+   * Enables `ComicService` to smoothly decrement to the previous valid publication date (`2026-10-31`) while updating the UI calendar selection in visual synchronization.
 
 ---
 
@@ -384,29 +410,96 @@ python3 main.py --debug
 
 ## 7. Packaging & Distribution
 
-The application is built and packaged across multiple targets using PyInstaller and GitHub Actions CI:
+The application is built and packaged across multiple targets using PyInstaller (`comic_browser.spec`) and GitHub Actions CI:
 
-* **Linux Binaries & Packages:** Single-file binary, `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL), and standalone `.AppImage`.
+* **Self-Contained Fat Binaries:** All Linux and Windows releases are built as standalone onefile binaries with all required dependencies embedded—including `curl_cffi` (with its native C extensions and `libcurl-impersonate` shared libraries), PyQt6, and Pillow. End users installing pre-packaged builds do **not** need to install Python or any Python packages separately.
+* **Linux Binaries & Packages:** Single-file binary (`dist/comic-strip-browser`), `.deb` (Debian/Ubuntu via `create_deb.py`), `.rpm` (Fedora/RHEL via `build_rpm.sh`), and standalone `.AppImage` (via `build_appimage.sh`). All three package formats wrap the PyInstaller fat binary.
 * **Linux AppImage Support:** `_open_cache_folder()` cleans `LD_LIBRARY_PATH`, `PYTHONPATH`, and `PYTHONHOME` before calling `xdg-open` to prevent library clashes with host system file managers.
 * **Windows:** Standalone single-file executable `ComicStripBrowser.exe` built via `build_scripts/build_windows.bat` and `comic_browser.spec`.
+* **CI Integration:** GitHub Actions runs on `ubuntu-22.04` and `windows-latest`, installing `curl_cffi` alongside core build dependencies so that PyInstaller bundles full TLS impersonation into all distributed artifacts.
+
+### 7.1 Building Packages Locally
+
+#### 1. Setup Build Environment
+Install the core system libraries and packaging tools:
+```bash
+# Debian / Ubuntu / Linux Mint
+sudo apt install python3-pyqt6 python3-bs4 python3-pil python3-requests python3-venv dpkg-dev rpm fuse
+
+# Fedora / RHEL
+sudo dnf install python3-pyqt6 python3-beautifulsoup4 python3-pillow python3-requests rpm-build fuse
+```
+
+Create a virtual environment with system access and install the Python build dependencies:
+```bash
+python3 -m venv venv --system-site-packages
+source venv/bin/activate
+pip install pyinstaller curl_cffi
+```
+*(Or simply `pip install -r requirements.txt`).*
+
+#### 2. Build the Standalone Binary
+Always build the onefile binary first (embeds `curl_cffi`, PyQt6, and all assets):
+```bash
+./build_scripts/build_binary.sh
+# Output: dist/comic-strip-browser
+```
+
+#### 3. Package for Distribution
+From the pre-built binary, generate any desired package format:
+```bash
+./build_scripts/build_deb.sh        # Generates dist/comic-strip-browser_*_amd64.deb
+./build_scripts/build_appimage.sh   # Generates dist/comic-strip-browser-*.AppImage
+./build_scripts/build_rpm.sh        # Generates ~/rpmbuild/RPMS/x86_64/*.rpm
+```
+
+#### Windows
+In PowerShell or Command Prompt:
+```cmd
+pip install -r requirements.txt
+build_scripts\build_windows.bat
+REM Output: dist\ComicStripBrowser.exe
+```
 
 ---
 
 ## 8. Python Dependencies & Execution Environment
 
-To run the application directly from Python source code (`python3 main.py`), the following libraries are required:
+### 8.1 Packaged Releases (End Users)
+No Python installation or manual package setup is required. The `.deb`, `.rpm`, `.AppImage`, and `.exe` binaries are completely self-contained.
 
-### Linux (Debian / Ubuntu / Linux Mint)
-Using system packages:
+### 8.2 Running from Source (`python3 main.py`)
+To run or develop the application directly from Python source code, the following libraries are required:
+
+#### Linux (Debian / Ubuntu / Linux Mint)
+1. Install core dependencies from system repositories:
 ```bash
-sudo apt install python3-pyqt6 python3-bs4 python3-pil python3-requests
+sudo apt install python3-pyqt6 python3-bs4 python3-pil python3-requests python3-venv
+```
+2. Install `curl_cffi` (not available in Debian/Ubuntu apt repositories):
+Because modern Debian (12+) and Ubuntu (23+) enforce PEP 668 (`EXTERNALLY-MANAGED`), install `curl_cffi` in a virtual environment (recommended):
+```bash
+python3 -m venv venv --system-site-packages
+source venv/bin/activate
+pip install curl_cffi
+```
+Or for user-level installation:
+```bash
+pip install --user --break-system-packages curl_cffi
 ```
 
-### Windows
+#### Linux (Fedora / Nobara / Ultramarine)
+```bash
+sudo dnf install python3-pyqt6 python3-beautifulsoup4 python3-pillow python3-requests
+pip install --user curl_cffi
+```
+
+#### Windows
 Using `pip`:
 ```bash
-pip install PyQt6 bs4 requests pillow
+pip install PyQt6 bs4 requests pillow curl_cffi
 ```
+*(or `pip install -r requirements.txt`).*
 
 ### Standard `requirements.txt`
 ```text
@@ -416,4 +509,5 @@ beautifulsoup4>=4.12.0
 pillow>=10.0.0
 pytest>=7.4.0
 pyinstaller>=6.0.0
+curl_cffi>=0.7.0
 ```

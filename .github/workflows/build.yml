@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
+          pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller curl_cffi
 
       - name: Build (onefile)
         run: |
@@ -71,7 +71,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller
+          pip install PyQt6 requests beautifulsoup4 Pillow pyinstaller curl_cffi
 
       - name: Build binary (onefile)
         run: |
