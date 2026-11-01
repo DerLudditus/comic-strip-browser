@@ -2,6 +2,9 @@
 
 A standalone PyQt6 application for browsing a selection of comic strips from GoComics and Comics Kingdom. Features include calendar navigation, caching, and support for **more than 90 popular titles**, including Calvin and Hobbes, Peanuts, Garfield, Shoe, Pearls Before Swine, Bizarro, and more.
 
+> [!TIP]
+> **In version 4, most GoComics blocks can be defeated!**
+
 This app started as vibe-coded with Amazon's Kiro, but over time it underwent countless changes and improvements, both manually and through the contributions of Claude, Qwen, and Gemini. Read **[the birth story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. 
 
 Version 1.1.3 was the last to have been touched by Claude via Kiro.
@@ -16,6 +19,8 @@ Version 3.1.0 added proper **feedback** for situations where **GoComics blocks y
 
 Version 3.1.2 **refined the feedback** for GoComics-related errors: Bunny Shield challenge, 403, and 429.
 
+Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!**
+
 ### 1. Major features
 	
 - Most comics are retrieved from **GoComics** or **Comics Kingdom**, with a couple being retrieved from other sites.
@@ -28,23 +33,19 @@ Version 3.1.2 **refined the feedback** for GoComics-related errors: Bunny Shield
 
 #### Debian 13 XFCE:
 
-![](ComicStripBrowser_Debian13_a.png)
+![](ComicStripBrowser_Debian13_a_400.png)
 
-![](ComicStripBrowser_Debian13_b.png)
+![](ComicStripBrowser_Debian13_b_400.png)
 
-![](ComicStripBrowser_Debian13_c.png)
-
-With GoComics hidden:
-
-![](ComicStripBrowser_Debian13_d.png)
+![](ComicStripBrowser_Debian13_c_400.png)
 
 #### Windows (125% scaling):
  
-![](ComicStripBrowser_Windows_a.png)
+![](ComicStripBrowser_Windows_a_400.png)
 
-![](ComicStripBrowser_Windows_b.png)
+![](ComicStripBrowser_Windows_b_400.png)
 
-![](ComicStripBrowser_Windows_c.png)
+![](ComicStripBrowser_Windows_c_400.png)
 
 ### 3. Currently supported comic strips
 
@@ -167,27 +168,48 @@ Note that some comic titles, especially in their early days, can have large gaps
 
 *(To compile standalone binaries or package `.deb`, `.rpm`, or `.AppImage` files locally on your own machine, see **[Building Packages Locally in ARCHITECTURE.md](./ARCHITECTURE.md#71-building-packages-locally)**).*
 
-### 5. VPN users and heavy comic consumers, beware!
+### 5. Bunny Shield — defeating GoComics!
 
-**GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. **If you cannot see a comic hosted by GoComics, disconnect from your VPN or connect to a different server or country!** 
+**GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. 
 
-Since release 3.1.0, the app will show this feedback to the user (the text changed in 3.1.2):
+> [!IMPORTANT]
+> **For the first time, release 4.0.0 can bypass the Bunny Shield challenge!** 🎉
 
-![](errorVPN.png)
+👉 When needed, the **Bunny Shield JS Proof-of-Work (PoW) resolver uses the host OS browser in headless mode**. This avoids increasing  the app size. The possible browsers are queried with different priorities depending on the OS:
+* Windows: Edge, Chrome, Brave, Firefox.
+* Linux: `firefox-esr`, `firefox`, `chromium`, `google-chrome` (plus their Flatpak versions).
 
-**GoComics** also limited **the number of comic strips users could request within a given time frame.** When they decide you need to “cool down” for a while, they will show you this “429 Too Many Requests” page in a web browser:
+Other differences:
+* The Chromium family is invoked via a local CDP WebSocket.
+* The Firefox family is invoked via a WebDriver BiDi WebSocket.
+
+The app will reuse previously solved clearance cookies until a new Bunny Shield challenge is presented.
+
+👉 **To reduce the frequency** of GoComics hitting the app with Bunny Shield challenges, “403 Access Forbidden” and “429 Too Many Requests”, the use of `requests` was replaced with `curl_cffi`, leading to fingerprints closer to those of a real browser.
+
+> [!WARNING]
+> The Bunny Shield resolver and other mitigations **cannot fix everything!**
+
+🌐 **When you use a VPN, GoComics can SOMETIMES block the app and even a full browser with a 403 error for your IP.** This shows in a browser as follows:
+
+<div align="center">
+  <img src="this_can_happen_in_browser_too.png" width="67%">
+</div>
+
+Since release 3.1.2, the app will show this feedback to the user when in this case:
+
+![](error403.png)
+
+🌐 **GoComics also limits the number of comic strips users could request within a given time frame.** When they decide you need to “cool down” for a while, they will show you this “429 Too Many Requests” page in a web browser:
 
 <div align="center">
   <img src="this_can_happen_in_browser.png" width="67%">
 </div>
 
-Since release 3.1.0, the app will show this feedback to the user (the text changed in 3.1.2):
+The app will show this feedback to the user:
 
 ![](error429.png)
 
-Since release 3.1.2, the app will also show this feedback to the user when it is the case:
-
-![](error403.png)
 
 ### 6. Cached images
 The last-accessed 200 images for each comic title are stored in a folder called `cache` (too generic a name, I know). Each comic title has its own subfolder.
@@ -214,7 +236,7 @@ Under Fedora/Nobara/Ultramarine:
 
 `sudo dnf install python3-beautifulsoup4 python3-pillow python3-pyqt6 python3-requests`
 
-In addition, **`curl_cffi`** is required for browser TLS impersonation to defeat GoComics anti-bot blocks. Because `curl_cffi` is not packaged in official distro repositories, install it using a Python virtual environment (recommended):
+In addition, **`curl_cffi`** is required for browser TLS impersonation to defeat GoComics anti-bot blocks. Because `curl_cffi` is not packaged in official distro repositories, install it using a Python virtual environment:
 
 ```bash
 python3 -m venv venv --system-site-packages
@@ -250,7 +272,7 @@ Commands supported in CLI-only operation mode (the app then exists; no GUI ever 
 
 More details in **[ARCHITECTURE.md](./ARCHITECTURE.md#62-command-line-interface-cli--headless-batch-operations)**.
 
-> [!WARNING]
+> [!CAUTION]
 >  Any download using `--all` risks triggering a “429 Too Many Requests” page from GoComics!
 
 ### 9. Minimal debugging
