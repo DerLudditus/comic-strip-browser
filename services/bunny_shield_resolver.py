@@ -199,7 +199,7 @@ class BunnyShieldResolver:
 
     def _log(self, msg: str) -> None:
         logger.debug(msg)
-        if self.debug:
+        if self.debug and not logging.getLogger().handlers:
             print(f"[BunnyShieldResolver] {msg}", file=sys.stderr)
 
     @classmethod
@@ -349,12 +349,54 @@ class BunnyShieldResolver:
             return int(s.getsockname()[1])
 
     @staticmethod
-    def _popen_kwargs() -> Dict[str, Any]:
+    def _clean_env_for_browser() -> Dict[str, str]:
+        """
+        Sanitizes the process environment so host system browsers (e.g. system Firefox on Debian)
+        do not inherit PyInstaller's or AppImage's bundled shared libraries or GTK/GIO overrides.
+        """
+        env = os.environ.copy()
+
+        # 1. PyInstaller: restore original LD_LIBRARY_PATH if available, or remove bundled path
+        meipass = getattr(sys, "_MEIPASS", None)
+        if "LD_LIBRARY_PATH_ORIG" in env:
+            orig = env.pop("LD_LIBRARY_PATH_ORIG")
+            if orig:
+                env["LD_LIBRARY_PATH"] = orig
+            else:
+                env.pop("LD_LIBRARY_PATH", None)
+        elif "LD_LIBRARY_PATH" in env:
+            if getattr(sys, "frozen", False) or meipass:
+                if meipass:
+                    parts = [p for p in env["LD_LIBRARY_PATH"].split(os.pathsep) if p and not p.startswith(meipass)]
+                    if parts:
+                        env["LD_LIBRARY_PATH"] = os.pathsep.join(parts)
+                    else:
+                        env.pop("LD_LIBRARY_PATH", None)
+                else:
+                    env.pop("LD_LIBRARY_PATH", None)
+
+        # 2. AppImage environment variables
+        for var in ("APPDIR", "APPIMAGE", "OWD"):
+            env.pop(var, None)
+
+        # 3. GIO / GTK overrides that might interfere with system browsers
+        for var in ("GIO_MODULE_DIR", "GIO_USE_VFS", "GIO_USE_VOLUME_MONITOR", "QT_NO_XDG_DESKTOP_PORTAL"):
+            env.pop(var, None)
+
+        return env
+
+    def _popen_kwargs(self, log_handle: Optional[Any] = None) -> Dict[str, Any]:
         kwargs: Dict[str, Any] = {
-            "stdout": subprocess.DEVNULL,
-            "stderr": subprocess.DEVNULL,
+            "env": self._clean_env_for_browser(),
             "stdin": subprocess.DEVNULL,
         }
+        if log_handle is not None:
+            kwargs["stdout"] = log_handle
+            kwargs["stderr"] = subprocess.STDOUT
+        else:
+            kwargs["stdout"] = subprocess.DEVNULL
+            kwargs["stderr"] = subprocess.DEVNULL
+
         if sys.platform == "win32":
             kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
         return kwargs
@@ -561,6 +603,8 @@ class BunnyShieldResolver:
     def _solve_with_chromium(self, base_cmd: List[str], url: str, timeout_sec: float) -> Dict[str, Any]:
         port = self._get_free_port()
         profile_dir = self._mk_profile_dir("csb_chr_")
+        console_log_path = Path(profile_dir) / "browser_console.log"
+        log_handle = open(console_log_path, "w", encoding="utf-8", errors="replace")
         proc: Optional[subprocess.Popen] = None
         ws: Optional[_LocalWebSocket] = None
 
@@ -584,11 +628,17 @@ class BunnyShieldResolver:
                 f"--remote-debugging-port={port}",
                 "about:blank",
             ]
-            proc = subprocess.Popen(cmd, **self._popen_kwargs())
+            self._log(f"Spawning Chromium: {' '.join(cmd)}")
+            proc = subprocess.Popen(cmd, **self._popen_kwargs(log_handle))
+            self._log(f"Chromium PID: {proc.pid}")
 
             ws_url = None
             startup_deadline = time.monotonic() + 6.0
+            self._log(f"Connecting to Chromium remote debugging port {port}...")
             while time.monotonic() < startup_deadline:
+                if proc.poll() is not None:
+                    self._log(f"Chromium process died during startup with exit code {proc.poll()}")
+                    break
                 try:
                     with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=1.0) as resp:
                         targets = json.loads(resp.read().decode("utf-8"))
@@ -597,12 +647,13 @@ class BunnyShieldResolver:
                                 ws_url = t["webSocketDebuggerUrl"]
                                 break
                     if ws_url:
+                        self._log(f"Chromium WebSocket target: {ws_url}")
                         break
                 except Exception:
                     time.sleep(0.15)
 
             if not ws_url:
-                raise RuntimeError("Chromium remote debugging port did not expose a page target.")
+                raise RuntimeError(f"Chromium remote debugging port did not expose a page target (exit code: {proc.poll()}).")
 
             ws = _LocalWebSocket(ws_url, timeout=5.0)
             cmd_id = 1
@@ -614,6 +665,7 @@ class BunnyShieldResolver:
             ws.call_command(cmd_id, "Network.setUserAgentOverride", {"userAgent": default_ua})
             cmd_id += 1
 
+            self._log(f"Chromium navigating to: {url}")
             ws.call_command(cmd_id, "Page.navigate", {"url": url})
             cmd_id += 1
 
@@ -633,6 +685,7 @@ class BunnyShieldResolver:
                 html = eval_res.get("result", {}).get("result", {}).get("value", "")
 
                 if self.is_rate_limited(200, html, url):
+                    self._log("Chromium: detected 429 rate limit page.")
                     return {
                         "ok": False,
                         "rate_limited": True,
@@ -659,6 +712,7 @@ class BunnyShieldResolver:
                 )
 
                 if has_comic_html or has_clearance_cookie:
+                    self._log(f"Chromium captured clearance! Cookies: {list(cookies.keys())}")
                     ua_res = ws.call_command(
                         cmd_id,
                         "Runtime.evaluate",
@@ -678,6 +732,7 @@ class BunnyShieldResolver:
                         "html": html if has_comic_html else "",
                     }
 
+            self._log("Chromium timed out waiting for clearance cookies.")
             return {
                 "ok": False,
                 "rate_limited": False,
@@ -691,6 +746,18 @@ class BunnyShieldResolver:
             if ws:
                 ws.close()
             self._terminate_process(proc)
+            if log_handle:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
+            if console_log_path.is_file():
+                try:
+                    out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
+                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
+                        self._log(f"Chromium process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                except Exception:
+                    pass
             shutil.rmtree(profile_dir, ignore_errors=True)
 
     def _solve_with_firefox(self, base_cmd: List[str], url: str, timeout_sec: float) -> Dict[str, Any]:
@@ -706,6 +773,8 @@ class BunnyShieldResolver:
     def _solve_with_firefox_bidi(self, base_cmd: List[str], url: str, timeout_sec: float) -> Dict[str, Any]:
         port = self._get_free_port()
         profile_dir = self._mk_profile_dir("csb_ff_bidi_")
+        console_log_path = Path(profile_dir) / "browser_console.log"
+        log_handle = open(console_log_path, "w", encoding="utf-8", errors="replace")
         proc: Optional[subprocess.Popen] = None
         ws: Optional[_LocalWebSocket] = None
 
@@ -719,18 +788,25 @@ class BunnyShieldResolver:
                 f"--remote-debugging-port={port}",
                 "about:blank",
             ]
-            proc = subprocess.Popen(cmd, **self._popen_kwargs())
+            self._log(f"Spawning Firefox BiDi: {' '.join(cmd)}")
+            proc = subprocess.Popen(cmd, **self._popen_kwargs(log_handle))
+            self._log(f"Firefox PID: {proc.pid}")
 
             startup_deadline = time.monotonic() + 7.0
+            self._log(f"Connecting to Firefox WebDriver BiDi socket ws://127.0.0.1:{port}/session...")
             while time.monotonic() < startup_deadline:
+                if proc.poll() is not None:
+                    self._log(f"Firefox process died during startup with exit code {proc.poll()}")
+                    break
                 try:
                     ws = _LocalWebSocket(f"ws://127.0.0.1:{port}/session", timeout=2.0)
+                    self._log("Firefox WebDriver BiDi socket connected successfully.")
                     break
                 except Exception:
                     time.sleep(0.2)
 
             if not ws:
-                raise RuntimeError("Firefox WebDriver BiDi socket did not come up.")
+                raise RuntimeError(f"Firefox WebDriver BiDi socket did not come up on port {port} (proc exit code: {proc.poll()}).")
 
             cmd_id = 1
             ws.call_command(cmd_id, "session.new", {"capabilities": {}})
@@ -752,6 +828,7 @@ class BunnyShieldResolver:
             )
             cmd_id += 1
 
+            self._log(f"Firefox BiDi navigating to: {url}")
             ws.call_command(
                 cmd_id,
                 "browsingContext.navigate",
@@ -777,6 +854,7 @@ class BunnyShieldResolver:
                 html = eval_res.get("result", {}).get("result", {}).get("value", "")
 
                 if self.is_rate_limited(200, html, url):
+                    self._log("Firefox BiDi: detected 429 rate limit page.")
                     return {
                         "ok": False,
                         "rate_limited": True,
@@ -805,6 +883,7 @@ class BunnyShieldResolver:
                 )
 
                 if has_comic_html or has_clearance_cookie:
+                    self._log(f"Firefox BiDi captured clearance! Cookies: {list(cookies.keys())}")
                     ua_res = ws.call_command(
                         cmd_id,
                         "script.evaluate",
@@ -824,6 +903,7 @@ class BunnyShieldResolver:
                         "html": html if has_comic_html else "",
                     }
 
+            self._log("Firefox BiDi timed out waiting for clearance cookies.")
             return {
                 "ok": False,
                 "rate_limited": False,
@@ -837,10 +917,24 @@ class BunnyShieldResolver:
             if ws:
                 ws.close()
             self._terminate_process(proc)
+            if log_handle:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
+            if console_log_path.is_file():
+                try:
+                    out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
+                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
+                        self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                except Exception:
+                    pass
             shutil.rmtree(profile_dir, ignore_errors=True)
 
     def _solve_with_firefox_sqlite(self, base_cmd: List[str], url: str, timeout_sec: float) -> Dict[str, Any]:
         profile_dir = self._mk_profile_dir("csb_ff_sql_")
+        console_log_path = Path(profile_dir) / "browser_console.log"
+        log_handle = open(console_log_path, "w", encoding="utf-8", errors="replace")
         proc: Optional[subprocess.Popen] = None
 
         try:
@@ -852,7 +946,9 @@ class BunnyShieldResolver:
                 profile_dir,
                 url,
             ]
-            proc = subprocess.Popen(cmd, **self._popen_kwargs())
+            self._log(f"Spawning Firefox SQLite harvest: {' '.join(cmd)}")
+            proc = subprocess.Popen(cmd, **self._popen_kwargs(log_handle))
+            self._log(f"Firefox PID: {proc.pid}")
 
             db_path = Path(profile_dir) / "cookies.sqlite"
             deadline = time.monotonic() + timeout_sec
@@ -880,6 +976,7 @@ class BunnyShieldResolver:
                         conn.close()
 
                     if any(k.startswith("bunny_shield") for k in cookies):
+                        self._log(f"Firefox SQLite harvested clearance cookies: {list(cookies.keys())}")
                         self._terminate_process(proc)
                         proc = None
                         return {
@@ -890,11 +987,12 @@ class BunnyShieldResolver:
                             "user_agent": default_ff_ua,
                             "html": "",
                         }
-                except Exception:
-                    pass
+                except Exception as db_err:
+                    self._log(f"SQLite poll notice: {db_err}")
 
                 # If process died prematurely, break to final check
                 if proc.poll() is not None:
+                    self._log(f"Firefox process exited with code {proc.poll()}")
                     break
 
             # Terminate process if still running
@@ -914,6 +1012,7 @@ class BunnyShieldResolver:
                         conn.close()
 
                     if any(k.startswith("bunny_shield") for k in cookies):
+                        self._log(f"Firefox SQLite harvested cookies on exit: {list(cookies.keys())}")
                         return {
                             "ok": True,
                             "rate_limited": False,
@@ -922,9 +1021,10 @@ class BunnyShieldResolver:
                             "user_agent": default_ff_ua,
                             "html": "",
                         }
-                except Exception:
-                    pass
+                except Exception as final_err:
+                    self._log(f"Final SQLite notice: {final_err}")
 
+            self._log("Firefox SQLite harvest completed without finding clearance cookies.")
             return {
                 "ok": False,
                 "rate_limited": False,
@@ -936,6 +1036,18 @@ class BunnyShieldResolver:
 
         finally:
             self._terminate_process(proc)
+            if log_handle:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
+            if console_log_path.is_file():
+                try:
+                    out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
+                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
+                        self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                except Exception:
+                    pass
             shutil.rmtree(profile_dir, ignore_errors=True)
 
     @staticmethod

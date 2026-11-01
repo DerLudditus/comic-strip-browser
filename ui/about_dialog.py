@@ -13,6 +13,8 @@ from PyQt6.QtGui import QFont, QPixmap, QIcon
 from version import __version__
 from ui import get_font_families, get_bold_weight
 
+BUILD_TIMESTAMP: str = "2026-11-01T20:04:27+02:00"
+
 
 class AboutDialog(QDialog):
     """Simple about dialog with app info, logo, and GitHub link."""
@@ -22,7 +24,7 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("About Comic Strip Browser")
-        self.setFixedSize(440, 460)
+        self.setFixedSize(440, 480)
         self.setModal(True)
 
         # Set dialog icon if available
@@ -124,6 +126,17 @@ class AboutDialog(QDialog):
         layout.addWidget(link_label)
 
         layout.addStretch()
+
+        # Build timestamp (updated via touch.py before git push)
+        if BUILD_TIMESTAMP:
+            build_label = QLabel(f"Build: {BUILD_TIMESTAMP}")
+            build_font = QFont()
+            build_font.setPointSize(8)
+            build_font.setFamilies(get_font_families())
+            build_label.setFont(build_font)
+            build_label.setStyleSheet("border:none; color: #777777; background: transparent;")
+            build_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(build_label)
 
         # Close button
         btn_layout = QHBoxLayout()

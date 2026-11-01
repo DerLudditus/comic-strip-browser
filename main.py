@@ -47,11 +47,36 @@ def _attach_console():
             pass
 
 
+def _get_log_file_path() -> Path:
+    """Return the platform-appropriate log file path for --debug."""
+    if sys.platform == "win32":
+        base_dir = os.environ.get("LOCALAPPDATA")
+        if base_dir:
+            log_dir = Path(base_dir) / "ComicStripBrowser"
+        else:
+            log_dir = Path.home() / "AppData" / "Local" / "ComicStripBrowser"
+    else:
+        # Linux / Unix follow XDG Base Directory Specification
+        xdg_cache = os.environ.get("XDG_CACHE_HOME")
+        if xdg_cache:
+            log_dir = Path(xdg_cache) / "comic-strip-browser"
+        else:
+            log_dir = Path.home() / ".cache" / "comic-strip-browser"
+
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        return log_dir / "comic_browser.log"
+    except Exception:
+        # Fallback to current working directory
+        return Path.cwd() / "comic_browser.log"
+
+
 class ComicStripBrowser:
     """Main application class for the Comic Strip Browser."""
     
-    def __init__(self):
+    def __init__(self, debug: bool = False):
         """Initialize the comic strip browser application."""
+        self.debug = debug
         self.app = None
         self.main_window = None
         self.services_initialized = False
@@ -145,7 +170,10 @@ class ComicStripBrowser:
             self.error_handler = ErrorHandler()
             self.config_manager = ConfigManager()
             self.cache_manager = CacheManager(error_handler=self.error_handler)
-            self.web_scraper = WebScraper(error_handler=self.error_handler)
+            self.web_scraper = WebScraper(
+                error_handler=self.error_handler,
+                debug=self.debug,
+            )
             self.date_manager = DateManager(
                 web_scraper=self.web_scraper,
                 config_manager=self.config_manager
@@ -270,7 +298,7 @@ def handle_cli(args) -> int:
     target_date = date.today() - timedelta(days=1) if args.yesterday else date.today()
 
     # Initialize headless services for downloading
-    browser = ComicStripBrowser()
+    browser = ComicStripBrowser(debug=args.debug)
     try:
         browser.initialize_services()
         browser.validate_configuration()
@@ -381,16 +409,31 @@ def main():
 
         import logging
         if args.debug:
-            logging.basicConfig(
-                filename='comic_browser.log',
-                level=logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            console = logging.StreamHandler()
-            console.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            console.setFormatter(formatter)
-            logging.getLogger('').addHandler(console)
+            _attach_console()
+            log_file = _get_log_file_path()
+
+            root_logger = logging.getLogger()
+            root_logger.setLevel(logging.DEBUG)
+            for handler in list(root_logger.handlers):
+                root_logger.removeHandler(handler)
+
+            formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(name)s - %(message)s')
+
+            try:
+                file_handler = logging.FileHandler(str(log_file), mode='w', encoding='utf-8')
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(formatter)
+                root_logger.addHandler(file_handler)
+            except Exception as e:
+                print(f"[DEBUG] Could not open log file {log_file}: {e}", file=sys.stderr)
+
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(logging.DEBUG)
+            console_handler.setFormatter(formatter)
+            root_logger.addHandler(console_handler)
+
+            print(f"[DEBUG] Debug logging enabled. Log file: {log_file}")
+            logging.getLogger("main").debug(f"Comic Strip Browser v{__version__} starting with --debug")
         else:
             logging.disable(logging.CRITICAL)
 
@@ -407,7 +450,7 @@ def main():
             return handle_cli(args)
 
         # Launch GUI application
-        browser = ComicStripBrowser()
+        browser = ComicStripBrowser(debug=args.debug)
         return browser.run()
     except Exception as e:
         print(f"Error starting Comic Strip Browser: {e}")
