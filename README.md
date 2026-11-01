@@ -185,6 +185,10 @@ Other differences:
 
 The app will reuse previously solved clearance cookies until a new Bunny Shield challenge is presented.
 
+**Bypassing the Bunny Shield challenge in Debian:**
+
+![](Challenge.png)
+
 👉 **To reduce the frequency** of GoComics hitting the app with Bunny Shield challenges, “403 Access Forbidden” and “429 Too Many Requests”, the use of `requests` was replaced with `curl_cffi`, leading to fingerprints closer to those of a real browser.
 
 > [!WARNING]
