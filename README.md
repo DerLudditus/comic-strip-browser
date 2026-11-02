@@ -39,6 +39,10 @@ Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge usin
 
 ![](ComicStripBrowser_Debian13_c_400.png)
 
+#### Fedora 45 KDE:
+
+![](ComicStripBrowser_F45_KDE.png)
+
 #### Windows (125% scaling):
  
 ![](ComicStripBrowser_Windows_a_400.png)
