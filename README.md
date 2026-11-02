@@ -5,6 +5,9 @@ A standalone PyQt6 application for browsing a selection of comic strips from GoC
 > [!TIP]
 > **In version 4, most GoComics blocks can be defeated!**
 
+> [!CAUTION]
+> **Release 4.0.0 is buggy. Please update to 4.0.1!** 👈
+
 This app started as vibe-coded with Amazon's Kiro, but over time it underwent countless changes and improvements, both manually and through the contributions of Claude, Qwen, and Gemini. Read **[the birth story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. 
 
 Version 1.1.3 was the last to have been touched by Claude via Kiro.
@@ -19,7 +22,10 @@ Version 3.1.0 added proper **feedback** for situations where **GoComics blocks y
 
 Version 3.1.2 **refined the feedback** for GoComics-related errors: Bunny Shield challenge, 403, and 429.
 
-Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!**
+Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!** ☢️ However, it’s so buggy that you **must** use 4.0.1 instead!
+
+Version 4.0.1 **fixed many severe bugs** and **greatly improved the resilience to GoComics’ Bunny Shield challenges!**
+
 
 ### 1. Major features
 	
@@ -33,11 +39,11 @@ Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge usin
 
 #### Debian 13 XFCE:
 
-![](ComicStripBrowser_Debian13_a_400.png)
+![](ComicStripBrowser_Debian13_a_401.png)
 
-![](ComicStripBrowser_Debian13_b_400.png)
+![](ComicStripBrowser_Debian13_b_401.png)
 
-![](ComicStripBrowser_Debian13_c_400.png)
+![](ComicStripBrowser_Debian13_c_401.png)
 
 #### Fedora 45 KDE:
 
@@ -45,11 +51,11 @@ Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge usin
 
 #### Windows (125% scaling):
  
-![](ComicStripBrowser_Windows_a_400.png)
+![](ComicStripBrowser_Windows_a_401.png)
 
-![](ComicStripBrowser_Windows_b_400.png)
+![](ComicStripBrowser_Windows_b_401.png)
 
-![](ComicStripBrowser_Windows_c_400.png)
+![](ComicStripBrowser_Windows_c_401.png)
 
 ### 3. Currently supported comic strips
 
@@ -179,9 +185,12 @@ Note that some comic titles, especially in their early days, can have large gaps
 > [!IMPORTANT]
 > **For the first time, release 4.0.0 can bypass the Bunny Shield challenge!** 🎉
 
+> [!CAUTION]
+> **Release 4.0.0 is buggy. Please update to 4.0.1!** 👈
+
 👉 When needed, the **Bunny Shield JS Proof-of-Work (PoW) resolver uses the host OS browser in headless mode**. This avoids increasing  the app size. The possible browsers are queried with different priorities depending on the OS:
-* Windows: Edge, Chrome, Brave, Firefox.
-* Linux: `firefox-esr`, `firefox`, `chromium`, `google-chrome` (plus their Flatpak versions).
+* **Windows:** Chromium, Chrome, Edge, Brave, Firefox, Firefox ESR.
+* **Linux:** Firefox ESR, Firefox, Chromium, Chrome, Brave, Edge, including Flatpak versions.
 
 Other differences:
 * The Chromium family is invoked via a local CDP WebSocket.
