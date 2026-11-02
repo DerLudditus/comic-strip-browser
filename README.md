@@ -8,6 +8,9 @@ A standalone PyQt6 application for browsing a selection of comic strips from GoC
 > [!CAUTION]
 > **Release 4.0.0 is buggy. Please update to 4.0.1!** 👈
 
+> [!WARNING]
+> **KNOWN ISSUES:** I have reports that version 4.0.1 doesn’t work on some Windows systems, and version 4.0.0 freezes when GoComics acts up. For now, the issue is under investigation, as I couldn’t reproduce it.
+
 This app started as vibe-coded with Amazon's Kiro, but over time it underwent countless changes and improvements, both manually and through the contributions of Claude, Qwen, and Gemini. Read **[the birth story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. 
 
 Version 1.1.3 was the last to have been touched by Claude via Kiro.
