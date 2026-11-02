@@ -10,10 +10,11 @@ import sys
 import os
 import subprocess
 import platform
+from typing import Optional
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QStatusBar, QApplication, QPushButton,
-    QSplitter, QFrame
+    QSplitter, QFrame, QButtonGroup
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QUrl
 from PyQt6.QtGui import QIcon, QFont, QDesktopServices
@@ -26,6 +27,7 @@ from ui.about_dialog import AboutDialog
 from ui import get_font_families
 from models.data_models import get_comic_definition
 from services.web_scraper import BunnyShieldChallengeError, RateLimitError, AccessForbiddenError
+from services.cache_manager import load_cache_preferences, save_cache_preferences
 from version import __version__
 
 
@@ -44,9 +46,11 @@ class MainWindow(QMainWindow):
     comic_selected = pyqtSignal(str)  # Emitted when a comic is selected
     date_changed = pyqtSignal(object)  # Emitted when calendar date changes
     
-    def __init__(self):
+    def __init__(self, browser_preference: Optional[str] = None):
         """Initialize the main window with basic structure."""
         super().__init__()
+        self._cli_browser_pref = browser_preference
+        self.browser_preference = None
         self.comic_controller = None
         self.initialize_ui()
         self.setup_cross_platform_compatibility()
@@ -96,6 +100,24 @@ class MainWindow(QMainWindow):
         self.comic_selector.setMinimumWidth(240)
         self.comic_selector.setMaximumWidth(400)
         
+        # Restore saved preferences from cache folder
+        cache_dir = self._get_cache_dir()
+        prefs = load_cache_preferences(cache_dir)
+        if prefs.get("hide_gocomics", False):
+            self.comic_selector.radio_hide_gocomics.setChecked(True)
+        else:
+            self.comic_selector.radio_show_all.setChecked(True)
+        self.comic_selector.radio_hide_gocomics.toggled.connect(self._on_hide_gocomics_toggled)
+
+        # Initialize browser preference (CLI override takes precedence)
+        if self._cli_browser_pref:
+            self.browser_preference = self._cli_browser_pref
+        else:
+            self.browser_preference = prefs.get("browser_preference") or (
+                "firefox" if sys.platform.startswith("linux") else "chromium"
+            )
+        self._update_browser_pref_ui()
+
         # Connect comic selector signals
         self.comic_selector.comic_selected.connect(self.on_comic_selected)
         
@@ -125,10 +147,8 @@ class MainWindow(QMainWindow):
         self.main_splitter.setSizes([320, 700, 260])
 
         # Manually trigger initial comic selection since the signal was likely emitted during ComicSelector init
-        initial_comic = self.comic_selector.get_selected_comic()
-        if initial_comic:
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(0, lambda: self.on_comic_selected(initial_comic))
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(0, lambda: self.on_comic_selected(self.comic_selector.get_selected_comic()))
     
 
     
@@ -158,6 +178,27 @@ class MainWindow(QMainWindow):
                 padding: 2px;
             }
         """)
+
+        # Browser preference buttons: "Prefer Firefox" and "Prefer Chromium"
+        self.prefer_firefox_btn = QPushButton("Prefer Firefox")
+        self.prefer_firefox_btn.setCheckable(True)
+        self.prefer_firefox_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prefer_firefox_btn.clicked.connect(lambda: self._set_browser_preference("firefox"))
+
+        self.prefer_chromium_btn = QPushButton("Prefer Chromium")
+        self.prefer_chromium_btn.setCheckable(True)
+        self.prefer_chromium_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prefer_chromium_btn.clicked.connect(lambda: self._set_browser_preference("chromium"))
+
+        self.browser_pref_group = QButtonGroup(self)
+        self.browser_pref_group.addButton(self.prefer_firefox_btn)
+        self.browser_pref_group.addButton(self.prefer_chromium_btn)
+        self.browser_pref_group.setExclusive(True)
+
+        self._update_browser_pref_ui()
+
+        self.status_bar.addPermanentWidget(self.prefer_firefox_btn)
+        self.status_bar.addPermanentWidget(self.prefer_chromium_btn)
 
         # Delete Cache button — delete cache folder
         self.delete_cache_btn = QPushButton("Delete Cache")
@@ -429,6 +470,8 @@ class MainWindow(QMainWindow):
         """Set up the comic controller and integrate it with UI components."""
         # Create the comic controller
         self.comic_controller = ComicController()
+        if self.browser_preference:
+            self.comic_controller.set_browser_preference(self.browser_preference)
         
         # Connect UI components to controller
         # NOTE: Don't connect these to controller - we handle them in on_comic_selected and on_date_changed
@@ -1030,7 +1073,13 @@ class MainWindow(QMainWindow):
                         self.comic_controller.comic_service.cache_manager._cache_index.clear()
                     except Exception:
                         pass
-                self.update_status("Cache folder deleted successfully.", 3000)
+
+                # Reset preferences to per-OS default
+                default_pref = "firefox" if sys.platform.startswith("linux") else "chromium"
+                self._set_browser_preference(default_pref, save=False)
+                if hasattr(self, "comic_selector") and self.comic_selector:
+                    self.comic_selector.radio_show_all.setChecked(True)
+                self.update_status("Cache folder deleted. Preferences reset to default.", 3000)
             except Exception as e:
                 QMessageBox.warning(
                     self,
@@ -1038,6 +1087,60 @@ class MainWindow(QMainWindow):
                     f"Failed to delete cache folder:\n{e}"
                 )
                 self.update_status(f"Error deleting cache folder: {e}", 4000)
+
+    def _get_cache_dir(self) -> str:
+        if hasattr(self, 'comic_controller') and self.comic_controller and hasattr(self.comic_controller, 'comic_service') and self.comic_controller.comic_service:
+            cm = getattr(self.comic_controller.comic_service, "cache_manager", None)
+            if cm and hasattr(cm, "cache_dir"):
+                return str(cm.cache_dir)
+        return os.path.abspath(os.path.join(os.getcwd(), "cache"))
+
+    def _update_browser_pref_ui(self):
+        active_style = """
+            QPushButton {
+                font-weight: bold;
+                background-color: #1976d2;
+                color: #ffffff;
+                border: 1px solid #115293;
+                border-radius: 3px;
+                padding: 2px 7px;
+            }
+        """
+        inactive_style = """
+            QPushButton {
+                font-weight: normal;
+                background-color: #e0e0e0;
+                color: #333333;
+                border: 1px solid #adadad;
+                border-radius: 3px;
+                padding: 2px 7px;
+            }
+            QPushButton:hover {
+                background-color: #d5d5d5;
+            }
+        """
+        if getattr(self, "browser_preference", None) == "firefox":
+            self.prefer_firefox_btn.setChecked(True)
+            self.prefer_firefox_btn.setStyleSheet(active_style)
+            self.prefer_chromium_btn.setChecked(False)
+            self.prefer_chromium_btn.setStyleSheet(inactive_style)
+        else:
+            self.prefer_chromium_btn.setChecked(True)
+            self.prefer_chromium_btn.setStyleSheet(active_style)
+            self.prefer_firefox_btn.setChecked(False)
+            self.prefer_firefox_btn.setStyleSheet(inactive_style)
+
+    def _set_browser_preference(self, pref: str, save: bool = True):
+        self.browser_preference = pref
+        self._update_browser_pref_ui()
+        if hasattr(self, "comic_controller") and self.comic_controller:
+            self.comic_controller.set_browser_preference(pref)
+        if save and not self._cli_browser_pref:
+            save_cache_preferences(self._get_cache_dir(), browser_preference=pref)
+        self.update_status(f"Browser preference set to {pref.title()}", 2500)
+
+    def _on_hide_gocomics_toggled(self, checked: bool):
+        save_cache_preferences(self._get_cache_dir(), hide_gocomics=checked)
 
     def keyPressEvent(self, event):
         """Handle key press events — F1 opens About dialog."""

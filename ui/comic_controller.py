@@ -116,7 +116,12 @@ class ComicController(QObject):
             self.load_comic(comic_name, self.current_date)
         else:
             self.load_comic(comic_name, date.today())
-    
+
+    def set_browser_preference(self, pref: str) -> None:
+        """Update browser resolution preference ('firefox' or 'chromium')."""
+        if self.comic_service and hasattr(self.comic_service, "set_browser_preference"):
+            self.comic_service.set_browser_preference(pref)
+
     def select_date(self, selected_date: date):
         """
         Handle date selection from the calendar.

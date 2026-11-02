@@ -14,6 +14,7 @@ import os
 import argparse
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Optional
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from ui.main_window import MainWindow
 from models.data_models import COMIC_DEFINITIONS, get_comic_definition
@@ -74,9 +75,10 @@ def _get_log_file_path() -> Path:
 class ComicStripBrowser:
     """Main application class for the Comic Strip Browser."""
     
-    def __init__(self, debug: bool = False):
+    def __init__(self, debug: bool = False, browser_preference: Optional[str] = None):
         """Initialize the comic strip browser application."""
         self.debug = debug
+        self.browser_preference = browser_preference
         self.app = None
         self.main_window = None
         self.services_initialized = False
@@ -173,6 +175,7 @@ class ComicStripBrowser:
             self.web_scraper = WebScraper(
                 error_handler=self.error_handler,
                 debug=self.debug,
+                browser_preference=self.browser_preference,
             )
             self.date_manager = DateManager(
                 web_scraper=self.web_scraper,
@@ -247,7 +250,7 @@ class ComicStripBrowser:
             self.validate_configuration()
 
             # Create main window
-            self.main_window = MainWindow()
+            self.main_window = MainWindow(browser_preference=self.browser_preference)
 
             # Inject initialized services into the controller
             if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
@@ -298,7 +301,10 @@ def handle_cli(args) -> int:
     target_date = date.today() - timedelta(days=1) if args.yesterday else date.today()
 
     # Initialize headless services for downloading
-    browser = ComicStripBrowser(debug=args.debug)
+    browser_pref = "firefox" if getattr(args, "prefer_firefox", False) else (
+        "chromium" if getattr(args, "prefer_chromium", False) else None
+    )
+    browser = ComicStripBrowser(debug=args.debug, browser_preference=browser_pref)
     try:
         browser.initialize_services()
         browser.validate_configuration()
@@ -371,6 +377,55 @@ def handle_cli(args) -> int:
     return 0
 
 
+def _enforce_source_dependencies(is_gui: bool = True) -> None:
+    """
+    When running from source (not frozen fat binary), verifies that essential
+    dependencies (specifically curl_cffi) are installed. If missing, refuses
+    to run, prints diagnostic instructions, and displays a GUI dialog if applicable.
+    """
+    if getattr(sys, "frozen", False):
+        return
+
+    try:
+        import curl_cffi  # noqa: F401
+    except ImportError:
+        msg = (
+            "CRITICAL ERROR: Missing required dependency 'curl_cffi'.\n\n"
+            "Comic Strip Browser requires 'curl_cffi' to provide authentic browser TLS "
+            "fingerprints and bypass GoComics Bunny Shield security challenges.\n\n"
+            "Standard 'requests' (urllib3) lacks TLS impersonation, causing GoComics "
+            "to repeatedly block requests and trigger security challenges.\n\n"
+            "To run the application from source, please install curl_cffi:\n\n"
+            "  On Debian / Ubuntu / Linux:\n"
+            "    python3 -m venv venv --system-site-packages\n"
+            "    source venv/bin/activate\n"
+            "    pip install curl_cffi\n"
+            "    (or: pip install --break-system-packages curl_cffi)\n\n"
+            "  On Windows:\n"
+            "    pip install curl_cffi\n"
+        )
+        _attach_console()
+        print(f"\n{'=' * 78}\n{msg}{'=' * 78}\n", file=sys.stderr)
+
+        if is_gui:
+            try:
+                app = QApplication.instance()
+                created = False
+                if app is None:
+                    app = QApplication(sys.argv)
+                    created = True
+                QMessageBox.critical(
+                    None,
+                    "Missing Required Dependency: curl_cffi",
+                    msg,
+                )
+                if created:
+                    app.quit()
+            except Exception:
+                pass
+        sys.exit(1)
+
+
 def main():
     """Main entry point for the application."""
     try:
@@ -383,6 +438,10 @@ def main():
         parser.add_argument("--all", action="store_true", help="Download all available comics")
         parser.add_argument("--name", type=str, help="Download a comic by its internal name")
         parser.add_argument("--number", type=int, help="Download a comic by its 1-based index (1-80)")
+
+        browser_group = parser.add_mutually_exclusive_group()
+        browser_group.add_argument("--prefer-firefox", action="store_true", help="Prefer Firefox (or Firefox ESR) for challenge resolution")
+        browser_group.add_argument("--prefer-chromium", action="store_true", help="Prefer Chromium (or Edge/Chrome) for challenge resolution")
 
         date_group = parser.add_mutually_exclusive_group()
         date_group.add_argument("--today", action="store_true", help="Target today's comic (default)")
@@ -406,6 +465,9 @@ def main():
             args.names or args.info or args.all or
             args.name is not None or args.number is not None
         )
+
+        # Enforce curl_cffi dependency when running from source
+        _enforce_source_dependencies(is_gui=not is_cli_action)
 
         import logging
         if args.debug:
@@ -450,7 +512,8 @@ def main():
             return handle_cli(args)
 
         # Launch GUI application
-        browser = ComicStripBrowser(debug=args.debug)
+        browser_pref = "firefox" if args.prefer_firefox else ("chromium" if args.prefer_chromium else None)
+        browser = ComicStripBrowser(debug=args.debug, browser_preference=browser_pref)
         return browser.run()
     except Exception as e:
         print(f"Error starting Comic Strip Browser: {e}")

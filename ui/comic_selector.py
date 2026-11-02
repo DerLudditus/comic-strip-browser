@@ -301,7 +301,7 @@ class ComicSelector(QWidget):
         """Get list of names of currently visible comic strips."""
         return [
             d.name for d in COMIC_DEFINITIONS
-            if d.name in self.comic_items and self.comic_items[d.name].isVisible()
+            if d.name in self.comic_items and not self.comic_items[d.name].isHidden()
         ]
 
     def _on_filter_changed(self):
@@ -320,7 +320,7 @@ class ComicSelector(QWidget):
         # If the currently selected comic is now hidden, select the first visible comic
         if hide_gocomics and self.selected_comic:
             selected_item = self.comic_items.get(self.selected_comic)
-            if selected_item and not selected_item.isVisible():
+            if selected_item and selected_item.isHidden():
                 visible_names = self.get_visible_comic_names()
                 if visible_names:
                     self.select_comic(visible_names[0])

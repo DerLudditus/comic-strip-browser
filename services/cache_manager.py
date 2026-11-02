@@ -7,12 +7,14 @@ The cache maintains a maximum of 200 items per comic strip and handles both
 metadata and image file storage.
 """
 
+from __future__ import annotations
+
 import os
 import json
 import shutil
 from datetime import datetime, date
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 import requests
 from PIL import Image
@@ -478,3 +480,36 @@ class CacheManager:
                 continue
         
         return sorted(dates)
+
+
+def load_cache_preferences(cache_dir: Optional[str | Path] = None) -> Dict[str, Any]:
+    """Load user preferences stored in the cache folder."""
+    base = Path(cache_dir) if cache_dir else Path("cache")
+    pref_file = base / "preferences.json"
+    if not pref_file.exists():
+        pref_file = base / "browser_preference.json"
+    if pref_file.exists():
+        try:
+            with open(pref_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+    return {}
+
+
+def save_cache_preferences(cache_dir: Optional[str | Path] = None, **kwargs) -> None:
+    """Save user preferences (e.g. browser_preference, hide_gocomics) in the cache folder."""
+    base = Path(cache_dir) if cache_dir else Path("cache")
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        pref_file = base / "preferences.json"
+        current = load_cache_preferences(base)
+        current.update(kwargs)
+        temp_file = pref_file.with_suffix(".tmp")
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(current, f, indent=2)
+        temp_file.replace(pref_file)
+    except Exception:
+        pass

@@ -13,7 +13,7 @@ from PyQt6.QtGui import QFont, QPixmap, QIcon
 from version import __version__
 from ui import get_font_families, get_bold_weight
 
-BUILD_TIMESTAMP: str = "2026-11-01T20:04:27+02:00"
+BUILD_TIMESTAMP: str = "2026-11-02T23:24:02+02:00"
 
 
 class AboutDialog(QDialog):

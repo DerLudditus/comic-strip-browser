@@ -165,7 +165,12 @@ class BunnyShieldResolver:
         "error 429",
     )
 
-    def __init__(self, cache_dir: Optional[os.PathLike | str] = None, debug: bool = False) -> None:
+    def __init__(
+        self,
+        cache_dir: Optional[os.PathLike | str] = None,
+        debug: bool = False,
+        browser_preference: Optional[str] = None,
+    ) -> None:
         self.debug = debug or ("--debug" in sys.argv)
         self._lock = threading.Lock()
         self._circuit_broken_until: float = 0.0  # Cooldown timestamp for circuit breaker
@@ -176,6 +181,19 @@ class BunnyShieldResolver:
             self.cache_dir = self._default_cache_dir()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.state_file = self.cache_dir / "gocomics_shield_state.json"
+
+        if browser_preference:
+            self.browser_preference = browser_preference
+        else:
+            from services.cache_manager import load_cache_preferences
+            pref = load_cache_preferences(self.cache_dir).get("browser_preference")
+            if not pref:
+                pref = load_cache_preferences(Path("cache")).get("browser_preference")
+            self.browser_preference = pref or ("firefox" if sys.platform.startswith("linux") else "chromium")
+
+    def set_browser_preference(self, pref: str) -> None:
+        self.browser_preference = pref
+        self._log(f"Browser preference updated to: {pref}")
 
     @staticmethod
     def _default_cache_dir() -> Path:
@@ -308,6 +326,16 @@ class BunnyShieldResolver:
             return True
         return False
 
+    @staticmethod
+    def is_true_clearance_cookie(name: str) -> bool:
+        """
+        Returns True if a cookie name is a genuine Bunny Shield clearance token.
+        Session/challenge IDs (bunny_shield_id_*) are NOT clearance tokens.
+        """
+        if not name or name.startswith("bunny_shield_id"):
+            return False
+        return name in ("bunny_shield", "bunny_shield_chk") or name.startswith("bunny_shield_bd")
+
     def load_cached_state(self) -> Optional[Dict[str, Any]]:
         """Loads previously solved cookies, User-Agent, and browser impersonation profile."""
         if not self.state_file.exists():
@@ -322,9 +350,13 @@ class BunnyShieldResolver:
 
     def save_cached_state(self, impersonate: str, cookies: Dict[str, str], user_agent: str) -> None:
         """Persists solved cookies and browser family so CLI and GUI runs reuse the session."""
+        filtered_cookies = {
+            k: v for k, v in cookies.items()
+            if not k.startswith("bunny_shield_id")
+        }
         payload = {
             "impersonate": impersonate,
-            "cookies": cookies,
+            "cookies": filtered_cookies,
             "user_agent": user_agent,
             "timestamp": int(time.time()),
         }
@@ -385,9 +417,10 @@ class BunnyShieldResolver:
 
         return env
 
-    def _popen_kwargs(self, log_handle: Optional[Any] = None) -> Dict[str, Any]:
+    @classmethod
+    def _popen_kwargs(cls, log_handle: Optional[Any] = None) -> Dict[str, Any]:
         kwargs: Dict[str, Any] = {
-            "env": self._clean_env_for_browser(),
+            "env": cls._clean_env_for_browser(),
             "stdin": subprocess.DEVNULL,
         }
         if log_handle is not None:
@@ -402,10 +435,11 @@ class BunnyShieldResolver:
         return kwargs
 
     @classmethod
-    def detect_system_browsers(cls) -> List[Tuple[str, List[str]]]:
+    def detect_system_browsers(cls, preference: Optional[str] = None) -> List[Tuple[str, List[str]]]:
         """
         Returns a prioritized list of available browsers on the host system as:
         [(family, base_command_list), ...] where family is 'chrome' or 'firefox'.
+        Prioritizes the browser family according to preference ('firefox' or 'chromium').
         """
         found: List[Tuple[str, List[str]]] = []
 
@@ -432,16 +466,28 @@ class BunnyShieldResolver:
                             found.append((family, cmd))
                         break
 
+        flatpak_app_ids = {
+            "org.mozilla.firefox",
+            "org.chromium.Chromium",
+            "com.google.Chrome",
+            "com.brave.Browser",
+        }
+
         # PATH binaries (prioritize Firefox on Linux/Debian, Chromium/Edge on Windows/others)
         if sys.platform.startswith("linux"):
             path_candidates = [
                 ("firefox", "firefox-esr"),
                 ("firefox", "firefox"),
+                ("firefox", "org.mozilla.firefox"),
                 ("chrome", "chromium"),
                 ("chrome", "chromium-browser"),
                 ("chrome", "google-chrome"),
                 ("chrome", "google-chrome-stable"),
                 ("chrome", "brave-browser"),
+                ("chrome", "brave"),
+                ("chrome", "com.brave.Browser"),
+                ("chrome", "com.google.Chrome"),
+                ("chrome", "org.chromium.Chromium"),
                 ("chrome", "microsoft-edge"),
                 ("chrome", "msedge"),
             ]
@@ -452,6 +498,8 @@ class BunnyShieldResolver:
                 ("chrome", "google-chrome"),
                 ("chrome", "google-chrome-stable"),
                 ("chrome", "brave-browser"),
+                ("chrome", "brave"),
+                ("chrome", "com.brave.Browser"),
                 ("chrome", "microsoft-edge"),
                 ("chrome", "msedge"),
                 ("firefox", "firefox"),
@@ -460,12 +508,17 @@ class BunnyShieldResolver:
         for family, binary in path_candidates:
             resolved = shutil.which(binary)
             if resolved:
+                # If resolved executable is a Flatpak wrapper or ID on Linux, defer to sandboxed flatpak run below
+                if sys.platform.startswith("linux") and (
+                    binary in flatpak_app_ids or "/flatpak/" in resolved.lower()
+                ):
+                    continue
                 cmd = [resolved]
                 if (family, cmd) not in found:
                     found.append((family, cmd))
 
-        # Flatpak fallback on Linux (Firefox first)
-        if sys.platform.startswith("linux") and shutil.which("flatpak"):
+        # Flatpak browsers on Linux (check filesystem directly across user and system scopes + CLI fallback)
+        if sys.platform.startswith("linux"):
             tmp_dir = str(Path(tempfile.gettempdir()).resolve())
             flatpak_candidates = [
                 ("firefox", "org.mozilla.firefox"),
@@ -473,30 +526,92 @@ class BunnyShieldResolver:
                 ("chrome", "com.google.Chrome"),
                 ("chrome", "com.brave.Browser"),
             ]
-            for family, app_id in flatpak_candidates:
+
+            flatpak_bin = shutil.which("flatpak") or ("/usr/bin/flatpak" if Path("/usr/bin/flatpak").is_file() else None)
+            installed_flatpaks = set()
+
+            # 1. Instant check on disk across both system (/var/lib/flatpak) and user scopes (~/.local/share/flatpak)
+            app_dirs = [
+                Path("/var/lib/flatpak/app"),
+                Path.home() / ".local" / "share" / "flatpak" / "app",
+            ]
+            xdg_data = os.environ.get("XDG_DATA_HOME")
+            if xdg_data:
+                app_dirs.append(Path(xdg_data) / "flatpak" / "app")
+
+            for base_dir in app_dirs:
                 try:
-                    res = subprocess.run(
-                        ["flatpak", "info", app_id],
-                        timeout=2.0,
-                        **cls._popen_kwargs(),
-                    )
-                    if res.returncode == 0:
-                        found.append(
-                            (
-                                family,
-                                [
-                                    "flatpak",
-                                    "run",
-                                    "--filesystem=/tmp",
-                                    f"--filesystem={tmp_dir}",
-                                    app_id,
-                                ],
-                            )
-                        )
+                    if base_dir.is_dir():
+                        for _, app_id in flatpak_candidates:
+                            if (base_dir / app_id).is_dir():
+                                installed_flatpaks.add(app_id)
                 except Exception:
                     pass
 
-        return found
+            # 2. Check Flatpak export wrappers (~/.local/share/flatpak/exports/bin and /var/lib/flatpak/exports/bin)
+            export_dirs = [
+                Path("/var/lib/flatpak/exports/bin"),
+                Path.home() / ".local" / "share" / "flatpak" / "exports" / "bin",
+            ]
+            if xdg_data:
+                export_dirs.append(Path(xdg_data) / "flatpak" / "exports" / "bin")
+
+            export_wrappers: Dict[str, str] = {}
+            for exp_dir in export_dirs:
+                try:
+                    if exp_dir.is_dir():
+                        for _, app_id in flatpak_candidates:
+                            wrapper_file = exp_dir / app_id
+                            if wrapper_file.is_file():
+                                installed_flatpaks.add(app_id)
+                                if app_id not in export_wrappers:
+                                    export_wrappers[app_id] = str(wrapper_file)
+                except Exception:
+                    pass
+
+            # 3. CLI fallback if flatpak binary is present and any candidates were missed
+            if flatpak_bin and not all(app_id in installed_flatpaks for _, app_id in flatpak_candidates):
+                try:
+                    res = subprocess.run(
+                        [flatpak_bin, "list", "--app", "--columns=application"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        text=True,
+                        timeout=3.0,
+                    )
+                    if res.returncode == 0:
+                        for line in res.stdout.splitlines():
+                            line = line.strip()
+                            if line:
+                                installed_flatpaks.add(line)
+                except Exception:
+                    pass
+
+            for family, app_id in flatpak_candidates:
+                if app_id in installed_flatpaks:
+                    if flatpak_bin:
+                        cmd = [
+                            flatpak_bin,
+                            "run",
+                            "--filesystem=/tmp",
+                            f"--filesystem={tmp_dir}",
+                            app_id,
+                        ]
+                    elif app_id in export_wrappers:
+                        cmd = [export_wrappers[app_id]]
+                    else:
+                        continue
+
+                    if (family, cmd) not in found:
+                        found.append((family, cmd))
+
+        if not preference:
+            preference = "firefox" if sys.platform.startswith("linux") else "chromium"
+
+        pref_family = "firefox" if preference.lower() == "firefox" else "chrome"
+        preferred = [b for b in found if b[0] == pref_family]
+        others = [b for b in found if b[0] != pref_family]
+        return preferred + others
 
     def solve_challenge(
         self,
@@ -531,7 +646,7 @@ class BunnyShieldResolver:
                     "html": "",
                 }
 
-            browsers = self.detect_system_browsers()
+            browsers = self.detect_system_browsers(preference=self.browser_preference)
             if not browsers:
                 self._log("No supported system browser (Chromium/Edge/Chrome/Firefox) found.")
                 self._circuit_broken_until = time.monotonic() + 15.0
@@ -572,16 +687,29 @@ class BunnyShieldResolver:
                         return result
 
                     if result.get("ok"):
-                        self._log(
-                            f"Solved challenge via {family}. Cookies captured: {list(result['cookies'].keys())}"
-                        )
+                        cookies = result.get("cookies", {})
+                        has_clearance = any(self.is_true_clearance_cookie(k) for k in cookies)
+                        has_html = bool(result.get("html"))
+                        if has_clearance:
+                            self._log(
+                                f"Solved PoW challenge via {family}. Clearance cookies: True, Cookies: {list(cookies.keys())}"
+                            )
+                        elif has_html:
+                            self._log(
+                                f"Resolved via {family} (direct comic HTML loaded). Session cookies: {list(cookies.keys())}"
+                            )
+                        else:
+                            self._log(
+                                f"Solved challenge via {family}. Clearance cookies: {has_clearance}, Cookies: {list(cookies.keys())}"
+                            )
                         if progress_callback:
                             progress_callback(f"Challenge solved via {browser_name}! Loading strip...")
-                        self.save_cached_state(
-                            result["impersonate"],
-                            result["cookies"],
-                            result["user_agent"],
-                        )
+                        if has_clearance or (has_html and "INGRESSCOOKIE" in cookies):
+                            self.save_cached_state(
+                                result["impersonate"],
+                                result["cookies"],
+                                result["user_agent"],
+                            )
                         return result
                 except Exception as exc:
                     self._log(f"Browser resolver ({' '.join(base_cmd)}) failed: {exc}")
@@ -609,9 +737,9 @@ class BunnyShieldResolver:
         ws: Optional[_LocalWebSocket] = None
 
         default_ua = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
             if sys.platform == "win32"
-            else "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+            else "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
         )
 
         try:
@@ -620,8 +748,11 @@ class BunnyShieldResolver:
                 "--disable-gpu",
                 "--no-first-run",
                 "--no-default-browser-check",
+                "--disable-sync",
+                "--disable-component-extensions-with-background-pages",
                 "--disable-extensions",
                 "--disable-blink-features=AutomationControlled",
+                "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider",
                 "--mute-audio",
                 f"--user-agent={default_ua}",
                 f"--user-data-dir={profile_dir}",
@@ -643,9 +774,20 @@ class BunnyShieldResolver:
                     with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=1.0) as resp:
                         targets = json.loads(resp.read().decode("utf-8"))
                         for t in targets:
-                            if t.get("type") == "page" and t.get("webSocketDebuggerUrl"):
+                            target_url = t.get("url", "")
+                            if (
+                                t.get("type") == "page"
+                                and t.get("webSocketDebuggerUrl")
+                                and not target_url.startswith("edge://")
+                                and not target_url.startswith("chrome-extension://")
+                            ):
                                 ws_url = t["webSocketDebuggerUrl"]
                                 break
+                        if not ws_url:
+                            for t in targets:
+                                if t.get("type") == "page" and t.get("webSocketDebuggerUrl"):
+                                    ws_url = t["webSocketDebuggerUrl"]
+                                    break
                     if ws_url:
                         self._log(f"Chromium WebSocket target: {ws_url}")
                         break
@@ -662,16 +804,16 @@ class BunnyShieldResolver:
             cmd_id += 1
             ws.call_command(cmd_id, "Network.enable", {})
             cmd_id += 1
-            ws.call_command(cmd_id, "Network.setUserAgentOverride", {"userAgent": default_ua})
-            cmd_id += 1
 
             self._log(f"Chromium navigating to: {url}")
             ws.call_command(cmd_id, "Page.navigate", {"url": url})
             cmd_id += 1
 
+            clearance_first_seen: Optional[float] = None
             deadline = time.monotonic() + timeout_sec
             while time.monotonic() < deadline:
-                time.sleep(1.0)
+                sleep_interval = 0.5 if clearance_first_seen else 1.0
+                time.sleep(sleep_interval)
 
                 eval_res = ws.call_command(
                     cmd_id,
@@ -702,17 +844,20 @@ class BunnyShieldResolver:
                 )
                 cmd_id += 1
                 raw_cookies = cookie_res.get("result", {}).get("cookies", [])
-                cookies = {c["name"]: c["value"] for c in raw_cookies if "name" in c and "value" in c}
+                cookies = {
+                    c["name"]: c["value"]
+                    for c in raw_cookies
+                    if "name" in c and "value" in c and not c["name"].startswith("bunny_shield_id")
+                }
 
-                has_clearance_cookie = any(
-                    k == "bunny_shield" or k.startswith("bunny_shield_bd") for k in cookies
-                )
+                has_clearance_cookie = any(self.is_true_clearance_cookie(k) for k in cookies)
                 has_comic_html = (
-                    "og:image" in html.lower() or "featureassets.gocomics.com" in html.lower()
+                    ("og:image" in html.lower() or "featureassets.gocomics.com" in html.lower())
+                    and not self.is_bunny_shield_challenge(200, html, url)
                 )
 
-                if has_comic_html or has_clearance_cookie:
-                    self._log(f"Chromium captured clearance! Cookies: {list(cookies.keys())}")
+                if has_comic_html:
+                    self._log(f"Chromium captured comic HTML directly. Cookies: {list(cookies.keys())}")
                     ua_res = ws.call_command(
                         cmd_id,
                         "Runtime.evaluate",
@@ -722,6 +867,8 @@ class BunnyShieldResolver:
                     user_agent = (
                         raw_ua.replace("HeadlessChrome/", "Chrome/") if raw_ua else default_ua
                     )
+                    if "Edg/" in user_agent or "Brave/" in user_agent:
+                        user_agent = default_ua
 
                     return {
                         "ok": True,
@@ -729,8 +876,39 @@ class BunnyShieldResolver:
                         "impersonate": "chrome",
                         "cookies": cookies,
                         "user_agent": user_agent,
-                        "html": html if has_comic_html else "",
+                        "html": html,
                     }
+
+                if has_clearance_cookie:
+                    if clearance_first_seen is None:
+                        clearance_first_seen = time.monotonic()
+                        self._log(
+                            f"Chromium captured clearance cookie(s)! Waiting for post-PoW reload: {list(cookies.keys())}"
+                        )
+
+                    has_bd_cookie = any(k.startswith("bunny_shield_bd") for k in cookies)
+                    if has_bd_cookie or (time.monotonic() - clearance_first_seen >= 3.5):
+                        self._log(f"Chromium clearance settled. Cookies: {list(cookies.keys())}")
+                        ua_res = ws.call_command(
+                            cmd_id,
+                            "Runtime.evaluate",
+                            {"expression": "navigator.userAgent", "returnByValue": True},
+                        )
+                        raw_ua = ua_res.get("result", {}).get("result", {}).get("value", "")
+                        user_agent = (
+                            raw_ua.replace("HeadlessChrome/", "Chrome/") if raw_ua else default_ua
+                        )
+                        if "Edg/" in user_agent or "Brave/" in user_agent:
+                            user_agent = default_ua
+
+                        return {
+                            "ok": True,
+                            "rate_limited": False,
+                            "impersonate": "chrome",
+                            "cookies": cookies,
+                            "user_agent": user_agent,
+                            "html": html if has_comic_html else "",
+                        }
 
             self._log("Chromium timed out waiting for clearance cookies.")
             return {
@@ -754,8 +932,15 @@ class BunnyShieldResolver:
             if console_log_path.is_file():
                 try:
                     out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
-                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
-                        self._log(f"Chromium process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                    if out and self.debug:
+                        filtered_lines = [
+                            line for line in out.splitlines()
+                            if "Created TensorFlow Lite XNNPACK delegate" not in line
+                            and "DevTools listening on" not in line
+                        ]
+                        filtered_out = "\n".join(filtered_lines).strip()
+                        if filtered_out:
+                            self._log(f"Chromium process output (exit {proc.poll() if proc else 'N/A'}):\n{filtered_out}")
                 except Exception:
                     pass
             shutil.rmtree(profile_dir, ignore_errors=True)
@@ -765,10 +950,12 @@ class BunnyShieldResolver:
             res = self._solve_with_firefox_bidi(base_cmd, url, timeout_sec)
             if res.get("ok") or res.get("rate_limited"):
                 return res
+            # BiDi completed and timed out: BiDi already monitored cookies live every second.
+            # Do NOT fall through to SQLite on disk, which locks cookies.sqlite and wastes another 25 seconds.
+            return res
         except Exception as exc:
             self._log(f"Firefox BiDi stage did not complete ({exc}); falling back to direct SQLite harvest...")
-
-        return self._solve_with_firefox_sqlite(base_cmd, url, timeout_sec)
+            return self._solve_with_firefox_sqlite(base_cmd, url, min(timeout_sec, 8.0))
 
     def _solve_with_firefox_bidi(self, base_cmd: List[str], url: str, timeout_sec: float) -> Dict[str, Any]:
         port = self._get_free_port()
@@ -777,6 +964,12 @@ class BunnyShieldResolver:
         log_handle = open(console_log_path, "w", encoding="utf-8", errors="replace")
         proc: Optional[subprocess.Popen] = None
         ws: Optional[_LocalWebSocket] = None
+
+        default_ff_ua = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
+            if sys.platform == "win32"
+            else "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0"
+        )
 
         try:
             self._write_firefox_prefs(Path(profile_dir))
@@ -812,21 +1005,34 @@ class BunnyShieldResolver:
             ws.call_command(cmd_id, "session.new", {"capabilities": {}})
             cmd_id += 1
 
+            # Hide navigator.webdriver so BunnyCDN's bunnyprint.js treats Firefox as authentic human
+            try:
+                ws.call_command(
+                    cmd_id,
+                    "script.addPreloadScript",
+                    {
+                        "functionDeclaration": (
+                            "() => { "
+                            "try { "
+                            "if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator) { "
+                            "const proto = Object.getPrototypeOf(navigator) || navigator; "
+                            "Object.defineProperty(proto, 'webdriver', { get: () => false, configurable: true }); "
+                            "} "
+                            "} catch (e) {} "
+                            "}"
+                        )
+                    },
+                )
+                cmd_id += 1
+            except Exception as e:
+                self._log(f"Firefox BiDi notice: addPreloadScript ({e})")
+
             tree_res = ws.call_command(cmd_id, "browsingContext.getTree", {})
             cmd_id += 1
             contexts = tree_res.get("result", {}).get("contexts", [])
             if not contexts:
                 raise RuntimeError("No Firefox browsingContext available.")
             ctx_id = contexts[0]["context"]
-
-            ws.call_command(
-                cmd_id,
-                "script.addPreloadScript",
-                {
-                    "functionDeclaration": "() => { Object.defineProperty(Navigator.prototype, 'webdriver', {get: () => false}); }"
-                },
-            )
-            cmd_id += 1
 
             self._log(f"Firefox BiDi navigating to: {url}")
             ws.call_command(
@@ -837,9 +1043,11 @@ class BunnyShieldResolver:
             )
             cmd_id += 1
 
+            clearance_first_seen: Optional[float] = None
             deadline = time.monotonic() + timeout_sec
             while time.monotonic() < deadline:
-                time.sleep(1.0)
+                sleep_interval = 0.5 if clearance_first_seen else 1.0
+                time.sleep(sleep_interval)
 
                 eval_res = ws.call_command(
                     cmd_id,
@@ -871,19 +1079,21 @@ class BunnyShieldResolver:
                 for c in raw_cookies:
                     domain = c.get("domain", "")
                     if "gocomics.com" in domain:
+                        name = c.get("name", "")
+                        if not name or name.startswith("bunny_shield_id"):
+                            continue
                         val_obj = c.get("value", {})
                         val = val_obj.get("value", "") if isinstance(val_obj, dict) else str(val_obj)
-                        cookies[c.get("name", "")] = val
+                        cookies[name] = val
 
-                has_clearance_cookie = any(
-                    k == "bunny_shield" or k.startswith("bunny_shield_bd") for k in cookies
-                )
+                has_clearance_cookie = any(self.is_true_clearance_cookie(k) for k in cookies)
                 has_comic_html = (
-                    "og:image" in html.lower() or "featureassets.gocomics.com" in html.lower()
+                    ("og:image" in html.lower() or "featureassets.gocomics.com" in html.lower())
+                    and not self.is_bunny_shield_challenge(200, html, url)
                 )
 
-                if has_comic_html or has_clearance_cookie:
-                    self._log(f"Firefox BiDi captured clearance! Cookies: {list(cookies.keys())}")
+                if has_comic_html:
+                    self._log(f"Firefox BiDi captured comic HTML directly. Cookies: {list(cookies.keys())}")
                     ua_res = ws.call_command(
                         cmd_id,
                         "script.evaluate",
@@ -893,15 +1103,46 @@ class BunnyShieldResolver:
                             "awaitPromise": False,
                         },
                     )
-                    user_agent = ua_res.get("result", {}).get("result", {}).get("value", "")
+                    raw_ua = ua_res.get("result", {}).get("result", {}).get("value", "")
+                    user_agent = default_ff_ua if not raw_ua else raw_ua
                     return {
                         "ok": True,
                         "rate_limited": False,
                         "impersonate": "firefox",
                         "cookies": cookies,
                         "user_agent": user_agent,
-                        "html": html if has_comic_html else "",
+                        "html": html,
                     }
+
+                if has_clearance_cookie:
+                    if clearance_first_seen is None:
+                        clearance_first_seen = time.monotonic()
+                        self._log(
+                            f"Firefox BiDi captured clearance cookie(s)! Waiting for post-PoW reload: {list(cookies.keys())}"
+                        )
+
+                    has_bd_cookie = any(k.startswith("bunny_shield_bd") for k in cookies)
+                    if has_bd_cookie or (time.monotonic() - clearance_first_seen >= 3.5):
+                        self._log(f"Firefox BiDi clearance settled. Cookies: {list(cookies.keys())}")
+                        ua_res = ws.call_command(
+                            cmd_id,
+                            "script.evaluate",
+                            {
+                                "expression": "navigator.userAgent",
+                                "target": {"context": ctx_id},
+                                "awaitPromise": False,
+                            },
+                        )
+                        raw_ua = ua_res.get("result", {}).get("result", {}).get("value", "")
+                        user_agent = default_ff_ua if not raw_ua else raw_ua
+                        return {
+                            "ok": True,
+                            "rate_limited": False,
+                            "impersonate": "firefox",
+                            "cookies": cookies,
+                            "user_agent": user_agent,
+                            "html": html if has_comic_html else "",
+                        }
 
             self._log("Firefox BiDi timed out waiting for clearance cookies.")
             return {
@@ -915,6 +1156,10 @@ class BunnyShieldResolver:
 
         finally:
             if ws:
+                try:
+                    ws.call_command(cmd_id, "session.end", {}, timeout=1.0)
+                except Exception:
+                    pass
                 ws.close()
             self._terminate_process(proc)
             if log_handle:
@@ -925,8 +1170,22 @@ class BunnyShieldResolver:
             if console_log_path.is_file():
                 try:
                     out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
-                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
-                        self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                    if out and self.debug:
+                        filtered_lines = [
+                            line for line in out.splitlines()
+                            if "Exiting due to channel error" not in line
+                            and "RenderCompositorSWGL" not in line
+                            and "chrome://remote/" not in line
+                            and "RSLoader:" not in line
+                            and "WEBGL_" not in line
+                            and "Dynamically enable" not in line
+                            and "WebDriver BiDi listening" not in line
+                            and "RemoteAgent" not in line
+                            and "You are running in headless mode" not in line
+                        ]
+                        filtered_out = "\n".join(filtered_lines).strip()
+                        if filtered_out:
+                            self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{filtered_out}")
                 except Exception:
                     pass
             shutil.rmtree(profile_dir, ignore_errors=True)
@@ -954,9 +1213,9 @@ class BunnyShieldResolver:
             deadline = time.monotonic() + timeout_sec
             cookies: Dict[str, str] = {}
             default_ff_ua = (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
                 if sys.platform == "win32"
-                else "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+                else "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0"
             )
 
             # Poll for clearance cookies while Firefox is actively running (typically completes in 2-4s)
@@ -966,16 +1225,16 @@ class BunnyShieldResolver:
                     continue
 
                 try:
-                    conn = sqlite3.connect(str(db_path), timeout=0.5)
+                    conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True, timeout=0.5)
                     try:
                         cur = conn.cursor()
-                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%'")
+                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%' AND name NOT LIKE 'bunny_shield_id%'")
                         for name, value in cur.fetchall():
                             cookies[name] = value
                     finally:
                         conn.close()
 
-                    if any(k.startswith("bunny_shield") for k in cookies):
+                    if any(self.is_true_clearance_cookie(k) for k in cookies):
                         self._log(f"Firefox SQLite harvested clearance cookies: {list(cookies.keys())}")
                         self._terminate_process(proc)
                         proc = None
@@ -1002,16 +1261,16 @@ class BunnyShieldResolver:
             # Final check in case cookies flushed on shutdown
             if db_path.is_file():
                 try:
-                    conn = sqlite3.connect(str(db_path), timeout=1.0)
+                    conn = sqlite3.connect(f"file:{db_path.resolve().as_posix()}?mode=ro", uri=True, timeout=1.0)
                     try:
                         cur = conn.cursor()
-                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%'")
+                        cur.execute("SELECT name, value FROM moz_cookies WHERE host LIKE '%gocomics.com%' AND name NOT LIKE 'bunny_shield_id%'")
                         for name, value in cur.fetchall():
                             cookies[name] = value
                     finally:
                         conn.close()
 
-                    if any(k.startswith("bunny_shield") for k in cookies):
+                    if any(self.is_true_clearance_cookie(k) for k in cookies):
                         self._log(f"Firefox SQLite harvested cookies on exit: {list(cookies.keys())}")
                         return {
                             "ok": True,
@@ -1044,8 +1303,22 @@ class BunnyShieldResolver:
             if console_log_path.is_file():
                 try:
                     out = console_log_path.read_text(encoding="utf-8", errors="replace").strip()
-                    if out and (self.debug or (proc and proc.poll() not in (None, 0))):
-                        self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{out}")
+                    if out and self.debug:
+                        filtered_lines = [
+                            line for line in out.splitlines()
+                            if "Exiting due to channel error" not in line
+                            and "RenderCompositorSWGL" not in line
+                            and "chrome://remote/" not in line
+                            and "RSLoader:" not in line
+                            and "WEBGL_" not in line
+                            and "Dynamically enable" not in line
+                            and "WebDriver BiDi listening" not in line
+                            and "RemoteAgent" not in line
+                            and "You are running in headless mode" not in line
+                        ]
+                        filtered_out = "\n".join(filtered_lines).strip()
+                        if filtered_out:
+                            self._log(f"Firefox process output (exit {proc.poll() if proc else 'N/A'}):\n{filtered_out}")
                 except Exception:
                     pass
             shutil.rmtree(profile_dir, ignore_errors=True)
@@ -1054,13 +1327,16 @@ class BunnyShieldResolver:
     def _write_firefox_prefs(profile_path: Path) -> None:
         """
         Configures an isolated Firefox profile with automation and telemetry disabled,
-        remote debugging/BiDi enabled, and extensions completely disabled across all scopes.
+        remote debugging/BiDi enabled, extensions disabled, and native User-Agent preserved.
         """
         user_js = (
             'user_pref("dom.webdriver.enabled", false);\n'
             'user_pref("remote.active-protocols", 3);\n'
             'user_pref("remote.allow-origins", "*");\n'
             'user_pref("remote.allow-hosts", "*");\n'
+            'user_pref("network.cookie.cookieBehavior", 0);\n'
+            'user_pref("privacy.partition.network_state", false);\n'
+            'user_pref("browser.sessionstore.interval", 1000);\n'
             'user_pref("toolkit.startup.max_resumed_crashes", -1);\n'
             'user_pref("browser.shell.checkDefaultBrowser", false);\n'
             'user_pref("datareporting.policy.dataSubmissionEnabled", false);\n'
@@ -1070,6 +1346,8 @@ class BunnyShieldResolver:
             'user_pref("extensions.enabledScopes", 0);\n'
             'user_pref("app.normandy.enabled", false);\n'
             'user_pref("app.shield.optoutstudies.enabled", true);\n'
+            'user_pref("messaging-system.rsexperimentloader.enabled", false);\n'
+            'user_pref("nimbus.debug", false);\n'
         )
         (profile_path / "user.js").write_text(user_js, encoding="utf-8")
 

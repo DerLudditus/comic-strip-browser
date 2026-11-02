@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import re
+import sys
 import threading
 from typing import Any, Callable, Dict, Optional, Tuple
 from urllib.parse import urlparse
@@ -48,7 +49,7 @@ class AccessForbiddenError(WebScrapingError):
 
 # Common modern browser headers with Chromium Client Hints
 DEFAULT_BROWSER_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate',
@@ -58,13 +59,13 @@ DEFAULT_BROWSER_HEADERS = {
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'none',
     'Sec-Fetch-User': '?1',
-    'sec-ch-ua': '"Google Chrome";v="135", "Chromium";v="135", "Not?A_Brand";v="24"',
+    'sec-ch-ua': '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
 }
 
 DEFAULT_IMAGE_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
     'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate',
@@ -72,9 +73,29 @@ DEFAULT_IMAGE_HEADERS = {
     'Sec-Fetch-Dest': 'image',
     'Sec-Fetch-Mode': 'no-cors',
     'Sec-Fetch-Site': 'cross-site',
-    'sec-ch-ua': '"Google Chrome";v="135", "Chromium";v="135", "Not?A_Brand";v="24"',
+    'sec-ch-ua': '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
+}
+
+# Authentic Firefox document navigation headers matching curl_cffi's native firefox TLS profile
+DEFAULT_FIREFOX_HEADERS = {
+    'User-Agent': (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0'
+        if os.name == 'nt'
+        else 'Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0'
+    ),
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Priority': 'u=0, i',
+    'Te': 'trailers',
 }
 
 
@@ -91,6 +112,7 @@ class WebScraper:
         error_handler: Optional[ErrorHandler] = None,
         cache_dir: Optional[str] = None,
         debug: bool = False,
+        browser_preference: Optional[str] = None,
     ):
         """
         Initialize the WebScraper.
@@ -100,26 +122,55 @@ class WebScraper:
             error_handler: ErrorHandler instance for error management
             cache_dir: Optional directory path for storing Bunny Shield cookie state
             debug: Enable verbose debug logging for Bunny Shield resolution
+            browser_preference: Optional preference ('firefox' or 'chromium')
         """
+        if not getattr(sys, "frozen", False) and not HAS_CURL_CFFI:
+            raise RuntimeError(
+                "Missing required dependency 'curl_cffi'. Please install it via 'pip install curl_cffi'."
+            )
+
         self.timeout = timeout
         self.error_handler = error_handler or ErrorHandler()
         self.logger = logging.getLogger(__name__)
-        self.shield_resolver = BunnyShieldResolver(cache_dir=cache_dir, debug=debug)
+
+        if HAS_CURL_CFFI:
+            version_str = getattr(cffi_requests, "__version__", "installed")
+            self.logger.debug(f"curl_cffi is active (version: {version_str})")
+        else:
+            self.logger.warning(
+                "curl_cffi is NOT installed! Running with standard requests (urllib3). "
+                "GoComics Bunny Shield challenges will be triggered frequently."
+            )
+
+        self.shield_resolver = BunnyShieldResolver(
+            cache_dir=cache_dir, debug=debug, browser_preference=browser_preference
+        )
         self._session_lock = threading.Lock()
 
         self.impersonate: str = "chrome"
         self.user_agent: str = DEFAULT_BROWSER_HEADERS["User-Agent"]
         self.session = None
+        self._last_gocomics_url: Optional[str] = "https://www.gocomics.com/"
 
+        initial_impersonate = (
+            "firefox" if getattr(self.shield_resolver, "browser_preference", "") == "firefox" else "chrome"
+        )
         cached = self.shield_resolver.load_cached_state()
         if cached:
             self._init_http_session(
-                impersonate=cached.get("impersonate", "chrome"),
+                impersonate=cached.get("impersonate", initial_impersonate),
                 cookies=cached.get("cookies"),
                 user_agent=cached.get("user_agent"),
             )
         else:
-            self._init_http_session(impersonate="chrome")
+            self._init_http_session(impersonate=initial_impersonate)
+
+    def set_browser_preference(self, pref: str) -> None:
+        """Update browser resolution preference ('firefox' or 'chromium')."""
+        self.shield_resolver.set_browser_preference(pref)
+        new_impersonate = "firefox" if (pref or "").lower() == "firefox" else "chrome"
+        if new_impersonate != self.impersonate:
+            self._init_http_session(impersonate=new_impersonate)
 
     def _init_http_session(
         self,
@@ -142,9 +193,9 @@ class WebScraper:
                 self.user_agent = user_agent
             elif self.impersonate == "firefox":
                 self.user_agent = (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0"
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
                     if os.name == "nt"
-                    else "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+                    else "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0"
                 )
             else:
                 self.user_agent = DEFAULT_BROWSER_HEADERS["User-Agent"]
@@ -152,40 +203,68 @@ class WebScraper:
             if HAS_CURL_CFFI:
                 try:
                     self.session = cffi_requests.Session(impersonate=self.impersonate)
-                except Exception:
-                    self.session = requests.Session()
+                except Exception as exc:
+                    self.logger.warning(
+                        "Failed to initialize curl_cffi Session(impersonate='%s'): %s. Trying fallback to chrome...",
+                        self.impersonate,
+                        exc,
+                    )
+                    try:
+                        self.session = cffi_requests.Session(impersonate="chrome")
+                    except Exception as exc2:
+                        self.logger.error(
+                            "Failed to initialize fallback curl_cffi Session: %s. Falling back to requests.",
+                            exc2,
+                        )
+                        self.session = requests.Session()
             else:
                 self.session = requests.Session()
 
+            if hasattr(self.session, "headers"):
+                self.session.headers["User-Agent"] = self.user_agent
+
             if cookies:
                 for k, v in cookies.items():
+                    if k.startswith("bunny_shield_id"):
+                        continue
                     self.session.cookies.set(k, v, domain=".gocomics.com")
+                    self.session.cookies.set(k, v, domain="www.gocomics.com")
 
-    def _build_browser_headers(self) -> Dict[str, str]:
-        """Builds request headers aligned with the active browser TLS impersonation."""
-        headers = DEFAULT_BROWSER_HEADERS.copy()
-        headers["User-Agent"] = self.user_agent
+    def _build_browser_headers(self, url: str = "") -> Dict[str, str]:
+        """
+        Builds request headers aligned with active session, referer, and browser impersonation.
+        When using curl_cffi, it preserves the authentic TLS/HTTP2 headers (including Brotli/zstd
+        compression and matched Client Hints) and adds contextual navigation metadata (Referer).
+        For Firefox impersonation, explicitly supplies authentic document navigation headers
+        (Sec-Fetch-Dest: document, Sec-Fetch-Mode: navigate, Sec-Fetch-User: ?1, Upgrade-Insecure-Requests).
+        """
+        headers: Dict[str, str] = {}
+        is_gocomics = "gocomics.com" in (url or "").lower()
 
-        ua_lower = self.user_agent.lower()
-        if self.impersonate == "firefox" or "firefox" in ua_lower:
-            # Firefox never sends Chromium Client Hints; sending them causes anti-bot blocks
-            headers.pop("sec-ch-ua", None)
-            headers.pop("sec-ch-ua-mobile", None)
-            headers.pop("sec-ch-ua-platform", None)
-        else:
-            if "linux" in ua_lower:
-                headers["sec-ch-ua-platform"] = '"Linux"'
-            elif "macintosh" in ua_lower or "mac os" in ua_lower:
-                headers["sec-ch-ua-platform"] = '"macOS"'
-            else:
-                headers["sec-ch-ua-platform"] = '"Windows"'
+        if is_gocomics:
+            headers["Referer"] = self._last_gocomics_url or "https://www.gocomics.com/"
+            headers["Sec-Fetch-Site"] = "same-origin"
 
-            ver_match = re.search(r"Chrome/(\d+)", self.user_agent)
-            if ver_match:
-                major = ver_match.group(1)
-                headers["sec-ch-ua"] = (
-                    f'"Google Chrome";v="{major}", "Chromium";v="{major}", "Not?A_Brand";v="24"'
-                )
+        if not HAS_CURL_CFFI:
+            # Fallback to requests: must supply full explicit browser headers
+            base = DEFAULT_FIREFOX_HEADERS if self.impersonate == "firefox" else DEFAULT_BROWSER_HEADERS
+            fallback_headers = base.copy()
+            fallback_headers.update(headers)
+            fallback_headers["User-Agent"] = self.user_agent
+            return fallback_headers
+
+        # For curl_cffi: curl-impersonate supplies authentic headers matching Chrome,
+        # but in Firefox mode curl-impersonate defaults to API/CORS fetch headers (Sec-Fetch-Dest: empty).
+        # We explicitly supply authentic top-level document navigation headers matching real Firefox.
+        if self.impersonate == "firefox":
+            headers["User-Agent"] = self.user_agent
+            headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            headers["Sec-Fetch-Dest"] = "document"
+            headers["Sec-Fetch-Mode"] = "navigate"
+            headers["Sec-Fetch-User"] = "?1"
+            headers["Upgrade-Insecure-Requests"] = "1"
+            headers["Priority"] = "u=0, i"
+            headers["Te"] = "trailers"
 
         return headers
 
@@ -235,7 +314,7 @@ class WebScraper:
         )
 
         def _fetch_with_requests() -> Tuple[str, str]:
-            headers = self._build_browser_headers()
+            headers = self._build_browser_headers(url)
             response = self._perform_get(url, headers=headers, allow_redirects=allow_redirects)
 
             # If redirects are disabled and we got a redirect, treat as 404/Unavailable
@@ -290,13 +369,15 @@ class WebScraper:
                             cookies=res.get("cookies"),
                             user_agent=res.get("user_agent"),
                         )
-                        # If redirects are allowed and the browser already captured the comic HTML, reuse it directly
+                        # If the browser already captured the comic HTML, reuse it directly
                         resolved_html = res.get("html") or ""
-                        if allow_redirects and "og:image" in resolved_html.lower():
+                        if "og:image" in resolved_html.lower():
+                            if is_gocomics:
+                                self._last_gocomics_url = url
                             return resolved_html, url
 
                         # Otherwise, re-fetch with the newly minted cookies (preserving allow_redirects=False)
-                        retry_headers = self._build_browser_headers()
+                        retry_headers = self._build_browser_headers(url)
                         retry_resp = self._perform_get(
                             url, headers=retry_headers, allow_redirects=allow_redirects
                         )
@@ -328,6 +409,8 @@ class WebScraper:
             self._raise_for_status_compat(response, url)
             if not html_text:
                 raise WebScrapingError(f"Empty response from {url}")
+            if is_gocomics and response.status_code == 200:
+                self._last_gocomics_url = final_url
             return html_text, final_url
 
         try:

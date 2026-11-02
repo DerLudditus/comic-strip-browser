@@ -5,20 +5,33 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "4.0.0"
-__version_info__ = (4, 0, 0)
+__version__ = "4.0.1"
+__version_info__ = (4, 0, 1)
 
 # Release information
-RELEASE_DATE = "2026-11-01"
+RELEASE_DATE = "2026-11-02"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "4.0.0-1"
+DEB_VERSION = "4.0.1-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (4.0.0-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (4.0.1-1) stable; urgency=high
+* As it’s often the case with dot-zero releases, 4.0.0 had severe bugs. Upgrading to this version is a must!
+* Fixed a bug that made `curl_cffi` send worse browser headers than `requests` and triggered more blocks from GoComics.
+* Fixed several browser-specific bugs that prevented the correct collection and the use of GoComics clearance cookies.
+* Fixed several bugs that made `curl_cffi` use different headers than those in the clearance cookies.
+* Fixed a browser solver HTML discard bug that created redundant network calls.
+* Fixed browsers installed as per-user Flatpaks not being detected (e.g., `com.brave.Browser`).
+* Added continuous `Referer` tracking to mimic the behavior of a real browser.
+* Added buttons to override the OS-specific priorities and prefer Firefox or Chromium/Edge to solve Bunny Shield challenges.
+* Preferences (this one and the hiding of GoComics titles) are persistent, but are deleted when the cache is manually deleted.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Mon, 2 Nov 2026 23:00 +0200
+ 
+comic-strip-browser (4.0.0-1) stable; urgency=medium
 * GoComics: implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!
 * Windows: browsers are queried in this order: Edge, Chrome, Brave, Firefox.
 * Linux: browsers are queried in this order: `firefox-esr`, `firefox`, `chromium`, `google-chrome` (plus Flatpak).

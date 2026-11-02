@@ -58,7 +58,12 @@ class ComicService:
             config_manager=self.config_manager
         )
         self.logger = logging.getLogger(__name__)
-    
+
+    def set_browser_preference(self, pref: str) -> None:
+        """Update browser resolution preference ('firefox' or 'chromium')."""
+        if self.web_scraper and hasattr(self.web_scraper, "set_browser_preference"):
+            self.web_scraper.set_browser_preference(pref)
+
     def get_comic(
         self,
         comic_name: str,
