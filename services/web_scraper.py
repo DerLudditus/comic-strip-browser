@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import threading
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -124,16 +125,32 @@ class WebScraper:
             debug: Enable verbose debug logging for Bunny Shield resolution
             browser_preference: Optional preference ('firefox' or 'chromium')
         """
-        if not getattr(sys, "frozen", False) and not HAS_CURL_CFFI:
-            raise RuntimeError(
-                "Missing required dependency 'curl_cffi'. Please install it via 'pip install curl_cffi'."
-            )
-
         self.timeout = timeout
         self.error_handler = error_handler or ErrorHandler()
         self.logger = logging.getLogger(__name__)
 
-        if HAS_CURL_CFFI:
+        self.shield_resolver = BunnyShieldResolver(
+            cache_dir=cache_dir, debug=debug, browser_preference=browser_preference
+        )
+        self._session_lock = threading.Lock()
+
+        # Load legacy mode preference from cache
+        from services.cache_manager import load_cache_preferences
+        resolved_cache = Path(cache_dir) if cache_dir else Path("cache")
+        prefs = load_cache_preferences(resolved_cache)
+        if "legacy_mode" not in prefs:
+            prefs = load_cache_preferences(Path("cache"))
+        self.legacy_mode: bool = bool(prefs.get("legacy_mode", False))
+        self.on_legacy_mode_changed: Optional[Callable[[bool], None]] = None
+
+        if not getattr(sys, "frozen", False) and not HAS_CURL_CFFI and not self.legacy_mode:
+            raise RuntimeError(
+                "Missing required dependency 'curl_cffi'. Please install it via 'pip install curl_cffi'."
+            )
+
+        if self.legacy_mode:
+            self.logger.info("Legacy mode is active: using standard requests.Session() (urllib3)")
+        elif HAS_CURL_CFFI:
             version_str = getattr(cffi_requests, "__version__", "installed")
             self.logger.debug(f"curl_cffi is active (version: {version_str})")
         else:
@@ -141,11 +158,6 @@ class WebScraper:
                 "curl_cffi is NOT installed! Running with standard requests (urllib3). "
                 "GoComics Bunny Shield challenges will be triggered frequently."
             )
-
-        self.shield_resolver = BunnyShieldResolver(
-            cache_dir=cache_dir, debug=debug, browser_preference=browser_preference
-        )
-        self._session_lock = threading.Lock()
 
         self.impersonate: str = "chrome"
         self.user_agent: str = DEFAULT_BROWSER_HEADERS["User-Agent"]
@@ -200,7 +212,7 @@ class WebScraper:
             else:
                 self.user_agent = DEFAULT_BROWSER_HEADERS["User-Agent"]
 
-            if HAS_CURL_CFFI:
+            if HAS_CURL_CFFI and not self.legacy_mode:
                 try:
                     self.session = cffi_requests.Session(impersonate=self.impersonate)
                 except Exception as exc:
@@ -230,6 +242,35 @@ class WebScraper:
                     self.session.cookies.set(k, v, domain=".gocomics.com")
                     self.session.cookies.set(k, v, domain="www.gocomics.com")
 
+    def enable_legacy_mode(self) -> None:
+        """
+        Switches the scraper from curl_cffi to standard requests.Session() (Legacy mode)
+        and persists this setting in cache/preferences.json.
+        """
+        if self.legacy_mode:
+            return
+        self.legacy_mode = True
+        self.logger.warning(
+            "Legacy mode activated: switching HTTP session from curl_cffi to requests.Session()"
+        )
+
+        from services.cache_manager import save_cache_preferences
+        try:
+            save_cache_preferences(self.shield_resolver.cache_dir, legacy_mode=True)
+            save_cache_preferences(Path("cache"), legacy_mode=True)
+        except Exception as e:
+            self.logger.debug(f"Could not persist legacy_mode preference: {e}")
+
+        # Re-initialize session as requests.Session
+        self._init_http_session(impersonate=self.impersonate)
+
+        # Notify listener (e.g. MainWindow status bar via controller signal)
+        if callable(self.on_legacy_mode_changed):
+            try:
+                self.on_legacy_mode_changed(True)
+            except Exception as e:
+                self.logger.debug(f"Error calling on_legacy_mode_changed: {e}")
+
     def _build_browser_headers(self, url: str = "") -> Dict[str, str]:
         """
         Builds request headers aligned with active session, referer, and browser impersonation.
@@ -245,7 +286,7 @@ class WebScraper:
             headers["Referer"] = self._last_gocomics_url or "https://www.gocomics.com/"
             headers["Sec-Fetch-Site"] = "same-origin"
 
-        if not HAS_CURL_CFFI:
+        if not HAS_CURL_CFFI or self.legacy_mode:
             # Fallback to requests: must supply full explicit browser headers
             base = DEFAULT_FIREFOX_HEADERS if self.impersonate == "firefox" else DEFAULT_BROWSER_HEADERS
             fallback_headers = base.copy()
@@ -315,7 +356,18 @@ class WebScraper:
 
         def _fetch_with_requests() -> Tuple[str, str]:
             headers = self._build_browser_headers(url)
-            response = self._perform_get(url, headers=headers, allow_redirects=allow_redirects)
+            try:
+                response = self._perform_get(url, headers=headers, allow_redirects=allow_redirects)
+            except Exception as exc:
+                if not self.legacy_mode and HAS_CURL_CFFI:
+                    self.logger.warning(
+                        f"Unusual error with curl_cffi on {url}: {exc}. Automatically switching to legacy mode (requests.Session())..."
+                    )
+                    self.enable_legacy_mode()
+                    retry_headers = self._build_browser_headers(url)
+                    response = self._perform_get(url, headers=retry_headers, allow_redirects=allow_redirects)
+                else:
+                    raise
 
             # If redirects are disabled and we got a redirect, treat as 404/Unavailable
             if not allow_redirects and 300 <= response.status_code < 400:
@@ -445,9 +497,29 @@ class WebScraper:
             self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except RequestException as e:
+            if not self.legacy_mode and HAS_CURL_CFFI:
+                self.logger.warning(
+                    f"RequestException with curl_cffi on {url}: {e}. Automatically switching to legacy mode..."
+                )
+                self.enable_legacy_mode()
+                try:
+                    return self.error_handler.retry_with_backoff(_fetch_with_requests)
+                except Exception as retry_exc:
+                    self.logger.error(f"Request failed for {url} in legacy mode: {retry_exc}")
+                    raise WebScrapingError(f"Failed to fetch {url}: {retry_exc}")
             self.logger.error(f"Request failed for {url}: {e}")
             raise WebScrapingError(f"Failed to fetch {url}: {e}")
         except Exception as e:
+            if not self.legacy_mode and HAS_CURL_CFFI:
+                self.logger.warning(
+                    f"Unexpected error with curl_cffi on {url}: {e}. Automatically switching to legacy mode..."
+                )
+                self.enable_legacy_mode()
+                try:
+                    return self.error_handler.retry_with_backoff(_fetch_with_requests)
+                except Exception as retry_exc:
+                    self.logger.error(f"Unexpected error for {url} in legacy mode: {retry_exc}")
+                    raise WebScrapingError(f"Unexpected error fetching {url}: {retry_exc}")
             self.logger.error(f"Unexpected error fetching {url}: {e}")
             raise WebScrapingError(f"Unexpected error fetching {url}: {e}")
 

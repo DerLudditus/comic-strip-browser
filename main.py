@@ -411,6 +411,10 @@ def _enforce_source_dependencies(is_gui: bool = True) -> None:
     if getattr(sys, "frozen", False):
         return
 
+    from services.cache_manager import load_cache_preferences
+    if load_cache_preferences().get("legacy_mode", False):
+        return
+
     try:
         import curl_cffi  # noqa: F401
     except ImportError:

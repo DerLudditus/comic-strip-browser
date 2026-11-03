@@ -199,13 +199,9 @@ class MainWindow(QMainWindow):
 
         self._update_browser_pref_ui()
 
-        # Mode status indicator (e.g. "Debug mode!") placed immediately to the left of "Prefer Firefox"
+        # Mode status indicator (e.g. "Debug mode!" or "Legacy mode!") placed immediately to the left of "Prefer Firefox"
         self.mode_status_label = QLabel()
-        if self.debug:
-            self.mode_status_label.setText("Debug mode!")
-            self.mode_status_label.setStyleSheet("font-weight: bold; color: #d32f2f; padding-right: 6px;")
-        else:
-            self.mode_status_label.setText("")
+        self.update_mode_status_label()
         self.status_bar.addPermanentWidget(self.mode_status_label)
 
         self.status_bar.addPermanentWidget(self.prefer_firefox_btn)
@@ -494,6 +490,7 @@ class MainWindow(QMainWindow):
         self.comic_controller.comic_loading_started.connect(self.on_comic_loading_started)
         self.comic_controller.comic_loading_finished.connect(self.on_comic_loading_finished)
         self.comic_controller.loading_error.connect(self.on_loading_error)
+        self.comic_controller.legacy_mode_changed.connect(self._on_legacy_mode_changed)
         
         # Add debounce tracking
         self._last_error_time = 0
@@ -1090,6 +1087,15 @@ class MainWindow(QMainWindow):
                 self._set_browser_preference(default_pref, save=False)
                 if hasattr(self, "comic_selector") and self.comic_selector:
                     self.comic_selector.radio_show_all.setChecked(True)
+
+                # Reset web_scraper legacy mode back to default if active
+                if hasattr(self, 'comic_controller') and self.comic_controller and hasattr(self.comic_controller, 'comic_service') and self.comic_controller.comic_service:
+                    scraper = getattr(self.comic_controller.comic_service, "web_scraper", None)
+                    if scraper and getattr(scraper, "legacy_mode", False):
+                        scraper.legacy_mode = False
+                        scraper._init_http_session(impersonate=scraper.impersonate)
+
+                self.update_mode_status_label()
                 self.update_status("Cache folder deleted. Preferences reset to default.", 3000)
             except Exception as e:
                 QMessageBox.warning(
@@ -1140,6 +1146,36 @@ class MainWindow(QMainWindow):
             self.prefer_chromium_btn.setStyleSheet(active_style)
             self.prefer_firefox_btn.setChecked(False)
             self.prefer_firefox_btn.setStyleSheet(inactive_style)
+
+    def _on_legacy_mode_changed(self, enabled: bool):
+        """Handle dynamic transition to legacy mode."""
+        self.update_mode_status_label()
+
+    def update_mode_status_label(self):
+        """Update the status indicator label (Debug mode / Legacy mode)."""
+        if not hasattr(self, "mode_status_label") or self.mode_status_label is None:
+            return
+
+        is_legacy = False
+        if hasattr(self, "comic_controller") and self.comic_controller:
+            service = getattr(self.comic_controller, "comic_service", None)
+            if service and hasattr(service, "web_scraper") and service.web_scraper:
+                is_legacy = getattr(service.web_scraper, "legacy_mode", False)
+        if not is_legacy:
+            from services.cache_manager import load_cache_preferences
+            is_legacy = bool(load_cache_preferences(self._get_cache_dir()).get("legacy_mode", False))
+
+        if self.debug and is_legacy:
+            self.mode_status_label.setText("Debug / Legacy mode!")
+            self.mode_status_label.setStyleSheet("font-weight: bold; color: #d32f2f; margin-right: 6px;")
+        elif is_legacy:
+            self.mode_status_label.setText("Legacy mode!")
+            self.mode_status_label.setStyleSheet("font-weight: bold; color: #1976d2; margin-right: 6px;")
+        elif self.debug:
+            self.mode_status_label.setText("Debug mode!")
+            self.mode_status_label.setStyleSheet("font-weight: bold; color: #d32f2f; margin-right: 6px;")
+        else:
+            self.mode_status_label.setText("")
 
     def _set_browser_preference(self, pref: str, save: bool = True):
         self.browser_preference = pref

@@ -86,6 +86,7 @@ class ComicController(QObject):
     comic_loading_finished = pyqtSignal(str, date)  # comic_name, date
     comic_loaded = pyqtSignal(ComicData)  # Successfully loaded comic
     loading_error = pyqtSignal(str, str, str)  # error_message, recovery_suggestions, error_type
+    legacy_mode_changed = pyqtSignal(bool)  # Emitted when legacy mode is toggled
     
     def __init__(self, comic_service: Optional[ComicService] = None):
         """
@@ -96,6 +97,8 @@ class ComicController(QObject):
         """
         super().__init__()
         self.comic_service = comic_service or ComicService()
+        if self.comic_service and hasattr(self.comic_service, "web_scraper") and self.comic_service.web_scraper:
+            self.comic_service.web_scraper.on_legacy_mode_changed = lambda enabled: self.legacy_mode_changed.emit(enabled)
         # self.logger = logging.getLogger(__name__)
         
         # Current state
@@ -308,6 +311,8 @@ class ComicController(QObject):
             comic_service: ComicService instance to use
         """
         self.comic_service = comic_service
+        if hasattr(self.comic_service, "web_scraper") and self.comic_service.web_scraper:
+            self.comic_service.web_scraper.on_legacy_mode_changed = lambda enabled: self.legacy_mode_changed.emit(enabled)
     
     def show_error_dialog(self, title: str, message: str, suggestions: str = ""):
         """

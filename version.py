@@ -5,25 +5,33 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "4.0.2"
-__version_info__ = (4, 0, 2)
+__version__ = "4.0.3"
+__version_info__ = (4, 0, 3)
 
 # Release information
 RELEASE_DATE = "2026-11-03"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "4.0.2-1"
+DEB_VERSION = "4.0.3-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (4.0.2-1) stable; urgency=medium
+CHANGELOG = """comic-strip-browser (4.0.3-1) stable; urgency=medium
+* This version is mainly meant to address the cases when `curl_cffi` fails to work on some Windows systems!
+* Automatically fall back to using `requests` (Legacy mode) if `curl_cffi` fails due to unexpected errors or after 7 date fallback failures.
+* Saved the `legacy_mode` setting in `cache/preferences.json` to persist across sessions.
+* Added a “Legacy mode!” status indicator to the left of the “Prefer Firefox“ button.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 3 Nov 2026 03:00 +0200
+ 
+comic-strip-browser (4.0.2-1) stable; urgency=medium
 * This version is mainly for debugging and revealing the errors that break this app on some Windows systems!
 * The next version will automatically fall back to using `requests` instead of `curl_cffi`. The current version doesn’t do that!
 * Enabled conditional debug mode triggered by a `debug.txt` file located in the application root or `cache/` folder.
 * Redirected debug log output to `cache/comic_browser.log` so it can be viewed directly via the “Open Cache” button.
-* Added a “Debug mode!” status indicator to the left of the "Prefer Firefox" button when debug mode is active.
+* Added a “Debug mode!“ status indicator to the left of the “Prefer Firefox“ button when debug mode is active.
 * Unmasked generic errors in the GUI viewer to show the exact underlying exception details instead of a generic message.
 
  -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 3 Nov 2026 02:00 +0200

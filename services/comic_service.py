@@ -145,6 +145,11 @@ class ComicService:
             if _depth < 7:
                 prev_date = self._find_previous_available_date(comic_name, comic_date)
                 if not prev_date:
+                    legacy_result = self._fallback_to_legacy_mode_and_retry(
+                        comic_name, comic_date, _depth, progress_callback
+                    )
+                    if legacy_result is not None:
+                        return legacy_result
                     raise ComicServiceError(f"Comic {comic_name} not available for {comic_date}")
                 self.logger.info(
                     f"Trying previous available comic ({prev_date}) as fallback (depth {_depth + 1}/7)"
@@ -162,6 +167,11 @@ class ComicService:
                     pass  # Fall through to main error
             
             # Re-raise the ComicUnavailableError
+            legacy_result = self._fallback_to_legacy_mode_and_retry(
+                comic_name, comic_date, _depth, progress_callback
+            )
+            if legacy_result is not None:
+                return legacy_result
             raise ComicServiceError(f"Comic {comic_name} not available for {comic_date}")
             
         except (NetworkError, ParsingError) as e:
@@ -175,6 +185,11 @@ class ComicService:
             if _depth < 7:
                 prev_date = self._find_previous_available_date(comic_name, comic_date)
                 if not prev_date:
+                    legacy_result = self._fallback_to_legacy_mode_and_retry(
+                        comic_name, comic_date, _depth, progress_callback
+                    )
+                    if legacy_result is not None:
+                        return legacy_result
                     raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
                 self.logger.info(
                     f"Trying previous available comic ({prev_date}) as fallback (depth {_depth + 1}/7)"
@@ -191,6 +206,11 @@ class ComicService:
                 except ComicServiceError:
                     pass  # Fall through to main error
             
+            legacy_result = self._fallback_to_legacy_mode_and_retry(
+                comic_name, comic_date, _depth, progress_callback
+            )
+            if legacy_result is not None:
+                return legacy_result
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
             
         except WebScrapingError as e:
@@ -220,6 +240,11 @@ class ComicService:
             if _depth < 7:
                 prev_date = self._find_previous_available_date(comic_name, comic_date)
                 if not prev_date:
+                    legacy_result = self._fallback_to_legacy_mode_and_retry(
+                        comic_name, comic_date, _depth, progress_callback
+                    )
+                    if legacy_result is not None:
+                        return legacy_result
                     raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
                 if progress_callback:
                     progress_callback(f"Checking {prev_date.strftime('%b %d')} (depth {_depth + 1}/7)...")
@@ -232,9 +257,44 @@ class ComicService:
                 except (ComicServiceError, ComicUnavailableError):
                     pass  # Fall through to main error
 
+            legacy_result = self._fallback_to_legacy_mode_and_retry(
+                comic_name, comic_date, _depth, progress_callback
+            )
+            if legacy_result is not None:
+                return legacy_result
             if "wrong date" in error_str or "not available" in error_str:
                 raise ComicServiceError(f"Comic {comic_name} not available for {comic_date}")
             raise ComicServiceError(f"Could not retrieve {comic_name} for {comic_date}: {e}")
+
+    def _fallback_to_legacy_mode_and_retry(
+        self,
+        comic_name: str,
+        comic_date: date,
+        depth: int,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> Optional[ComicData]:
+        """
+        If we are at the top-level retrieval (_depth == 0) and 7 date fallback attempts failed
+        while running with curl_cffi, automatically switches to Legacy mode (requests.Session)
+        and retries the retrieval from the original target date.
+        """
+        if depth == 0 and hasattr(self, "web_scraper") and self.web_scraper:
+            if not getattr(self.web_scraper, "legacy_mode", False):
+                self.logger.warning(
+                    f"Failed 7 consecutive date fallbacks for {comic_name} using curl_cffi. "
+                    "Automatically switching to legacy mode (requests.Session())..."
+                )
+                if hasattr(self.web_scraper, "enable_legacy_mode"):
+                    self.web_scraper.enable_legacy_mode()
+                    if progress_callback:
+                        progress_callback("Retrying in legacy mode...")
+                    try:
+                        return self.get_comic(
+                            comic_name, comic_date, _depth=0, progress_callback=progress_callback
+                        )
+                    except Exception:
+                        pass
+        return None
     
     def _fetch_comic_from_web(
         self,
