@@ -9,7 +9,7 @@ A standalone PyQt6 application for browsing a selection of comic strips from GoC
 > **Release 4.0.0 is buggy. Please update to 4.0.1!** 👈
 
 > [!WARNING]
-> **KNOWN ISSUES:** I have reports that version 4.0.1 doesn’t work on some Windows systems, and version 4.0.0 freezes when GoComics acts up. For now, the issue is under investigation, as I couldn’t reproduce it.
+> **KNOWN ISSUES:** I have reports that version 4.0.1 doesn’t work on some Windows systems, and version 4.0.0 freezes when GoComics acts up. **If you are in such a situation, use 4.0.2 or 4.0.3.** 👈
 
 This app started as vibe-coded with Amazon's Kiro, but over time it underwent countless changes and improvements, both manually and through the contributions of Claude, Qwen, and Gemini. Read **[the birth story](https://ludditus.com/2025/07/25/the-magic-of-amazons-kiro/)**. 
 
@@ -28,6 +28,10 @@ Version 3.1.2 **refined the feedback** for GoComics-related errors: Bunny Shield
 Version 4.0.0 **implemented mechanisms to defeat the Bunny Shield challenge using a headless browser!** ☢️ However, it’s so buggy that you **must** use 4.0.1 instead!
 
 Version 4.0.1 **fixed many severe bugs** and **greatly improved the resilience to GoComics’ Bunny Shield challenges!**
+
+Version 4.0.2 **enables conditional debug mode triggered by a `debug.txt` file located in the app or `cache/` folder.** The resulting `cache/comic_browser.log` can be viewed via the “Open Cache” button.
+
+Version 4.0.3 **is meant to address the cases when `curl_cffi` fails to work on some Windows systems.** It falls back to using `requests` (Legacy mode) if `curl_cffi` fails due to unexpected errors or after 7 date fallback failures. See details [below](#5-bunny-shield--defeating-gocomics).
 
 
 ### 1. Major features
@@ -186,10 +190,24 @@ Note that some comic titles, especially in their early days, can have large gaps
 **GoComics** recently added a [Bunny Shield challenge](https://bunny.net/shield/) (read [here](https://ludditus.com/2026/03/28/the-day-gocomics-went-badcomics/) about what this broke) for requests coming from IPs that belong to some VPNs, data centers, or other shared IPs. 
 
 > [!IMPORTANT]
-> **For the first time, release 4.0.0 can bypass the Bunny Shield challenge!** 🎉
+> **For the first time, version 4 can bypass the Bunny Shield challenge!** 🎉
 
 > [!CAUTION]
 > **Release 4.0.0 is buggy. Please update to 4.0.1!** 👈
+
+> [!WARNING]
+> **KNOWN ISSUES:** I have reports that version 4.0.1 doesn’t work on some Windows systems, and version 4.0.0 freezes when GoComics acts up. **If you are in such a situation, use 4.0.2 or 4.0.3.** 👈
+
+> [!TIP]
+> **Version 4.0.2:**
+> * Enable the **debug mode** by creating an empty `debug.txt` file in the application or `cache/` folder (which is usually in `$HOME` on Linux).
+> * The resulting `cache/comic_browser.log` can be viewed via the “Open Cache” button.
+
+> [!TIP]
+> **Version 4.0.3:**
+> * Meant to address the cases when `curl_cffi` fails to work on some Windows systems.
+> * It falls back to using `requests` (Legacy mode) if `curl_cffi` fails due to unexpected errors or after 7 date fallback failures.
+> * **The caveat is that in legacy mode, GoComics will issue Bunny Shield Challenges and 403 errors more often.**
 
 👉 When needed, the **Bunny Shield JS Proof-of-Work (PoW) resolver uses the host OS browser in headless mode**. This avoids increasing  the app size. The possible browsers are queried with different priorities depending on the OS:
 * **Windows:** Chromium, Chrome, Edge, Brave, Firefox, Firefox ESR.
