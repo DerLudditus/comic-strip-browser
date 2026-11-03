@@ -474,6 +474,10 @@ class ErrorHandler:
                 return "This comic is not available for the selected date."
 
         else:
+            err_details = error.message if hasattr(error, 'message') and error.message else str(error)
+            err_details = err_details.strip()
+            if err_details and err_details != "None":
+                return f"An unexpected error occurred:\n{err_details}"
             return "An unexpected error occurred. Please try again."
     
     def get_recovery_suggestions(self, error: ComicError) -> List[str]:

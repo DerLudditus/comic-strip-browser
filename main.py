@@ -48,25 +48,47 @@ def _attach_console():
             pass
 
 
-def _get_log_file_path() -> Path:
-    """Return the platform-appropriate log file path for --debug."""
-    if sys.platform == "win32":
-        base_dir = os.environ.get("LOCALAPPDATA")
-        if base_dir:
-            log_dir = Path(base_dir) / "ComicStripBrowser"
-        else:
-            log_dir = Path.home() / "AppData" / "Local" / "ComicStripBrowser"
-    else:
-        # Linux / Unix follow XDG Base Directory Specification
-        xdg_cache = os.environ.get("XDG_CACHE_HOME")
-        if xdg_cache:
-            log_dir = Path(xdg_cache) / "comic-strip-browser"
-        else:
-            log_dir = Path.home() / ".cache" / "comic-strip-browser"
+def _check_debug_mode(cli_debug: bool = False) -> bool:
+    """
+    Check if debug mode is triggered by a debug.txt file or CLI argument.
+    Looks for debug.txt in the application root, beside the executable, or in cache/.
+    """
+    if cli_debug:
+        return True
 
+    # 1. Current working directory
+    if Path("debug.txt").is_file():
+        return True
+
+    # 2. cache/ folder
+    if (Path("cache") / "debug.txt").is_file():
+        return True
+
+    # 3. Beside frozen executable or source file root
     try:
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir / "comic_browser.log"
+        if getattr(sys, "frozen", False):
+            exe_dir = Path(sys.executable).parent
+            if (exe_dir / "debug.txt").is_file() or (exe_dir / "cache" / "debug.txt").is_file():
+                return True
+        else:
+            root_dir = Path(__file__).resolve().parent
+            if (root_dir / "debug.txt").is_file() or (root_dir / "cache" / "debug.txt").is_file():
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+def _get_log_file_path() -> Path:
+    """
+    Return the log file path located inside the application cache directory (cache/comic_browser.log).
+    This allows users to view the log directly by clicking 'Open Cache' in the GUI.
+    """
+    try:
+        cache_dir = Path("cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        return cache_dir / "comic_browser.log"
     except Exception:
         # Fallback to current working directory
         return Path.cwd() / "comic_browser.log"
@@ -250,7 +272,10 @@ class ComicStripBrowser:
             self.validate_configuration()
 
             # Create main window
-            self.main_window = MainWindow(browser_preference=self.browser_preference)
+            self.main_window = MainWindow(
+                browser_preference=self.browser_preference,
+                debug=self.debug
+            )
 
             # Inject initialized services into the controller
             if hasattr(self.main_window, 'comic_controller') and self.main_window.comic_controller:
@@ -281,7 +306,7 @@ def _find_latest_available_date(comic_def, target_date: date, max_days: int = 31
     return comic_def.earliest_date if comic_def.earliest_date else target_date
 
 
-def handle_cli(args) -> int:
+def handle_cli(args, debug: bool = False) -> int:
     """Handle command line operations without GUI."""
     _attach_console()
 
@@ -304,7 +329,7 @@ def handle_cli(args) -> int:
     browser_pref = "firefox" if getattr(args, "prefer_firefox", False) else (
         "chromium" if getattr(args, "prefer_chromium", False) else None
     )
-    browser = ComicStripBrowser(debug=args.debug, browser_preference=browser_pref)
+    browser = ComicStripBrowser(debug=debug, browser_preference=browser_pref)
     try:
         browser.initialize_services()
         browser.validate_configuration()
@@ -470,7 +495,8 @@ def main():
         _enforce_source_dependencies(is_gui=not is_cli_action)
 
         import logging
-        if args.debug:
+        is_debug = _check_debug_mode(cli_debug=args.debug)
+        if is_debug:
             _attach_console()
             log_file = _get_log_file_path()
 
@@ -495,7 +521,7 @@ def main():
             root_logger.addHandler(console_handler)
 
             print(f"[DEBUG] Debug logging enabled. Log file: {log_file}")
-            logging.getLogger("main").debug(f"Comic Strip Browser v{__version__} starting with --debug")
+            logging.getLogger("main").debug(f"Comic Strip Browser v{__version__} starting with debug mode enabled")
         else:
             logging.disable(logging.CRITICAL)
 
@@ -509,11 +535,11 @@ def main():
             os.environ["COMIC_BROWSER_FAKE_403"] = "1"
             
         if is_cli_action:
-            return handle_cli(args)
+            return handle_cli(args, debug=is_debug)
 
         # Launch GUI application
         browser_pref = "firefox" if args.prefer_firefox else ("chromium" if args.prefer_chromium else None)
-        browser = ComicStripBrowser(debug=args.debug, browser_preference=browser_pref)
+        browser = ComicStripBrowser(debug=is_debug, browser_preference=browser_pref)
         return browser.run()
     except Exception as e:
         print(f"Error starting Comic Strip Browser: {e}")

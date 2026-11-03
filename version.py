@@ -5,20 +5,30 @@ This is the single source of truth for version information.
 Update this file when releasing a new version.
 """
 
-__version__ = "4.0.1"
-__version_info__ = (4, 0, 1)
+__version__ = "4.0.2"
+__version_info__ = (4, 0, 2)
 
 # Release information
-RELEASE_DATE = "2026-11-02"
+RELEASE_DATE = "2026-11-03"
 RELEASE_NAME = "Comic Strip Browser"
 
 # Package information for .deb
-DEB_VERSION = "4.0.1-1"
+DEB_VERSION = "4.0.2-1"
 DEB_MAINTAINER = "Homo Ludditus <DerLudditus@gmail.com>"
 DEB_HOMEPAGE = "https://github.com/DerLudditus/comic-strip-browser"
 
 # Changelog entry (most recent first)
-CHANGELOG = """comic-strip-browser (4.0.1-1) stable; urgency=high
+CHANGELOG = """comic-strip-browser (4.0.2-1) stable; urgency=medium
+* This version is mainly for debugging and revealing the errors that break this app on some Windows systems!
+* The next version will automatically fall back to using `requests` instead of `curl_cffi`. The current version doesn’t do that!
+* Enabled conditional debug mode triggered by a `debug.txt` file located in the application root or `cache/` folder.
+* Redirected debug log output to `cache/comic_browser.log` so it can be viewed directly via the “Open Cache” button.
+* Added a “Debug mode!” status indicator to the left of the "Prefer Firefox" button when debug mode is active.
+* Unmasked generic errors in the GUI viewer to show the exact underlying exception details instead of a generic message.
+
+ -- Homo Ludditus <DerLudditus@gmail.com>  Tue, 3 Nov 2026 02:00 +0200
+ 
+comic-strip-browser (4.0.1-1) stable; urgency=high
 * As it’s often the case with dot-zero releases, 4.0.0 had severe bugs. Upgrading to this version is a must!
 * Fixed a bug that made `curl_cffi` send worse browser headers than `requests` and triggered more blocks from GoComics.
 * Fixed several browser-specific bugs that prevented the correct collection and the use of GoComics clearance cookies.

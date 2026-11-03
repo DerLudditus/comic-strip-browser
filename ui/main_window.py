@@ -13,7 +13,7 @@ import platform
 from typing import Optional
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QStatusBar, QApplication, QPushButton,
+    QStatusBar, QApplication, QPushButton, QLabel,
     QSplitter, QFrame, QButtonGroup
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QUrl
@@ -46,12 +46,14 @@ class MainWindow(QMainWindow):
     comic_selected = pyqtSignal(str)  # Emitted when a comic is selected
     date_changed = pyqtSignal(object)  # Emitted when calendar date changes
     
-    def __init__(self, browser_preference: Optional[str] = None):
+    def __init__(self, browser_preference: Optional[str] = None, debug: bool = False):
         """Initialize the main window with basic structure."""
         super().__init__()
         self._cli_browser_pref = browser_preference
+        self.debug = debug
         self.browser_preference = None
         self.comic_controller = None
+        self.mode_status_label = None
         self.initialize_ui()
         self.setup_cross_platform_compatibility()
         self.setup_controller_integration()
@@ -196,6 +198,15 @@ class MainWindow(QMainWindow):
         self.browser_pref_group.setExclusive(True)
 
         self._update_browser_pref_ui()
+
+        # Mode status indicator (e.g. "Debug mode!") placed immediately to the left of "Prefer Firefox"
+        self.mode_status_label = QLabel()
+        if self.debug:
+            self.mode_status_label.setText("Debug mode!")
+            self.mode_status_label.setStyleSheet("font-weight: bold; color: #d32f2f; padding-right: 6px;")
+        else:
+            self.mode_status_label.setText("")
+        self.status_bar.addPermanentWidget(self.mode_status_label)
 
         self.status_bar.addPermanentWidget(self.prefer_firefox_btn)
         self.status_bar.addPermanentWidget(self.prefer_chromium_btn)

@@ -545,6 +545,9 @@ class ComicService:
                 network_error = NetworkError(str(error))
                 return self.error_handler.get_user_friendly_message(network_error)
             else:
+                err_text = str(error).strip()
+                if err_text:
+                    return f"An unexpected error occurred:\n{err_text}"
                 from services.error_handler import ComicError, ErrorType, ErrorSeverity
                 comic_error = ComicError(str(error), ErrorType.UNKNOWN_ERROR, ErrorSeverity.MEDIUM)
                 return self.error_handler.get_user_friendly_message(comic_error)
@@ -561,6 +564,9 @@ class ComicService:
             return self.error_handler.get_user_friendly_message(error)
 
         # Default fallback message
+        err_text = str(error).strip()
+        if err_text:
+            return f"An unexpected error occurred:\n{err_text}"
         return "An unexpected error occurred. Please try again."
     
     def get_recovery_suggestions(self, error: Exception) -> List[str]:
