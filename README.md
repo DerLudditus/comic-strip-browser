@@ -5,9 +5,9 @@ A standalone PyQt6 application for browsing a selection of comic strips from GoC
 <div align="center">
 <img src="https://raw.githubusercontent.com/DerLudditus/comic-strip-browser/refs/heads/main/assets/comic-strip-browser.png" alt="Comic Strip Browser Logo" width="200" />
 
-[![Build](https://github.com/DerLudditus/comic-strip-browser/actions/workflows/build.yml/badge.svg)](https://github.com/DerLudditus/comic-strip-browser/actions)   
-[![Latest Release](https://img.shields.io/github/v/release/DerLudditus/comic-strip-browser?logo=github)](https://github.com/DerLudditus/comic-strip-browser/releases/latest) [![Downloads](https://img.shields.io/github/downloads/DerLudditus/comic-strip-browser/total?color=blue)](https://github.com/DerLudditus/comic-strip-browser/releases) [![OS](https://img.shields.io/badge/OS-Windows%20%7C%20Linux-lightgrey?logo=linux)](#)  
-[![Python](https://img.shields.io/badge/python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/) [![PyQt6](https://img.shields.io/badge/PyQt-6.4.2-41CD52.svg?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/) [![Built with PyInstaller](https://img.shields.io/badge/built_with-PyInstaller-ff69b4.svg)](https://pyinstaller.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![](https://github.com/DerLudditus/comic-strip-browser/actions/workflows/build.yml/badge.svg)](https://github.com/DerLudditus/comic-strip-browser/actions)   
+[![](https://img.shields.io/github/v/release/DerLudditus/comic-strip-browser?logo=github)](https://github.com/DerLudditus/comic-strip-browser/releases/latest) [![](https://img.shields.io/github/downloads/DerLudditus/comic-strip-browser/total?color=blue)](https://github.com/DerLudditus/comic-strip-browser/releases) [![](https://img.shields.io/badge/OS-Windows%20%7C%20Linux-lightgrey?logo=linux)](#)  
+[![](https://img.shields.io/badge/python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/) [![](https://img.shields.io/badge/PyQt-6.4.2-41CD52.svg?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/) [![](https://img.shields.io/badge/built_with-PyInstaller-ff69b4.svg)](https://pyinstaller.org/) [![](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 </div>
 
 > [!TIP]
